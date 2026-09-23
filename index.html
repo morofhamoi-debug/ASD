@@ -1,0 +1,3007 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="system">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#0B0D12" />
+<title>ASD BANK</title>
+<link rel="manifest" href="data:application/json,%7B%22name%22%3A%22ASD%20BANK%22%2C%22short_name%22%3A%22ASD%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%230B0D12%22%2C%22theme_color%22%3A%22%230B0D12%22%7D" />
+<link rel="preconnect" href="https://rsms.me/">
+<link rel="stylesheet" href="https://rsms.me/inter/inter.css">
+
+<style>
+/* ============================================================
+   DESIGN TOKENS
+   ============================================================ */
+:root {
+  --bg: #F7F8FA;
+  --bg-elev: #FFFFFF;
+  --bg-sunken: #EEF0F4;
+  --fg: #0B0D12;
+  --fg-muted: #5B6472;
+  --fg-subtle: #8A93A3;
+  --border: #E4E7EC;
+  --border-strong: #D0D5DD;
+  --accent: #3B5BFF;
+  --accent-hover: #2E4BE0;
+  --accent-soft: #EEF1FF;
+  --success: #12B76A;
+  --success-soft: #E7F8EF;
+  --danger: #F04438;
+  --danger-soft: #FEECEB;
+  --warning: #F79009;
+  --warning-soft: #FEF3E2;
+  --shadow-sm: 0 1px 2px rgba(16,24,40,.05);
+  --shadow-md: 0 4px 12px rgba(16,24,40,.08);
+  --shadow-lg: 0 12px 32px rgba(16,24,40,.10);
+  --radius-sm: 8px;
+  --radius: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --transition: 200ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  --sidebar-w: 260px;
+  --header-h: 64px;
+}
+[data-theme="dark"] {
+  --bg: #0B0D12;
+  --bg-elev: #14171F;
+  --bg-sunken: #0F1218;
+  --fg: #F2F4F7;
+  --fg-muted: #98A2B3;
+  --fg-subtle: #667085;
+  --border: #1F2430;
+  --border-strong: #2A3040;
+  --accent: #5B78FF;
+  --accent-hover: #7089FF;
+  --accent-soft: #1A2140;
+  --success-soft: #0E2A1E;
+  --danger-soft: #2A1310;
+  --warning-soft: #2A1F0A;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,.4);
+  --shadow-md: 0 4px 12px rgba(0,0,0,.5);
+  --shadow-lg: 0 12px 32px rgba(0,0,0,.6);
+}
+
+/* ============================================================
+   BASE
+   ============================================================ */
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; height: 100%; }
+body {
+  font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--fg);
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  transition: background var(--transition), color var(--transition);
+}
+button { font-family: inherit; cursor: pointer; border: none; background: none; color: inherit; }
+a { color: inherit; text-decoration: none; }
+input, select, textarea { font-family: inherit; font-size: inherit; }
+[hidden] { display: none !important; }
+::selection { background: var(--accent); color: white; }
+
+/* ============================================================
+   APP LAYOUT
+   ============================================================ */
+#app { display: flex; min-height: 100vh; }
+
+.sidebar {
+  width: var(--sidebar-w);
+  background: var(--bg-elev);
+  border-right: 1px solid var(--border);
+  padding: 20px 14px;
+  display: flex; flex-direction: column;
+  position: fixed; top: 0; left: 0; bottom: 0;
+  overflow-y: auto;
+  z-index: 30;
+}
+.brand {
+  display: flex; align-items: center; gap: 10px;
+  padding: 6px 10px 22px;
+  font-weight: 700; letter-spacing: -0.01em;
+}
+.brand-mark {
+  width: 32px; height: 32px; border-radius: 9px;
+  background: linear-gradient(135deg, #3B5BFF, #7C3BFF);
+  display: grid; place-items: center;
+  color: white; font-weight: 800; font-size: 13px;
+  box-shadow: var(--shadow-md);
+}
+.brand-text { font-size: 16px; }
+.brand-text small { display: block; font-size: 10px; color: var(--fg-subtle); font-weight: 500; letter-spacing: 0.08em; }
+
+.nav { display: flex; flex-direction: column; gap: 2px; flex: 1; }
+.nav-section {
+  font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em;
+  color: var(--fg-subtle); padding: 16px 10px 6px; font-weight: 600;
+}
+.nav-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 10px;
+  border-radius: var(--radius-sm);
+  color: var(--fg-muted);
+  font-size: 14px; font-weight: 500;
+  transition: background var(--transition), color var(--transition);
+  position: relative;
+}
+.nav-item:hover { background: var(--bg-sunken); color: var(--fg); }
+.nav-item.active { background: var(--accent-soft); color: var(--accent); }
+.nav-item svg { width: 18px; height: 18px; flex-shrink: 0; }
+.nav-item .badge-dot {
+  margin-left: auto; background: var(--danger); color: white;
+  font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 10px;
+}
+
+.main {
+  flex: 1;
+  margin-left: var(--sidebar-w);
+  min-width: 0;
+  display: flex; flex-direction: column;
+}
+.header {
+  height: var(--header-h);
+  padding: 0 28px;
+  display: flex; align-items: center; gap: 16px;
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in srgb, var(--bg) 85%, transparent);
+  backdrop-filter: blur(12px);
+  position: sticky; top: 0; z-index: 20;
+}
+.header h1 { font-size: 18px; font-weight: 600; margin: 0; letter-spacing: -0.01em; }
+.header .spacer { flex: 1; }
+
+.icon-btn {
+  width: 38px; height: 38px; border-radius: 10px;
+  display: grid; place-items: center;
+  color: var(--fg-muted);
+  transition: background var(--transition), color var(--transition);
+  position: relative;
+}
+.icon-btn:hover { background: var(--bg-sunken); color: var(--fg); }
+.icon-btn svg { width: 20px; height: 20px; }
+.icon-btn .dot {
+  position: absolute; top: 8px; right: 8px;
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--danger); border: 2px solid var(--bg);
+}
+
+.avatar {
+  width: 36px; height: 36px; border-radius: 50%;
+  background: linear-gradient(135deg, #3B5BFF, #7C3BFF);
+  color: white; display: grid; place-items: center;
+  font-weight: 600; font-size: 13px;
+  cursor: pointer; transition: transform var(--transition);
+}
+.avatar:hover { transform: scale(1.05); }
+
+.content {
+  flex: 1;
+  padding: 28px;
+  max-width: 1280px;
+  width: 100%;
+  animation: pageIn 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+@keyframes pageIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ============================================================
+   COMPONENTS
+   ============================================================ */
+.card {
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+.card.hoverable:hover { border-color: var(--border-strong); box-shadow: var(--shadow-md); }
+.card-title { font-size: 13px; color: var(--fg-muted); font-weight: 500; margin: 0 0 6px; }
+.card-value { font-size: 28px; font-weight: 700; letter-spacing: -0.02em; margin: 0; font-variant-numeric: tabular-nums; }
+
+.grid { display: grid; gap: 16px; }
+.grid-2 { grid-template-columns: repeat(2, 1fr); }
+.grid-3 { grid-template-columns: repeat(3, 1fr); }
+.grid-4 { grid-template-columns: repeat(4, 1fr); }
+
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 10px 16px;
+  border-radius: 10px;
+  font-size: 14px; font-weight: 600;
+  transition: all var(--transition);
+  white-space: nowrap;
+}
+.btn svg { width: 16px; height: 16px; }
+.btn:active { transform: scale(0.97); }
+.btn-primary { background: var(--accent); color: white; }
+.btn-primary:hover { background: var(--accent-hover); }
+.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-secondary { background: var(--bg-sunken); color: var(--fg); }
+.btn-secondary:hover { background: var(--border); }
+.btn-ghost { background: transparent; color: var(--fg-muted); }
+.btn-ghost:hover { background: var(--bg-sunken); color: var(--fg); }
+.btn-danger { background: var(--danger-soft); color: var(--danger); }
+.btn-danger:hover { background: var(--danger); color: white; }
+.btn-block { width: 100%; }
+.btn-sm { padding: 7px 12px; font-size: 13px; }
+
+.input, .select, .textarea {
+  width: 100%;
+  padding: 11px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--bg-elev);
+  color: var(--fg);
+  font-size: 14px;
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+.input:focus, .select:focus, .textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.input.error { border-color: var(--danger); }
+.field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+.field label { font-size: 13px; font-weight: 500; color: var(--fg-muted); }
+.field .err { font-size: 12px; color: var(--danger); }
+
+.badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 12px; font-weight: 600;
+  background: var(--bg-sunken); color: var(--fg-muted);
+}
+.badge.success { background: var(--success-soft); color: var(--success); }
+.badge.danger  { background: var(--danger-soft);  color: var(--danger); }
+.badge.warning { background: var(--warning-soft); color: var(--warning); }
+.badge.accent  { background: var(--accent-soft);  color: var(--accent); }
+
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin-bottom: 20px; overflow-x: auto; }
+.tab {
+  padding: 10px 14px;
+  font-size: 14px; font-weight: 500;
+  color: var(--fg-muted);
+  border-bottom: 2px solid transparent;
+  transition: all var(--transition);
+  white-space: nowrap;
+}
+.tab:hover { color: var(--fg); }
+.tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+.list { display: flex; flex-direction: column; }
+.list-row {
+  display: flex; align-items: center; gap: 14px;
+  padding: 14px 4px;
+  border-bottom: 1px solid var(--border);
+  transition: background var(--transition);
+  cursor: pointer;
+}
+.list-row:last-child { border-bottom: none; }
+.list-row:hover { background: var(--bg-sunken); border-radius: 8px; padding-left: 10px; padding-right: 10px; margin: 0 -10px; }
+
+.tx-icon {
+  width: 40px; height: 40px; border-radius: 12px;
+  display: grid; place-items: center;
+  flex-shrink: 0;
+  background: var(--bg-sunken); color: var(--fg-muted);
+}
+.tx-icon.in  { background: var(--success-soft); color: var(--success); }
+.tx-icon.out { background: var(--danger-soft);  color: var(--danger); }
+.tx-icon svg { width: 18px; height: 18px; }
+
+.tx-meta { flex: 1; min-width: 0; }
+.tx-title { font-size: 14px; font-weight: 600; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tx-sub { font-size: 12px; color: var(--fg-subtle); margin: 2px 0 0; }
+.tx-amount { font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.tx-amount.in  { color: var(--success); }
+.tx-amount.out { color: var(--fg); }
+
+.quick-actions { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; }
+.quick-action {
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  padding: 16px 8px;
+  border-radius: var(--radius);
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  font-size: 12px; font-weight: 500;
+  transition: all var(--transition);
+  text-align: center;
+}
+.quick-action:hover { border-color: var(--accent); color: var(--accent); transform: translateY(-2px); box-shadow: var(--shadow-md); }
+.quick-action .qa-icon {
+  width: 40px; height: 40px; border-radius: 12px;
+  background: var(--accent-soft); color: var(--accent);
+  display: grid; place-items: center;
+}
+.quick-action svg { width: 18px; height: 18px; }
+
+/* Bank card visual */
+.bank-card {
+  aspect-ratio: 1.586;
+  border-radius: 18px;
+  padding: 20px;
+  color: white;
+  display: flex; flex-direction: column; justify-content: space-between;
+  position: relative; overflow: hidden;
+  background: linear-gradient(135deg, #1a1f2e 0%, #0B0D12 100%);
+  box-shadow: var(--shadow-lg);
+  transition: transform var(--transition);
+}
+.bank-card:hover { transform: translateY(-4px); }
+.bank-card.black { background: linear-gradient(135deg, #232838 0%, #0B0D12 100%); }
+.bank-card.blue  { background: linear-gradient(135deg, #3B5BFF 0%, #1E2F8F 100%); }
+.bank-card.purple{ background: linear-gradient(135deg, #7C3BFF 0%, #3B1E8F 100%); }
+.bank-card::after {
+  content: ''; position: absolute;
+  top: -40%; right: -20%;
+  width: 60%; height: 120%;
+  background: radial-gradient(circle, rgba(255,255,255,.08) 0%, transparent 70%);
+  pointer-events: none;
+}
+.bank-card .bc-brand { font-size: 13px; font-weight: 700; letter-spacing: 0.1em; }
+.bank-card .bc-chip {
+  width: 34px; height: 26px; border-radius: 6px;
+  background: linear-gradient(135deg, #D4AF37, #A17E1A);
+  margin-top: auto;
+}
+.bank-card .bc-number { font-family: 'SF Mono', ui-monospace, monospace; font-size: 18px; letter-spacing: 0.12em; margin-top: 10px; }
+.bank-card .bc-bottom { display: flex; justify-content: space-between; align-items: end; font-size: 12px; opacity: 0.85; margin-top: 10px; }
+.bank-card .bc-bottom b { display: block; font-size: 14px; font-weight: 600; letter-spacing: 0.05em; }
+
+/* Skeleton */
+.skeleton {
+  background: linear-gradient(90deg, var(--bg-sunken) 25%, var(--border) 50%, var(--bg-sunken) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+  border-radius: 8px;
+}
+@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+/* Toast */
+.toast-wrap {
+  position: fixed; bottom: 24px; right: 24px;
+  display: flex; flex-direction: column; gap: 10px;
+  z-index: 100;
+  pointer-events: none;
+}
+.toast {
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 16px;
+  box-shadow: var(--shadow-lg);
+  font-size: 14px;
+  min-width: 260px;
+  display: flex; align-items: center; gap: 10px;
+  animation: toastIn 240ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  pointer-events: auto;
+}
+.toast.success { border-left: 3px solid var(--success); }
+.toast.error   { border-left: 3px solid var(--danger); }
+.toast.info    { border-left: 3px solid var(--accent); }
+@keyframes toastIn {
+  from { opacity: 0; transform: translateX(20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+/* Empty state */
+.empty {
+  padding: 60px 20px; text-align: center;
+  color: var(--fg-muted);
+}
+.empty svg { width: 48px; height: 48px; margin-bottom: 12px; opacity: 0.4; }
+.empty h3 { margin: 0 0 6px; color: var(--fg); font-size: 16px; }
+.empty p { margin: 0 0 16px; font-size: 14px; }
+
+/* Auth layout */
+.auth-wrap {
+  min-height: 100vh;
+  display: grid; place-items: center;
+  padding: 24px;
+  background: var(--bg);
+}
+.auth-card {
+  width: 100%; max-width: 420px;
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  padding: 32px;
+  box-shadow: var(--shadow-lg);
+}
+.auth-card h2 { margin: 0 0 6px; font-size: 22px; letter-spacing: -0.01em; }
+.auth-card p.sub { margin: 0 0 24px; color: var(--fg-muted); font-size: 14px; }
+.auth-logo { display: flex; align-items: center; gap: 10px; margin-bottom: 24px; }
+
+/* Mobile bottom nav */
+.mobile-nav {
+  display: none;
+  position: fixed; bottom: 0; left: 0; right: 0;
+  background: var(--bg-elev);
+  border-top: 1px solid var(--border);
+  padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
+  z-index: 40;
+}
+.mobile-nav-inner { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; }
+.mobile-nav a {
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  padding: 6px 4px; border-radius: 10px;
+  font-size: 10px; font-weight: 500; color: var(--fg-subtle);
+  transition: color var(--transition);
+}
+.mobile-nav a.active { color: var(--accent); }
+.mobile-nav svg { width: 22px; height: 22px; }
+
+/* Demo banner */
+.demo-banner {
+  background: var(--warning-soft); color: var(--warning);
+  font-size: 12px; font-weight: 600;
+  padding: 6px 14px; text-align: center;
+  border-bottom: 1px solid color-mix(in srgb, var(--warning) 25%, transparent);
+}
+
+/* Password strength */
+.pwd-strength { display: flex; gap: 4px; margin-top: 6px; }
+.pwd-strength span { flex: 1; height: 4px; border-radius: 2px; background: var(--border); transition: background var(--transition); }
+.pwd-strength[data-level="1"] span:nth-child(1) { background: var(--danger); }
+.pwd-strength[data-level="2"] span:nth-child(-n+2) { background: var(--warning); }
+.pwd-strength[data-level="3"] span:nth-child(-n+3) { background: #84CC16; }
+.pwd-strength[data-level="4"] span { background: var(--success); }
+
+/* Charts */
+.chart-svg { width: 100%; height: 220px; display: block; }
+.chart-legend { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 12px; font-size: 12px; color: var(--fg-muted); }
+.chart-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.chart-legend i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+
+/* Progress */
+.progress { height: 6px; border-radius: 3px; background: var(--bg-sunken); overflow: hidden; }
+.progress > div { height: 100%; background: var(--accent); transition: width 400ms cubic-bezier(0.2,0.8,0.2,1); }
+.progress.warn > div { background: var(--warning); }
+.progress.danger > div { background: var(--danger); }
+
+/* Row */
+.row { display: flex; align-items: center; gap: 12px; }
+.row.between { justify-content: space-between; }
+.mt-16 { margin-top: 16px; } .mt-24 { margin-top: 24px; } .mt-8 { margin-top: 8px; }
+.muted { color: var(--fg-muted); }
+.subtle { color: var(--fg-subtle); font-size: 12px; }
+.mono { font-family: 'SF Mono', ui-monospace, monospace; }
+.text-c { text-align: center; }
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width: 1024px) {
+  .grid-4 { grid-template-columns: repeat(2, 1fr); }
+  .grid-3 { grid-template-columns: repeat(2, 1fr); }
+  .quick-actions { grid-template-columns: repeat(3, 1fr); }
+}
+@media (max-width: 768px) {
+  .sidebar { display: none; }
+  .main { margin-left: 0; }
+  .content { padding: 16px; padding-bottom: 90px; }
+  .header { padding: 0 16px; }
+  .header h1 { font-size: 16px; }
+  .mobile-nav { display: block; }
+  .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+  .quick-actions { grid-template-columns: repeat(3, 1fr); }
+  .card-value { font-size: 24px; }
+  .toast-wrap { left: 16px; right: 16px; bottom: 90px; }
+  .toast { min-width: 0; }
+}
+@media (max-width: 380px) {
+  .quick-actions { grid-template-columns: repeat(2, 1fr); }
+}
+</style>
+</head>
+<body>
+
+<div id="app"></div>
+<div class="toast-wrap" id="toasts"></div>
+
+<script>
+/* ==================================================================
+ * ASD BANK — Demo SPA
+ * Внутренняя архитектура организована секциями.
+ * В production каждая секция = отдельный модуль/файл.
+ * ================================================================== */
+
+/* ==================================================================
+ * SECTION: APP CONFIG
+ * ================================================================== */
+const CONFIG = {
+  APP_NAME: 'ASD BANK',
+  DEMO_MODE: true,
+  CURRENCY_DEFAULT: 'EUR',
+  CURRENCIES: ['EUR', 'USD', 'GBP', 'RUB'],
+  LOCALES: ['ru', 'en', 'et'],
+  THEMES: ['light', 'dark', 'system'],
+  TRANSFER_OTP_THRESHOLD: 1000,   // выше — требовать OTP
+  DAILY_LIMIT: 5000,
+  SUPPORTED_ROLES: ['USER', 'SUPPORT', 'ADMIN', 'SUPER_ADMIN'],
+};
+
+/* ==================================================================
+ * SECTION: STATE
+ * ================================================================== */
+const State = {
+  user: null,               // текущий пользователь
+  session: null,            // токен сессии (mock)
+  settings: {
+    theme: 'system',
+    language: 'ru',
+    currency: 'EUR',
+  },
+  cache: {},                // кэш сущностей
+  listeners: [],
+  subscribe(fn) { this.listeners.push(fn); return () => this.listeners = this.listeners.filter(f => f !== fn); },
+  emit() { this.listeners.forEach(fn => fn(this)); },
+};
+
+/* ==================================================================
+ * SECTION: DB (IndexedDB, с fallback на in-memory)
+ * Для demo используется in-memory + IndexedDB sync.
+ * В production — REST API к PostgreSQL.
+ * ================================================================== */
+const DB = (() => {
+  const data = {
+    users: [],
+    accounts: [],
+    cards: [],
+    transactions: [],
+    notifications: [],
+    beneficiaries: [],
+    sessions: [],
+    audit_logs: [],
+    otp_codes: [],
+    settings: [],
+    categories: [
+      { id: 'food', name: { ru: 'Продукты', en: 'Groceries', et: 'Toidukaubad' }, color: '#F79009' },
+      { id: 'transport', name: { ru: 'Транспорт', en: 'Transport', et: 'Transport' }, color: '#3B5BFF' },
+      { id: 'fun', name: { ru: 'Развлечения', en: 'Entertainment', et: 'Meelelahutus' }, color: '#7C3BFF' },
+      { id: 'shopping', name: { ru: 'Покупки', en: 'Shopping', et: 'Ostlemine' }, color: '#F04438' },
+      { id: 'subs', name: { ru: 'Подписки', en: 'Subscriptions', et: 'Tellimused' }, color: '#12B76A' },
+      { id: 'other', name: { ru: 'Другое', en: 'Other', et: 'Muu' }, color: '#667085' },
+    ],
+    budgets: [],
+  };
+
+  let nextId = { users: 10000, accounts: 20000, cards: 30000, transactions: 40000, notifications: 50000 };
+
+  const id = (table) => ++nextId[table];
+
+  const byUser = (table, userId) => data[table].filter(x => x.user_id === userId);
+  const byId = (table, id) => data[table].find(x => x.id === id);
+
+  const insert = (table, row) => {
+    row.id = id(table);
+    data[table].push(row);
+    return row;
+  };
+
+  const update = (table, id, patch) => {
+    const idx = data[table].findIndex(x => x.id === id);
+    if (idx >= 0) Object.assign(data[table][idx], patch);
+    return data[table][idx];
+  };
+
+  return { data, insert, update, byUser, byId };
+})();
+
+/* ==================================================================
+ * SECTION: SEED — demo users
+ * ================================================================== */
+async function seed() {
+  if (DB.data.users.length > 0) return;
+
+  const pwd = async (p) => await Hash.sha256(p + ':asd-salt');
+
+  const users = [
+    { asd_id: 'ASD-10000001', first_name: 'Alice',   last_name: 'Morozova', email: 'alice@asd-bank.local',   phone: '+37250000001', password_hash: await pwd('Demo123!'), role: 'USER',        status: 'active', email_verified: true, phone_verified: true },
+    { asd_id: 'ASD-10000002', first_name: 'Bob',     last_name: 'Ivanov',   email: 'bob@asd-bank.local',     phone: '+37250000002', password_hash: await pwd('Demo123!'), role: 'USER',        status: 'active', email_verified: true, phone_verified: true },
+    { asd_id: 'ASD-10000003', first_name: 'Charlie', last_name: 'Smith',    email: 'charlie@asd-bank.local', phone: '+37250000003', password_hash: await pwd('Demo123!'), role: 'USER',        status: 'active', email_verified: true, phone_verified: true },
+    { asd_id: 'ASD-10000004', first_name: 'Demo',    last_name: 'User',     email: 'demo@asd-bank.local',    phone: '+37250000004', password_hash: await pwd('Demo123!'), role: 'USER',        status: 'active', email_verified: true, phone_verified: true },
+    { asd_id: 'ASD-10000099', first_name: 'Admin',   last_name: 'Root',     email: 'admin@asd-bank.local',   phone: '+37250000099', password_hash: await pwd('Admin123!'), role: 'SUPER_ADMIN', status: 'active', email_verified: true, phone_verified: true },
+  ];
+
+  for (const u of users) {
+    u.avatar_url = null;
+    u.created_at = Date.now() - 30 * 24 * 3600 * 1000;
+    u.updated_at = Date.now();
+    u.last_login = null;
+    u.totp_secret = null;
+    const user = DB.insert('users', u);
+
+    // Основной счёт EUR
+    DB.insert('accounts', {
+      user_id: user.id,
+      account_number: 'EE' + String(10000000000000000000n + BigInt(user.id)).slice(0,18),
+      currency: 'EUR',
+      kind: 'main',
+      balance: 0,
+      available_balance: 0,
+      status: 'active',
+      created_at: Date.now(),
+      updated_at: Date.now(),
+    });
+  }
+
+  // Стартовые балансы (через ledger-подобную операцию deposit)
+  const initialBalances = [
+    { asd_id: 'ASD-10000001', amount: 5000 },
+    { asd_id: 'ASD-10000002', amount: 1200 },
+    { asd_id: 'ASD-10000003', amount: 850 },
+    { asd_id: 'ASD-10000004', amount: 10000 },
+  ];
+
+  for (const ib of initialBalances) {
+    const u = DB.data.users.find(x => x.asd_id === ib.asd_id);
+    const acc = DB.data.accounts.find(a => a.user_id === u.id);
+    acc.balance = ib.amount;
+    acc.available_balance = ib.amount;
+    DB.insert('transactions', {
+      ref: genRef(),
+      user_id: u.id,
+      account_id: acc.id,
+      type: 'deposit',
+      direction: 'in',
+      amount: ib.amount,
+      currency: 'EUR',
+      status: 'completed',
+      description: 'Начальное пополнение (demo)',
+      counterparty: null,
+      created_at: Date.now() - 20 * 24 * 3600 * 1000,
+      completed_at: Date.now() - 20 * 24 * 3600 * 1000,
+    });
+  }
+
+  // Карты
+  const alice = DB.data.users.find(u => u.email === 'alice@asd-bank.local');
+  const aliceAcc = DB.data.accounts.find(a => a.user_id === alice.id);
+  DB.insert('cards', {
+    user_id: alice.id,
+    account_id: aliceAcc.id,
+    pan_last4: '4821',
+    exp_month: 12, exp_year: 29,
+    brand: 'ASD', kind: 'virtual',
+    status: 'active',
+    daily_limit: 1000,
+    color: 'black',
+    holder: 'ALICE MOROZOVA',
+    created_at: Date.now(),
+  });
+
+  const bob = DB.data.users.find(u => u.email === 'bob@asd-bank.local');
+  const bobAcc = DB.data.accounts.find(a => a.user_id === bob.id);
+  DB.insert('cards', {
+    user_id: bob.id,
+    account_id: bobAcc.id,
+    pan_last4: '7392',
+    exp_month: 8, exp_year: 28,
+    brand: 'ASD', kind: 'virtual',
+    status: 'active',
+    daily_limit: 500,
+    color: 'blue',
+    holder: 'BOB IVANOV',
+    created_at: Date.now(),
+  });
+
+  // История операций (демо)
+  const demo = DB.data.users.find(u => u.email === 'demo@asd-bank.local');
+  const demoAcc = DB.data.accounts.find(a => a.user_id === demo.id);
+  const sampleTx = [
+    { type: 'payment', direction: 'out', amount: 34.90, description: 'Супермаркет Rimi', category: 'food', days: 1 },
+    { type: 'transfer', direction: 'out', amount: 150, description: 'Перевод Alice', counterparty: alice.id, days: 2 },
+    { type: 'deposit', direction: 'in', amount: 500, description: 'Зарплата', days: 3 },
+    { type: 'payment', direction: 'out', amount: 12.50, description: 'Bolt', category: 'transport', days: 4 },
+    { type: 'payment', direction: 'out', amount: 9.99, description: 'Spotify', category: 'subs', days: 5 },
+    { type: 'transfer', direction: 'in', amount: 200, description: 'Перевод от Bob', counterparty: bob.id, days: 6 },
+    { type: 'payment', direction: 'out', amount: 89.00, description: 'Zara', category: 'shopping', days: 8 },
+    { type: 'payment', direction: 'out', amount: 45.20, description: 'Ресторан', category: 'fun', days: 10 },
+  ];
+  for (const tx of sampleTx) {
+    const d = Date.now() - tx.days * 24 * 3600 * 1000;
+    DB.insert('transactions', {
+      ref: genRef(),
+      user_id: demo.id,
+      account_id: demoAcc.id,
+      type: tx.type,
+      direction: tx.direction,
+      amount: tx.amount,
+      currency: 'EUR',
+      status: 'completed',
+      description: tx.description,
+      counterparty: tx.counterparty || null,
+      category: tx.category || null,
+      created_at: d,
+      completed_at: d,
+    });
+  }
+}
+
+/* ==================================================================
+ * SECTION: CRYPTO — хэширование пароля и генерация ID
+ * В production: argon2id на backend. Здесь — SHA-256 для demo.
+ * ================================================================== */
+const Hash = {
+  async sha256(str) {
+    const buf = new TextEncoder().encode(str);
+    const hash = await crypto.subtle.digest('SHA-256', buf);
+    return [...new Uint8Array(hash)].map(b => b.toString(16).padStart(2, '0')).join('');
+  },
+};
+
+function genRef() {
+  const d = new Date();
+  const date = `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
+  const rnd = [...crypto.getRandomValues(new Uint8Array(4))].map(b => b.toString(16).padStart(2,'0')).join('').toUpperCase();
+  return `ASD-TRX-${date}-${rnd}`;
+}
+
+function genIdempotencyKey() {
+  return [...crypto.getRandomValues(new Uint8Array(16))].map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
+/* ==================================================================
+ * SECTION: AUDIT
+ * ================================================================== */
+function audit(action, meta = {}) {
+  DB.insert('audit_logs', {
+    user_id: State.user?.id || null,
+    action,
+    meta,
+    user_agent: navigator.userAgent,
+    created_at: Date.now(),
+  });
+}
+
+/* ==================================================================
+ * SECTION: NOTIFICATIONS
+ * ================================================================== */
+function notify(userId, category, title, body) {
+  DB.insert('notifications', {
+    user_id: userId,
+    category, title, body,
+    is_read: false,
+    created_at: Date.now(),
+  });
+  // Real-time: если получатель — текущий пользователь, обновим UI
+  if (State.user && State.user.id === userId) {
+    State.emit();
+    toast(title, 'info');
+  }
+}
+
+/* ==================================================================
+ * SECTION: TOAST
+ * ================================================================== */
+function toast(msg, type = 'info') {
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.textContent = msg;
+  document.getElementById('toasts').appendChild(el);
+  setTimeout(() => {
+    el.style.transition = 'opacity 200ms';
+    el.style.opacity = '0';
+    setTimeout(() => el.remove(), 200);
+  }, 3200);
+}
+
+/* ==================================================================
+ * SECTION: API (mock REST layer)
+ * В production: заменить на fetch('/api/...') — интерфейсы совпадают.
+ * ================================================================== */
+const API = {
+  async login(emailOrPhone, password) {
+    await sleep(300);
+    const user = DB.data.users.find(u =>
+      u.email.toLowerCase() === emailOrPhone.toLowerCase() ||
+      u.phone === emailOrPhone
+    );
+    if (!user) throw new Error('Пользователь не найден');
+    if (user.status !== 'active') throw new Error('Аккаунт заблокирован');
+    const hash = await Hash.sha256(password + ':asd-salt');
+    if (hash !== user.password_hash) throw new Error('Неверный пароль');
+    const session = {
+      id: DB.insert('sessions', {
+        user_id: user.id,
+        token: genIdempotencyKey(),
+        device: parseUA(navigator.userAgent),
+        ip: 'demo',
+        created_at: Date.now(),
+        last_active: Date.now(),
+        current: true,
+      }).id,
+    };
+    DB.update('users', user.id, { last_login: Date.now() });
+    audit('login', { user_id: user.id });
+    return { user, session };
+  },
+
+  async register(payload) {
+    await sleep(300);
+    if (DB.data.users.find(u => u.email.toLowerCase() === payload.email.toLowerCase()))
+      throw new Error('Email уже используется');
+    if (DB.data.users.find(u => u.phone === payload.phone))
+      throw new Error('Телефон уже используется');
+
+    const pwdHash = await Hash.sha256(payload.password + ':asd-salt');
+    const asdId = 'ASD-' + String(10000000 + DB.data.users.length + 1);
+    const user = DB.insert('users', {
+      asd_id: asdId,
+      first_name: payload.first_name,
+      last_name: payload.last_name,
+      email: payload.email,
+      phone: payload.phone,
+      password_hash: pwdHash,
+      role: 'USER',
+      status: 'active',
+      avatar_url: null,
+      email_verified: true,   // в demo — сразу
+      phone_verified: true,
+      created_at: Date.now(),
+      updated_at: Date.now(),
+      last_login: Date.now(),
+    });
+    DB.insert('accounts', {
+      user_id: user.id,
+      account_number: 'EE' + String(20000000000000000000n + BigInt(user.id)).slice(0,18),
+      currency: 'EUR',
+      kind: 'main',
+      balance: 100, // приветственный бонус в demo
+      available_balance: 100,
+      status: 'active',
+      created_at: Date.now(),
+      updated_at: Date.now(),
+    });
+    // Приветственная транзакция
+    const acc = DB.data.accounts.find(a => a.user_id === user.id);
+    DB.insert('transactions', {
+      ref: genRef(),
+      user_id: user.id,
+      account_id: acc.id,
+      type: 'deposit',
+      direction: 'in',
+      amount: 100,
+      currency: 'EUR',
+      status: 'completed',
+      description: 'Приветственный бонус ASD BANK (demo)',
+      counterparty: null,
+      created_at: Date.now(),
+      completed_at: Date.now(),
+    });
+    notify(user.id, 'system', 'Добро пожаловать в ASD BANK', 'Ваш аккаунт создан. Ваш ASD ID: ' + asdId);
+    audit('register', { user_id: user.id });
+    return { user };
+  },
+
+  async transfer({ fromAccountId, toUserId, amount, description, idempotencyKey }) {
+    await sleep(400);
+    const fromAcc = DB.byId('accounts', fromAccountId);
+    if (!fromAcc) throw new Error('Счёт списания не найден');
+    if (fromAcc.status !== 'active') throw new Error('Счёт заблокирован');
+
+    const toUser = DB.byId('users', toUserId);
+    if (!toUser) throw new Error('Получатель не найден');
+    if (toUser.status !== 'active') throw new Error('Получатель заблокирован');
+
+    const toAcc = DB.data.accounts.find(a => a.user_id === toUserId);
+    if (!toAcc) throw new Error('Счёт получателя не найден');
+
+    if (fromAcc.id === toAcc.id) throw new Error('Нельзя перевести на тот же счёт');
+    if (!(amount > 0)) throw new Error('Сумма должна быть больше 0');
+    if (amount > fromAcc.available_balance) throw new Error('Недостаточно средств');
+
+    // Idempotency
+    if (idempotencyKey) {
+      const existing = DB.data.transactions.find(t => t.idempotency === idempotencyKey);
+      if (existing) return { transaction: existing, duplicate: true };
+    }
+
+    // Атомарное списание/зачисление (в mock — синхронно)
+    fromAcc.balance -= amount;
+    fromAcc.available_balance -= amount;
+    fromAcc.updated_at = Date.now();
+    toAcc.balance += amount;
+    toAcc.available_balance += amount;
+    toAcc.updated_at = Date.now();
+
+    const ref = genRef();
+    const txOut = DB.insert('transactions', {
+      ref,
+      user_id: fromAcc.user_id,
+      account_id: fromAcc.id,
+      type: 'transfer',
+      direction: 'out',
+      amount,
+      currency: fromAcc.currency,
+      status: 'completed',
+      description: description || `Перевод ${toUser.first_name} ${toUser.last_name}`,
+      counterparty: toUser.id,
+      idempotency: idempotencyKey,
+      created_at: Date.now(),
+      completed_at: Date.now(),
+    });
+    const txIn = DB.insert('transactions', {
+      ref,
+      user_id: toAcc.user_id,
+      account_id: toAcc.id,
+      type: 'transfer',
+      direction: 'in',
+      amount,
+      currency: toAcc.currency,
+      status: 'completed',
+      description: description || `Перевод от ${DB.byId('users', fromAcc.user_id).first_name}`,
+      counterparty: fromAcc.user_id,
+      created_at: Date.now(),
+      completed_at: Date.now(),
+    });
+
+    notify(fromAcc.user_id, 'transfer', 'Перевод выполнен',
+      `−${fmt(amount, fromAcc.currency)} → ${toUser.first_name} ${toUser.last_name}`);
+    notify(toAcc.user_id, 'transfer', 'Вам поступили деньги',
+      `+${fmt(amount, toAcc.currency)} от ${DB.byId('users', fromAcc.user_id).first_name}`);
+
+    audit('transfer', { ref, amount, from: fromAcc.id, to: toAcc.id });
+
+    // Real-time эмуляция: обновим UI если получатель — текущий
+    State.emit();
+
+    return { transaction: txOut, transactionIn: txIn };
+  },
+
+  async me(userId) {
+    return DB.byId('users', userId);
+  },
+
+  async accounts(userId) {
+    return DB.byUser('accounts', userId);
+  },
+
+  async cards(userId) {
+    return DB.byUser('cards', userId);
+  },
+
+  async transactions(userId) {
+    return DB.byUser('transactions', userId).sort((a,b) => b.created_at - a.created_at);
+  },
+
+  async notifications(userId) {
+    return DB.byUser('notifications', userId).sort((a,b) => b.created_at - a.created_at);
+  },
+
+  async searchUsers(q) {
+    q = q.trim().toLowerCase();
+    if (!q) return [];
+    return DB.data.users.filter(u =>
+      u.asd_id.toLowerCase().includes(q) ||
+      u.email.toLowerCase().includes(q) ||
+      u.phone.includes(q) ||
+      (u.first_name + ' ' + u.last_name).toLowerCase().includes(q)
+    ).slice(0, 10);
+  },
+};
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+function parseUA(ua) {
+  if (/iPhone|iPad/.test(ua)) return 'iOS · Safari';
+  if (/Android/.test(ua)) return 'Android · Chrome';
+  if (/Macintosh/.test(ua)) return 'macOS · Safari';
+  if (/Windows/.test(ua)) return 'Windows · Browser';
+  return 'Unknown device';
+}
+
+/* ==================================================================
+ * SECTION: FORMATTING / UTILS
+ * ================================================================== */
+function fmt(amount, currency = 'EUR') {
+  return new Intl.NumberFormat('ru-RU', { style: 'currency', currency, minimumFractionDigits: 2 }).format(amount);
+}
+function fmtDate(ts, withTime = false) {
+  const d = new Date(ts);
+  return d.toLocaleString('ru-RU', withTime
+    ? { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }
+    : { day: '2-digit', month: 'long', year: 'numeric' });
+}
+function escapeHtml(str) {
+  return String(str).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+}
+function initials(u) { return (u.first_name[0] + (u.last_name[0] || '')).toUpperCase(); }
+
+/* ==================================================================
+ * SECTION: ROUTER
+ * History API, реальные URL, guards, back/forward.
+ * ================================================================== */
+const Router = (() => {
+  const routes = [];
+  let currentCleanup = null;
+  let notFoundHandler = null;
+
+  function on(pattern, handler, opts = {}) {
+    // pattern: '/cards/:id'
+    const keys = [];
+    const rx = new RegExp('^' + pattern.replace(/:([a-z_]+)/g, (_, k) => { keys.push(k); return '([^/]+)'; }) + '/?$');
+    routes.push({ rx, keys, handler, opts });
+  }
+
+  function match(path) {
+    for (const r of routes) {
+      const m = path.match(r.rx);
+      if (m) {
+        const params = {};
+        r.keys.forEach((k, i) => params[k] = decodeURIComponent(m[i+1]));
+        return { ...r, params };
+      }
+    }
+    return null;
+  }
+
+  async function resolve(path) {
+    const m = match(path);
+    if (currentCleanup) { try { currentCleanup(); } catch {} currentCleanup = null; }
+    if (!m) {
+      if (notFoundHandler) currentCleanup = await notFoundHandler();
+      return;
+    }
+    // Guard
+    if (m.opts.auth && !State.user) { navigate('/login'); return; }
+    if (m.opts.guest && State.user) { navigate('/'); return; }
+    if (m.opts.role && !m.opts.role.includes(State.user?.role)) {
+      render403();
+      return;
+    }
+    currentCleanup = await m.handler(m.params);
+  }
+
+  function navigate(path, replace = false) {
+    if (path === location.pathname && !replace) return;
+    if (replace) history.replaceState(null, '', path);
+    else history.pushState(null, '', path);
+    resolve(path);
+  }
+
+  window.addEventListener('popstate', () => resolve(location.pathname));
+  window.addEventListener('click', (e) => {
+    const a = e.target.closest('[data-link]');
+    if (!a) return;
+    e.preventDefault();
+    navigate(a.getAttribute('href'));
+  });
+
+  function setNotFound(fn) { notFoundHandler = fn; }
+
+  return { on, navigate, resolve, setNotFound };
+})();
+
+/* ==================================================================
+ * SECTION: SVG ICONS
+ * ================================================================== */
+const Icons = {
+  home: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V9.5"/></svg>`,
+  accounts: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18"/><circle cx="16" cy="14.5" r="1.2" fill="currentColor" stroke="none"/></svg>`,
+  cards: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="5.5" width="19" height="13" rx="2"/><path d="M2.5 10h19"/><path d="M6 14.5h3"/></svg>`,
+  transfers: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h13l-3-3"/><path d="M20 17H7l3 3"/></svg>`,
+  payments: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h18v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/><path d="M3 8V6a2 2 0 0 1 2-2h11l3 4"/></svg>`,
+  history: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l3 2"/></svg>`,
+  analytics: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10"/><path d="M10 20V4"/><path d="M16 20v-7"/><path d="M22 20H2"/></svg>`,
+  budget: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>`,
+  receive: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M4 20h16"/></svg>`,
+  bell: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>`,
+  user: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>`,
+  settings: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></svg>`,
+  send: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4Z"/></svg>`,
+  plus: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>`,
+  qr: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM20 14v3M14 20h6"/></svg>`,
+  eye: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>`,
+  eyeOff: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3 21 21"/><path d="M10.6 10.6a3 3 0 0 0 4.24 4.24"/><path d="M6.6 6.6C3.9 8.2 2 12 2 12s3.5 7 10 7c1.7 0 3.3-.5 4.6-1.2"/><path d="M9.9 5.2A10.6 10.6 0 0 1 12 5c6.5 0 10 7 10 7a17.6 17.6 0 0 1-3 3.8"/></svg>`,
+  copy: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>`,
+  check: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5L20 7"/></svg>`,
+  x: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>`,
+  arrowDown: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M6 13l6 6 6-6"/></svg>`,
+  arrowUp: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M6 11l6-6 6 6"/></svg>`,
+  search: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>`,
+  logout: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/></svg>`,
+  shield: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/></svg>`,
+  device: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2" width="12" height="20" rx="3"/><path d="M11 18h2"/></svg>`,
+  lock: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>`,
+  trend: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m3 17 6-6 4 4 8-8"/><path d="M14 7h7v7"/></svg>`,
+};
+
+/* ==================================================================
+ * SECTION: UI KIT (components)
+ * ================================================================== */
+const UI = {
+  btn(label, { variant = 'primary', icon = '', href = '', onclick = '', size = '', block = false, disabled = false, type = 'button' } = {}) {
+    const cls = ['btn', `btn-${variant}`, size && `btn-${size}`, block && 'btn-block'].filter(Boolean).join(' ');
+    const attrs = [
+      `class="${cls}"`,
+      `type="${type}"`,
+      disabled && 'disabled',
+      href ? `data-link href="${href}"` : '',
+      onclick ? `data-action="${onclick}"` : '',
+    ].filter(Boolean).join(' ');
+    return `<${href ? 'a' : 'button'} ${attrs}>${icon}${label ? `<span>${label}</span>` : ''}</${href ? 'a' : 'button'}>`;
+  },
+
+  field({ label, name, type = 'text', value = '', placeholder = '', required = false, autocomplete = '', error = '' }) {
+    return `
+      <div class="field">
+        ${label ? `<label for="${name}">${label}</label>` : ''}
+        <input class="input ${error ? 'error' : ''}" id="${name}" name="${name}" type="${type}" value="${escapeHtml(value)}" placeholder="${escapeHtml(placeholder)}" ${required ? 'required' : ''} ${autocomplete ? `autocomplete="${autocomplete}"` : ''} />
+        ${error ? `<div class="err">${escapeHtml(error)}</div>` : ''}
+      </div>`;
+  },
+
+  badge(text, kind = '') { return `<span class="badge ${kind}">${escapeHtml(text)}</span>`; },
+
+  txRow(tx) {
+    const isIn = tx.direction === 'in';
+    const cp = tx.counterparty ? DB.byId('users', tx.counterparty) : null;
+    const title = tx.description || (cp ? `${cp.first_name} ${cp.last_name}` : 'Операция');
+    const sub = `${fmtDate(tx.created_at, true)}${cp ? ' · ' + (cp.first_name + ' ' + cp.last_name) : ''}`;
+    return `
+      <a class="list-row" href="/transactions/${tx.id}" data-link>
+        <div class="tx-icon ${isIn ? 'in' : 'out'}">${isIn ? Icons.arrowDown : Icons.arrowUp}</div>
+        <div class="tx-meta">
+          <p class="tx-title">${escapeHtml(title)}</p>
+          <p class="tx-sub">${escapeHtml(sub)}</p>
+        </div>
+        <div class="tx-amount ${isIn ? 'in' : 'out'}">${isIn ? '+' : '−'}${fmt(tx.amount, tx.currency)}</div>
+      </a>`;
+  },
+};
+
+/* ==================================================================
+ * SECTION: LAYOUTS
+ * ================================================================== */
+function Sidebar() {
+  const u = State.user;
+  const unread = u ? DB.byUser('notifications', u.id).filter(n => !n.is_read).length : 0;
+  const path = location.pathname;
+  const item = (href, label, icon, badge = 0) => `
+    <a class="nav-item ${path === href || (href !== '/' && path.startsWith(href)) ? 'active' : ''}" href="${href}" data-link>
+      ${icon}<span>${label}</span>${badge ? `<span class="badge-dot">${badge}</span>` : ''}
+    </a>`;
+  return `
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark">ASD</div>
+        <div class="brand-text">ASD BANK<small>DIGITAL BANKING</small></div>
+      </div>
+      <nav class="nav">
+        <div class="nav-section">Меню</div>
+        ${item('/', 'Главная', Icons.home)}
+        ${item('/accounts', 'Счета', Icons.accounts)}
+        ${item('/cards', 'Карты', Icons.cards)}
+        ${item('/transfers', 'Переводы', Icons.transfers)}
+        ${item('/payments', 'Платежи', Icons.payments)}
+        ${item('/transactions', 'История', Icons.history)}
+        <div class="nav-section">Финансы</div>
+        ${item('/analytics', 'Аналитика', Icons.analytics)}
+        ${item('/budget', 'Бюджет', Icons.budget)}
+        ${item('/receive', 'Получить', Icons.receive)}
+        ${item('/qr', 'QR-перевод', Icons.qr)}
+        <div class="nav-section">Аккаунт</div>
+        ${item('/notifications', 'Уведомления', Icons.bell, unread)}
+        ${item('/profile', 'Профиль', Icons.user)}
+        ${item('/settings', 'Настройки', Icons.settings)}
+        ${u && (u.role === 'ADMIN' || u.role === 'SUPER_ADMIN') ? item('/admin', 'Админ-панель', Icons.shield) : ''}
+      </nav>
+    </aside>`;
+}
+
+function MobileNav() {
+  const path = location.pathname;
+  const item = (href, label, icon) => `
+    <a href="${href}" data-link class="${path === href || (href !== '/' && path.startsWith(href)) ? 'active' : ''}">
+      ${icon}<span>${label}</span>
+    </a>`;
+  return `
+    <nav class="mobile-nav">
+      <div class="mobile-nav-inner">
+        ${item('/', 'Главная', Icons.home)}
+        ${item('/transactions', 'История', Icons.history)}
+        ${item('/transfers', 'Переводы', Icons.transfers)}
+        ${item('/cards', 'Карты', Icons.cards)}
+        ${item('/profile', 'Профиль', Icons.user)}
+      </div>
+    </nav>`;
+}
+
+function Header({ title, showBack = false, actions = '' } = {}) {
+  const u = State.user;
+  const unread = u ? DB.byUser('notifications', u.id).filter(n => !n.is_read).length : 0;
+  return `
+    <header class="header">
+      ${showBack ? `<button class="icon-btn" data-action="back" aria-label="Назад">${Icons.x}</button>` : ''}
+      <h1>${escapeHtml(title || CONFIG.APP_NAME)}</h1>
+      <div class="spacer"></div>
+      ${actions}
+      <a class="icon-btn" href="/search" data-link aria-label="Поиск">${Icons.search}</a>
+      <a class="icon-btn" href="/notifications" data-link aria-label="Уведомления">
+        ${Icons.bell}${unread ? '<span class="dot"></span>' : ''}
+      </a>
+      <a href="/profile" data-link class="avatar" aria-label="Профиль">${u ? initials(u) : '?'}</a>
+    </header>`;
+}
+
+function Shell(contentHtml, { title, showBack, actions } = {}) {
+  const u = State.user;
+  return `
+    ${CONFIG.DEMO_MODE ? `<div class="demo-banner">DEMO MODE · Все деньги и карты виртуальные · Данные хранятся локально в браузере</div>` : ''}
+    <div id="app" style="display:flex;min-height:100vh">
+      ${Sidebar()}
+      <div class="main">
+        ${Header({ title, showBack, actions })}
+        <div class="content" id="content">${contentHtml}</div>
+      </div>
+      ${MobileNav()}
+    </div>`;
+}
+
+/* ==================================================================
+ * SECTION: PAGES
+ * ================================================================== */
+
+/* ---------- HOME ---------- */
+async function PageHome() {
+  const u = State.user;
+  const accounts = await API.accounts(u.id);
+  const mainAcc = accounts[0];
+  const cards = await API.cards(u.id);
+  const txs = (await API.transactions(u.id)).slice(0, 6);
+  const total = accounts.reduce((s, a) => s + a.balance, 0);
+  const available = accounts.reduce((s, a) => s + a.available_balance, 0);
+
+  const html = `
+    <div style="margin-bottom:20px">
+      <div class="muted" style="font-size:14px">Добро пожаловать,</div>
+      <div style="font-size:24px;font-weight:700;letter-spacing:-0.02em">${escapeHtml(u.first_name)} ${escapeHtml(u.last_name)}</div>
+    </div>
+
+    <div class="grid grid-4" style="margin-bottom:20px">
+      <div class="card" style="grid-column:span 2">
+        <p class="card-title">Общий баланс</p>
+        <p class="card-value">${fmt(total)}</p>
+        <div class="row" style="margin-top:12px;font-size:13px;color:var(--fg-muted)">
+          <span>Доступно: <b style="color:var(--fg)">${fmt(available)}</b></span>
+          <span>·</span>
+          <span>Заблокировано: <b style="color:var(--fg)">${fmt(total - available)}</b></span>
+        </div>
+      </div>
+      <div class="card">
+        <p class="card-title">ASD ID</p>
+        <p style="font-size:16px;font-weight:600;margin:0" class="mono">${u.asd_id}</p>
+        <button class="btn btn-ghost btn-sm" style="margin-top:8px" data-action="copy" data-value="${u.asd_id}">${Icons.copy} Копировать</button>
+      </div>
+      <div class="card">
+        <p class="card-title">Аккаунт</p>
+        <p style="font-size:16px;font-weight:600;margin:0">${u.role === 'USER' ? 'Клиент' : u.role}</p>
+        <div style="margin-top:8px">${UI.badge('Verified', 'success')}</div>
+      </div>
+    </div>
+
+    <div class="quick-actions" style="margin-bottom:20px">
+      <a class="quick-action" href="/transfers" data-link><div class="qa-icon">${Icons.send}</div>Перевести</a>
+      <a class="quick-action" href="/deposit" data-link><div class="qa-icon">${Icons.plus}</div>Пополнить</a>
+      <a class="quick-action" href="/payments" data-link><div class="qa-icon">${Icons.payments}</div>Оплатить</a>
+      <a class="quick-action" href="/receive" data-link><div class="qa-icon">${Icons.receive}</div>Получить</a>
+      <a class="quick-action" href="/qr" data-link><div class="qa-icon">${Icons.qr}</div>QR</a>
+      <a class="quick-action" href="/transactions" data-link><div class="qa-icon">${Icons.history}</div>История</a>
+    </div>
+
+    <div class="grid grid-2" style="margin-bottom:20px">
+      <div>
+        <div class="row between" style="margin-bottom:12px">
+          <h3 style="margin:0;font-size:15px">Карты</h3>
+          <a href="/cards" data-link class="muted" style="font-size:13px">Все →</a>
+        </div>
+        ${cards.length === 0 ? `
+          <div class="card empty">
+            <h3>У вас пока нет карт</h3>
+            <p>Откройте виртуальную карту за 10 секунд</p>
+            ${UI.btn('Открыть карту', { href: '/cards', icon: Icons.plus })}
+          </div>` : cards.slice(0, 1).map(c => `
+          <a href="/cards/${c.id}" data-link>
+            <div class="bank-card ${c.color || 'black'}">
+              <div class="row between"><div class="bc-brand">ASD BANK</div><div style="font-size:11px;opacity:.8">${c.kind.toUpperCase()}</div></div>
+              <div class="bc-chip"></div>
+              <div class="bc-number">•••• •••• •••• ${c.pan_last4}</div>
+              <div class="bc-bottom"><div><b>${c.holder}</b><span>Card Holder</span></div><div><b>${String(c.exp_month).padStart(2,'0')}/${String(c.exp_year).slice(-2)}</b><span>Expires</span></div></div>
+            </div>
+          </a>`).join('')}
+      </div>
+      <div>
+        <div class="row between" style="margin-bottom:12px">
+          <h3 style="margin:0;font-size:15px">Последние операции</h3>
+          <a href="/transactions" data-link class="muted" style="font-size:13px">Все →</a>
+        </div>
+        <div class="card" style="padding:8px 16px">
+          ${txs.length === 0 ? `<div class="empty"><h3>У вас пока нет операций</h3>${UI.btn('Совершить перевод', { href: '/transfers', icon: Icons.send })}</div>` : `<div class="list">${txs.map(UI.txRow).join('')}</div>`}
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="row between">
+        <div>
+          <p class="card-title">Финансовая рекомендация</p>
+          <p style="margin:0;font-size:14px">Ваши расходы на подписки — 9,99 €/мес. Проверьте, не дублируются ли сервисы.</p>
+        </div>
+        <a href="/budget" data-link class="btn btn-secondary">Открыть бюджет</a>
+      </div>
+    </div>
+  `;
+  render(Shell(html, { title: 'Главная' }));
+}
+
+/* ---------- ACCOUNTS ---------- */
+async function PageAccounts() {
+  const accounts = await API.accounts(State.user.id);
+  const html = `
+    <div class="grid grid-2" style="margin-bottom:20px">
+      ${accounts.map(a => `
+        <a href="/accounts/${a.id}" data-link class="card hoverable">
+          <div class="row between">
+            <div>
+              <p class="card-title">${a.kind === 'main' ? 'Основной счёт' : a.kind}</p>
+              <p class="card-value">${fmt(a.balance, a.currency)}</p>
+              <p class="subtle mono" style="margin-top:8px">${a.account_number}</p>
+            </div>
+            ${UI.badge(a.status === 'active' ? 'Активен' : a.status, 'success')}
+          </div>
+          <div class="row" style="margin-top:12px;font-size:12px" class="subtle">
+            <span class="muted">Доступно: ${fmt(a.available_balance, a.currency)}</span>
+          </div>
+        </a>
+      `).join('')}
+    </div>
+    <div class="card">
+      <div class="row between">
+        <div><b>Открыть новый счёт</b><p class="subtle" style="margin:4px 0 0">Сберегательный, валютный или демо-счёт</p></div>
+        <button class="btn btn-primary" data-action="open-account">${Icons.plus} Открыть счёт</button>
+      </div>
+    </div>
+  `;
+  render(Shell(html, { title: 'Счета' }));
+}
+
+/* ---------- ACCOUNT DETAIL ---------- */
+async function PageAccountDetail({ id }) {
+  const acc = DB.byId('accounts', +id);
+  if (!acc || acc.user_id !== State.user.id) return render404();
+  const txs = (await API.transactions(State.user.id)).filter(t => t.account_id === acc.id).slice(0, 20);
+  const html = `
+    <div class="card" style="margin-bottom:20px">
+      <p class="card-title">${acc.kind === 'main' ? 'Основной счёт' : acc.kind}</p>
+      <p class="card-value">${fmt(acc.balance, acc.currency)}</p>
+      <p class="subtle mono" style="margin-top:8px">${acc.account_number}</p>
+      <div class="row" style="margin-top:12px;gap:8px">
+        ${UI.btn('Реквизиты', { variant: 'secondary', icon: Icons.copy, onclick: 'copy-iban', size: 'sm' })}
+        <button class="btn btn-secondary btn-sm" data-action="copy" data-value="${acc.account_number}">${Icons.copy} IBAN</button>
+        <a class="btn btn-secondary btn-sm" href="/transfers?from=${acc.id}" data-link>${Icons.send} Перевести</a>
+      </div>
+    </div>
+    <h3 style="font-size:15px;margin:0 0 12px">Операции по счёту</h3>
+    <div class="card" style="padding:8px 16px">
+      ${txs.length === 0 ? `<div class="empty">Нет операций</div>` : `<div class="list">${txs.map(UI.txRow).join('')}</div>`}
+    </div>
+  `;
+  render(Shell(html, { title: 'Счёт', showBack: true }));
+}
+
+/* ---------- CARDS ---------- */
+async function PageCards() {
+  const cards = await API.cards(State.user.id);
+  const html = `
+    ${cards.length === 0 ? `
+      <div class="card empty">
+        <h3>У вас пока нет карт</h3>
+        <p>Откройте виртуальную карту мгновенно</p>
+        <button class="btn btn-primary" data-action="create-card">${Icons.plus} Добавить карту</button>
+      </div>
+    ` : `
+      <div class="grid grid-3">
+        ${cards.map(c => `
+          <a href="/cards/${c.id}" data-link>
+            <div class="bank-card ${c.color || 'black'}">
+              <div class="row between"><div class="bc-brand">ASD BANK</div><div style="font-size:11px;opacity:.8">${c.kind.toUpperCase()}</div></div>
+              <div class="bc-chip"></div>
+              <div class="bc-number">•••• •••• •••• ${c.pan_last4}</div>
+              <div class="bc-bottom"><div><b>${c.holder}</b><span>Card Holder</span></div><div><b>${String(c.exp_month).padStart(2,'0')}/${String(c.exp_year).slice(-2)}</b><span>Expires</span></div></div>
+            </div>
+          </a>
+        `).join('')}
+      </div>
+      <div class="card mt-16">
+        <div class="row between">
+          <div><b>Добавить карту</b><p class="subtle" style="margin:4px 0 0">Виртуальная карта · мгновенно</p></div>
+          <button class="btn btn-primary" data-action="create-card">${Icons.plus} Создать</button>
+        </div>
+      </div>
+    `}
+  `;
+  render(Shell(html, { title: 'Карты' }));
+}
+
+/* ---------- CARD DETAIL ---------- */
+async function PageCardDetail({ id }) {
+  const card = DB.byId('cards', +id);
+  if (!card || card.user_id !== State.user.id) return render404();
+  const acc = DB.byId('accounts', card.account_id);
+  const txs = (await API.transactions(State.user.id)).slice(0, 10);
+
+  const html = `
+    <div class="grid grid-2" style="margin-bottom:20px">
+      <div>
+        <div class="bank-card ${card.color || 'black'}">
+          <div class="row between"><div class="bc-brand">ASD BANK</div><div style="font-size:11px;opacity:.8">${card.kind.toUpperCase()}</div></div>
+          <div class="bc-chip"></div>
+          <div class="bc-number" id="card-pan">•••• •••• •••• ${card.pan_last4}</div>
+          <div class="bc-bottom"><div><b>${card.holder}</b><span>Card Holder</span></div><div><b>${String(card.exp_month).padStart(2,'0')}/${String(card.exp_year).slice(-2)}</b><span>Expires</span></div></div>
+        </div>
+      </div>
+      <div class="card">
+        <p class="card-title">Баланс карты</p>
+        <p class="card-value">${fmt(acc.balance, acc.currency)}</p>
+        <div class="row" style="margin-top:12px;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-secondary btn-sm" data-action="reveal-card" data-id="${card.id}">${Icons.eye} Показать реквизиты</button>
+          <button class="btn ${card.status === 'active' ? 'btn-danger' : 'btn-secondary'} btn-sm" data-action="toggle-card" data-id="${card.id}">
+            ${card.status === 'active' ? Icons.lock + ' Заблокировать' : Icons.check + ' Разблокировать'}
+          </button>
+          <button class="btn btn-secondary btn-sm" data-action="reissue-card" data-id="${card.id}">Перевыпустить</button>
+        </div>
+        <div style="margin-top:16px" class="row between">
+          <span class="subtle">Статус</span>
+          ${UI.badge(card.status, card.status === 'active' ? 'success' : 'danger')}
+        </div>
+        <div class="row between" style="margin-top:8px"><span class="subtle">Дневной лимит</span><b>${fmt(card.daily_limit)}</b></div>
+      </div>
+    </div>
+
+    <h3 style="font-size:15px;margin:0 0 12px">Последние операции по карте</h3>
+    <div class="card" style="padding:8px 16px">
+      ${txs.length === 0 ? `<div class="empty">Нет операций</div>` : `<div class="list">${txs.map(UI.txRow).join('')}</div>`}
+    </div>
+  `;
+  render(Shell(html, { title: 'Карта ···· ' + card.pan_last4, showBack: true }));
+}
+
+/* ---------- TRANSFERS ---------- */
+async function PageTransfers(query) {
+  const accounts = await API.accounts(State.user.id);
+  const fromPreselect = query.from ? +query.from : accounts[0]?.id;
+  const html = `
+    <div class="grid grid-2" style="align-items:start">
+      <div class="card">
+        <h3 style="margin:0 0 16px;font-size:16px">Новый перевод</h3>
+        <form id="transfer-form" novalidate>
+          <div class="field">
+            <label>Тип перевода</label>
+            <select class="select" name="type" id="transfer-type">
+              <option value="user">По ASD ID / email / телефону</option>
+              <option value="phone">По номеру телефона</option>
+              <option value="email">По email</option>
+              <option value="iban">По реквизитам (IBAN)</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Получатель</label>
+            <input class="input" id="recipient-search" name="recipient" placeholder="ASD ID, email, телефон или имя" autocomplete="off" />
+            <div id="recipient-result" style="margin-top:8px"></div>
+            <div class="err" id="recipient-err"></div>
+          </div>
+          <div class="grid grid-2" style="gap:12px">
+            <div class="field">
+              <label>Сумма</label>
+              <input class="input" id="amount" name="amount" type="number" step="0.01" min="0.01" placeholder="0.00" />
+              <div class="err" id="amount-err"></div>
+            </div>
+            <div class="field">
+              <label>Валюта</label>
+              <select class="select" id="currency" name="currency">
+                ${CONFIG.CURRENCIES.map(c => `<option value="${c}" ${c === CONFIG.CURRENCY_DEFAULT ? 'selected' : ''}>${c}</option>`).join('')}
+              </select>
+            </div>
+          </div>
+          <div class="field">
+            <label>Комментарий</label>
+            <input class="input" id="description" name="description" placeholder="Например: за обед" maxlength="120" />
+          </div>
+          <div class="field">
+            <label>Списать со счёта</label>
+            <select class="select" id="from-account" name="from_account">
+              ${accounts.map(a => `<option value="${a.id}" ${a.id === fromPreselect ? 'selected' : ''}>${a.kind === 'main' ? 'Основной' : a.kind} · ${a.account_number} · ${fmt(a.available_balance, a.currency)}</option>`).join('')}
+            </select>
+          </div>
+          <button class="btn btn-primary btn-block" type="submit" id="submit-transfer">Продолжить</button>
+        </form>
+      </div>
+
+      <div>
+        <div class="card" style="margin-bottom:16px">
+          <h4 style="margin:0 0 12px;font-size:14px">Мои реквизиты для получения</h4>
+          <div class="row between" style="margin-bottom:8px"><span class="subtle">ASD ID</span><span class="mono">${State.user.asd_id}</span></div>
+          <div class="row between" style="margin-bottom:8px"><span class="subtle">Телефон</span><span class="mono">${State.user.phone}</span></div>
+          <div class="row between" style="margin-bottom:8px"><span class="subtle">Email</span><span class="mono">${State.user.email}</span></div>
+          <a href="/receive" data-link class="btn btn-secondary btn-block" style="margin-top:8px">Показать QR</a>
+        </div>
+        <div class="card">
+          <h4 style="margin:0 0 12px;font-size:14px">Быстрые получатели</h4>
+          <div class="list" id="quick-beneficiaries">
+            ${DB.data.users.filter(u => u.id !== State.user.id).slice(0,4).map(u => `
+              <div class="list-row" data-quick-user="${u.id}">
+                <div class="avatar">${initials(u)}</div>
+                <div class="tx-meta"><p class="tx-title">${escapeHtml(u.first_name)} ${escapeHtml(u.last_name)}</p><p class="tx-sub mono">${u.asd_id}</p></div>
+                <button class="btn btn-secondary btn-sm" type="button" data-action="pick-user" data-id="${u.id}">Выбрать</button>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+  render(Shell(html, { title: 'Переводы', showBack: false }));
+  attachTransferForm();
+}
+
+function attachTransferForm() {
+  const form = document.getElementById('transfer-form');
+  const search = document.getElementById('recipient-search');
+  const result = document.getElementById('recipient-result');
+  let selectedUser = null;
+
+  search.addEventListener('input', async () => {
+    const q = search.value;
+    if (q.length < 2) { result.innerHTML = ''; return; }
+    const users = (await API.searchUsers(q)).filter(u => u.id !== State.user.id);
+    if (users.length === 0) {
+      result.innerHTML = `<div class="subtle">Ничего не найдено</div>`;
+      return;
+    }
+    result.innerHTML = users.map(u => `
+      <div class="list-row" data-pick="${u.id}">
+        <div class="avatar">${initials(u)}</div>
+        <div class="tx-meta"><p class="tx-title">${escapeHtml(u.first_name)} ${escapeHtml(u.last_name)}</p><p class="tx-sub mono">${u.asd_id} · ${u.email}</p></div>
+        <button class="btn btn-secondary btn-sm" type="button" data-action="pick-user" data-id="${u.id}">Выбрать</button>
+      </div>
+    `).join('');
+  });
+
+  document.addEventListener('click', function pickHandler(e) {
+    const btn = e.target.closest('[data-action="pick-user"]');
+    if (!btn) return;
+    const id = +btn.dataset.id;
+    const u = DB.byId('users', id);
+    if (!u) return;
+    selectedUser = u;
+    search.value = `${u.first_name} ${u.last_name}`;
+    result.innerHTML = `
+      <div class="card" style="background:var(--accent-soft);border-color:var(--accent)">
+        <div class="row">
+          <div class="avatar">${initials(u)}</div>
+          <div><b>${escapeHtml(u.first_name)} ${escapeHtml(u.last_name)}</b><div class="subtle mono">${u.asd_id} · ${u.email}</div></div>
+        </div>
+      </div>`;
+  }, { once: false });
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const errBox = document.getElementById('recipient-err');
+    errBox.textContent = '';
+    if (!selectedUser) { errBox.textContent = 'Выберите получателя'; return; }
+    const amount = parseFloat(document.getElementById('amount').value);
+    const currency = document.getElementById('currency').value;
+    const description = document.getElementById('description').value.trim();
+    const fromAccountId = +document.getElementById('from-account').value;
+    if (!(amount > 0)) { document.getElementById('amount-err').textContent = 'Введите корректную сумму'; return; }
+
+    const fromAcc = DB.byId('accounts', fromAccountId);
+    if (amount > fromAcc.available_balance) { document.getElementById('amount-err').textContent = 'Недостаточно средств'; return; }
+
+    // сохраним черновик перевода для страницы подтверждения
+    sessionStorage.setItem('asd_pending_transfer', JSON.stringify({
+      fromAccountId, toUserId: selectedUser.id, amount, currency, description,
+      idempotencyKey: genIdempotencyKey(),
+      recipient: { name: `${selectedUser.first_name} ${selectedUser.last_name}`, asd_id: selectedUser.asd_id, email: selectedUser.email },
+      account: { id: fromAcc.id, number: fromAcc.account_number },
+    }));
+
+    Router.navigate('/transfer-confirmation');
+  });
+}
+
+/* ---------- TRANSFER CONFIRMATION ---------- */
+async function PageTransferConfirmation() {
+  const raw = sessionStorage.getItem('asd_pending_transfer');
+  if (!raw) { Router.navigate('/transfers'); return; }
+  const t = JSON.parse(raw);
+  const fee = 0; // demo: без комиссии
+  const total = t.amount + fee;
+
+  const html = `
+    <div style="max-width:560px;margin:0 auto">
+      <div class="card" style="margin-bottom:16px">
+        <h3 style="margin:0 0 16px;font-size:16px">Подтверждение перевода</h3>
+        <div class="row between" style="margin-bottom:10px"><span class="subtle">Получатель</span><b>${escapeHtml(t.recipient.name)}</b></div>
+        <div class="row between" style="margin-bottom:10px"><span class="subtle">ASD ID</span><span class="mono">${t.recipient.asd_id}</span></div>
+        <div class="row between" style="margin-bottom:10px"><span class="subtle">Email</span><span class="mono">${t.recipient.email}</span></div>
+        <div class="row between" style="margin-bottom:10px"><span class="subtle">Источник</span><span class="mono">${t.account.number}</span></div>
+        <hr style="border:none;border-top:1px solid var(--border);margin:14px 0">
+        <div class="row between" style="margin-bottom:10px"><span class="subtle">Сумма</span><b>${fmt(t.amount, t.currency)}</b></div>
+        <div class="row between" style="margin-bottom:10px"><span class="subtle">Комиссия</span><b>${fmt(fee, t.currency)}</b></div>
+        <div class="row between" style="margin-bottom:10px"><span class="subtle">Итого</span><b style="font-size:18px">${fmt(total, t.currency)}</b></div>
+        ${t.description ? `<div class="row between"><span class="subtle">Комментарий</span><span>${escapeHtml(t.description)}</span></div>` : ''}
+      </div>
+      <div class="row" style="gap:8px">
+        <button class="btn btn-secondary" data-action="back">Отмена</button>
+        <button class="btn btn-primary" style="flex:1" id="confirm-transfer" data-action="confirm-transfer">Подтвердить перевод</button>
+      </div>
+    </div>
+  `;
+  render(Shell(html, { title: 'Подтверждение', showBack: true }));
+
+  document.getElementById('confirm-transfer').addEventListener('click', async () => {
+    const btn = document.getElementById('confirm-transfer');
+    if (btn.disabled) return;
+    btn.disabled = true;
+    btn.textContent = 'Отправка...';
+    try {
+      const res = await API.transfer(t);
+      sessionStorage.removeItem('asd_pending_transfer');
+      sessionStorage.setItem('asd_last_tx', res.transaction.id);
+      Router.navigate('/transfer-success');
+    } catch (e) {
+      toast(e.message, 'error');
+      btn.disabled = false;
+      btn.textContent = 'Подтвердить перевод';
+    }
+  });
+}
+
+/* ---------- TRANSFER SUCCESS ---------- */
+async function PageTransferSuccess() {
+  const txId = sessionStorage.getItem('asd_last_tx');
+  if (!txId) { Router.navigate('/transfers'); return; }
+  const tx = DB.byId('transactions', +txId);
+  if (!tx) { Router.navigate('/transfers'); return; }
+  const cp = tx.counterparty ? DB.byId('users', tx.counterparty) : null;
+
+  const html = `
+    <div style="max-width:520px;margin:0 auto;text-align:center">
+      <div style="width:72px;height:72px;margin:0 auto 20px;border-radius:50%;background:var(--success-soft);color:var(--success);display:grid;place-items:center">
+        ${Icons.check.replace('viewBox', 'style="width:34px;height:34px" viewBox')}
+      </div>
+      <h2 style="margin:0 0 6px">Перевод выполнен</h2>
+      <p class="muted" style="margin:0 0 24px">${fmt(tx.amount, tx.currency)} ${cp ? '→ ' + escapeHtml(cp.first_name + ' ' + cp.last_name) : ''}</p>
+      <div class="card" style="text-align:left;margin-bottom:16px">
+        <div class="row between" style="margin-bottom:8px"><span class="subtle">Transaction ID</span><span class="mono">${tx.ref}</span></div>
+        <div class="row between" style="margin-bottom:8px"><span class="subtle">Статус</span>${UI.badge('Выполнено', 'success')}</div>
+        <div class="row between" style="margin-bottom:8px"><span class="subtle">Дата</span><span>${fmtDate(tx.created_at, true)}</span></div>
+        ${tx.description ? `<div class="row between"><span class="subtle">Комментарий</span><span>${escapeHtml(tx.description)}</span></div>` : ''}
+      </div>
+      <div class="row" style="gap:8px;justify-content:center">
+        <a href="/transactions/${tx.id}" data-link class="btn btn-secondary">Детали</a>
+        <a href="/transfers" data-link class="btn btn-primary">Новый перевод</a>
+      </div>
+    </div>
+  `;
+  render(Shell(html, { title: 'Готово', showBack: false }));
+}
+
+/* ---------- TRANSACTIONS LIST ---------- */
+async function PageTransactions(query) {
+  const all = await API.transactions(State.user.id);
+  const filter = query.filter || 'all';
+  const search = (query.q || '').toLowerCase();
+  let list = all;
+  if (filter === 'in') list = list.filter(t => t.direction === 'in');
+  else if (filter === 'out') list = list.filter(t => t.direction === 'out');
+  else if (filter === 'transfer') list = list.filter(t => t.type === 'transfer');
+  else if (filter === 'payment') list = list.filter(t => t.type === 'payment');
+  if (search) list = list.filter(t => (t.description || '').toLowerCase().includes(search) || t.ref.toLowerCase().includes(search));
+
+  const html = `
+    <div class="row" style="gap:8px;margin-bottom:16px">
+      <input class="input" id="tx-search" placeholder="Поиск по описанию или ID" value="${escapeHtml(query.q || '')}" style="max-width:320px" />
+      <a href="/export" data-link class="btn btn-secondary">Экспорт</a>
+    </div>
+    <div class="tabs">
+      <a class="tab ${filter === 'all' ? 'active' : ''}" href="/transactions" data-link>Все</a>
+      <a class="tab ${filter === 'in' ? 'active' : ''}" href="/transactions?filter=in" data-link>Поступления</a>
+      <a class="tab ${filter === 'out' ? 'active' : ''}" href="/transactions?filter=out" data-link>Списания</a>
+      <a class="tab ${filter === 'transfer' ? 'active' : ''}" href="/transactions?filter=transfer" data-link>Переводы</a>
+      <a class="tab ${filter === 'payment' ? 'active' : ''}" href="/transactions?filter=payment" data-link>Платежи</a>
+    </div>
+    <div class="card" style="padding:8px 16px">
+      ${list.length === 0 ? `<div class="empty"><h3>Операций не найдено</h3><p>Попробуйте изменить фильтр</p>${UI.btn('Совершить перевод', { href: '/transfers', icon: Icons.send })}</div>` : `<div class="list">${list.map(UI.txRow).join('')}</div>`}
+    </div>
+  `;
+  render(Shell(html, { title: 'История операций' }));
+
+  const s = document.getElementById('tx-search');
+  s.addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      const q = s.value.trim();
+      Router.navigate('/transactions' + (q ? `?q=${encodeURIComponent(q)}` : ''));
+    }
+  });
+}
+
+/* ---------- TRANSACTION DETAIL ---------- */
+async function PageTransactionDetail({ id }) {
+  const tx = DB.byId('transactions', +id);
+  if (!tx || tx.user_id !== State.user.id) return render404();
+  const cp = tx.counterparty ? DB.byId('users', tx.counterparty) : null;
+  const acc = DB.byId('accounts', tx.account_id);
+  const isIn = tx.direction === 'in';
+
+  const html = `
+    <div style="max-width:560px;margin:0 auto">
+      <div class="card" style="text-align:center;margin-bottom:16px">
+        <div class="tx-icon ${isIn ? 'in' : 'out'}" style="margin:0 auto 12px;width:56px;height:56px">${isIn ? Icons.arrowDown : Icons.arrowUp}</div>
+        <div style="font-size:26px;font-weight:700;letter-spacing:-0.02em">${isIn ? '+' : '−'}${fmt(tx.amount, tx.currency)}</div>
+        <div style="margin-top:8px">${UI.badge(tx.status, tx.status === 'completed' ? 'success' : 'warning')}</div>
+      </div>
+      <div class="card" style="margin-bottom:16px">
+        <div class="row between" style="margin-bottom:10px"><span class="subtle">Transaction ID</span><span class="mono" style="font-size:12px">${tx.ref}</span></div>
+        <div class="row between" style="margin-bottom:10px"><span class="subtle">Дата</span><span>${fmtDate(tx.created_at, true)}</span></div>
+        <div class="row between" style="margin-bottom:10px"><span class="subtle">Тип</span><span>${tx.type}</span></div>
+        <div class="row between" style="margin-bottom:10px"><span class="subtle">Направление</span><span>${isIn ? 'Поступление' : 'Списание'}</span></div>
+        ${cp ? `<div class="row between" style="margin-bottom:10px"><span class="subtle">${isIn ? 'Отправитель' : 'Получатель'}</span><span>${escapeHtml(cp.first_name + ' ' + cp.last_name)} (${cp.asd_id})</span></div>` : ''}
+        <div class="row between" style="margin-bottom:10px"><span class="subtle">Счёт</span><span class="mono">${acc.account_number}</span></div>
+        ${tx.description ? `<div class="row between"><span class="subtle">Описание</span><span>${escapeHtml(tx.description)}</span></div>` : ''}
+      </div>
+      <div class="row" style="gap:8px">
+        <a class="btn btn-secondary" href="/transactions/${tx.id}/receipt" data-link>Скачать подтверждение</a>
+        <button class="btn btn-secondary" data-action="repeat-tx" data-id="${tx.id}">Повторить</button>
+        <button class="btn btn-ghost" data-action="report-tx" data-id="${tx.id}">Сообщить о проблеме</button>
+      </div>
+    </div>
+  `;
+  render(Shell(html, { title: 'Операция', showBack: true }));
+}
+
+/* ---------- RECEIPT ---------- */
+async function PageReceipt({ id }) {
+  const tx = DB.byId('transactions', +id);
+  if (!tx || tx.user_id !== State.user.id) return render404();
+  const cp = tx.counterparty ? DB.byId('users', tx.counterparty) : null;
+  const html = `
+    <div style="max-width:520px;margin:0 auto">
+      <div class="card" id="receipt">
+        <div class="row between" style="margin-bottom:20px">
+          <div class="brand"><div class="brand-mark">ASD</div><div class="brand-text">ASD BANK</div></div>
+          ${UI.badge('Completed', 'success')}
+        </div>
+        <div class="text-c" style="margin:20px 0">
+          <div class="subtle">Сумма</div>
+          <div style="font-size:30px;font-weight:800;letter-spacing:-0.02em">${fmt(tx.amount, tx.currency)}</div>
+        </div>
+        <div class="row between" style="margin-bottom:8px"><span class="subtle">Transaction</span><span class="mono">${tx.ref}</span></div>
+        <div class="row between" style="margin-bottom:8px"><span class="subtle">Дата</span><span>${fmtDate(tx.created_at, true)}</span></div>
+        ${cp ? `<div class="row between" style="margin-bottom:8px"><span class="subtle">Контрагент</span><span>${escapeHtml(cp.first_name + ' ' + cp.last_name)}</span></div>` : ''}
+        <div class="row between"><span class="subtle">Описание</span><span>${escapeHtml(tx.description || '—')}</span></div>
+        <div style="margin-top:20px;text-align:center">
+          <div class="mono subtle" style="font-size:10px">Verification: ${tx.ref}</div>
+        </div>
+      </div>
+      <div class="row" style="gap:8px;margin-top:16px">
+        <button class="btn btn-secondary" onclick="window.print()">Печать / PDF</button>
+        <a href="/transactions/${tx.id}" data-link class="btn btn-primary">К операции</a>
+      </div>
+    </div>
+  `;
+  render(Shell(html, { title: 'Подтверждение', showBack: true }));
+}
+
+/* ---------- PAYMENTS ---------- */
+async function PagePayments() {
+  const cats = [
+    { id: 'mobile',   name: 'Мобильная связь',   icon: Icons.send },
+    { id: 'internet', name: 'Интернет и ТВ',     icon: Icons.home },
+    { id: 'utility',  name: 'Коммунальные',      icon: Icons.home },
+    { id: 'transport',name: 'Транспорт',         icon: Icons.transfers },
+    { id: 'subs',     name: 'Подписки',          icon: Icons.cards },
+    { id: 'tax',      name: 'Налоги',            icon: Icons.budget },
+    { id: 'fine',     name: 'Штрафы',            icon: Icons.shield },
+    { id: 'other',    name: 'Другие услуги',     icon: Icons.plus },
+  ];
+  const html = `
+    <div class="grid grid-4" style="gap:12px">
+      ${cats.map(c => `
+        <a class="quick-action" href="/payments/${c.id}" data-link style="padding:20px 10px">
+          <div class="qa-icon">${c.icon}</div>
+          <div style="font-weight:600;font-size:13px">${c.name}</div>
+        </a>`).join('')}
+    </div>
+  `;
+  render(Shell(html, { title: 'Платежи' }));
+}
+
+async function PagePaymentCategory({ id }) {
+  const cats = { mobile:'Мобильная связь', internet:'Интернет и ТВ', utility:'Коммунальные', transport:'Транспорт', subs:'Подписки', tax:'Налоги', fine:'Штрафы', other:'Другие услуги' };
+  const name = cats[id] || 'Платёж';
+  const accounts = await API.accounts(State.user.id);
+  const html = `
+    <div style="max-width:560px;margin:0 auto">
+      <div class="card">
+        <h3 style="margin:0 0 16px;font-size:16px">${name}</h3>
+        <form id="payment-form">
+          <div class="field"><label>Получатель / провайдер</label><input class="input" name="provider" required placeholder="Например: Elisa" /></div>
+          <div class="field"><label>Номер договора / телефон</label><input class="input" name="account_ref" required /></div>
+          <div class="grid grid-2" style="gap:12px">
+            <div class="field"><label>Сумма</label><input class="input" name="amount" type="number" step="0.01" min="0.01" required /></div>
+            <div class="field"><label>Валюта</label>
+              <select class="select" name="currency">${CONFIG.CURRENCIES.map(c => `<option ${c==='EUR'?'selected':''}>${c}</option>`).join('')}</select>
+            </div>
+          </div>
+          <div class="field"><label>Списать со счёта</label>
+            <select class="select" name="from_account">${accounts.map(a => `<option value="${a.id}">${a.kind} · ${fmt(a.available_balance, a.currency)}</option>`).join('')}</select>
+          </div>
+          <button class="btn btn-primary btn-block" type="submit">Оплатить</button>
+        </form>
+      </div>
+    </div>
+  `;
+  render(Shell(html, { title: name, showBack: true }));
+
+  document.getElementById('payment-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    const fd = new FormData(e.target);
+    const amount = parseFloat(fd.get('amount'));
+    const fromAcc = DB.byId('accounts', +fd.get('from_account'));
+    if (amount > fromAcc.available_balance) { toast('Недостаточно средств', 'error'); return; }
+    fromAcc.balance -= amount; fromAcc.available_balance -= amount;
+    DB.insert('transactions', {
+      ref: genRef(), user_id: State.user.id, account_id: fromAcc.id,
+      type: 'payment', direction: 'out', amount, currency: fd.get('currency'),
+      status: 'completed', description: `${name}: ${fd.get('provider')}`,
+      counterparty: null, created_at: Date.now(), completed_at: Date.now(),
+    });
+    notify(State.user.id, 'payment', 'Платёж выполнен', `${name} · ${fmt(amount)}`);
+    audit('payment', { category: id, amount });
+    toast('Платёж выполнен', 'success');
+    Router.navigate('/transactions');
+  });
+}
+
+/* ---------- DEPOSIT ---------- */
+async function PageDeposit() {
+  const accounts = await API.accounts(State.user.id);
+  const acc = accounts[0];
+  const html = `
+    <div style="max-width:560px;margin:0 auto">
+      <div class="card">
+        <h3 style="margin:0 0 16px;font-size:16px">Пополнение счёта</h3>
+        <form id="deposit-form">
+          <div class="field"><label>Сумма</label><input class="input" name="amount" type="number" step="0.01" min="1" required /></div>
+          <div class="field"><label>Источник</label>
+            <select class="select" name="source">
+              <option>Банковская карта (demo)</option>
+              <option>Банковский перевод</option>
+              <option>Другой пользователь ASD BANK</option>
+            </select>
+          </div>
+          <div class="field"><label>На счёт</label>
+            <select class="select" name="account_id">${accounts.map(a => `<option value="${a.id}">${a.kind} · ${a.account_number}</option>`).join('')}</select>
+          </div>
+          <button class="btn btn-primary btn-block" type="submit">Пополнить</button>
+        </form>
+      </div>
+    </div>
+  `;
+  render(Shell(html, { title: 'Пополнение', showBack: true }));
+  document.getElementById('deposit-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    const fd = new FormData(e.target);
+    const amount = parseFloat(fd.get('amount'));
+    const accId = +fd.get('account_id');
+    const a = DB.byId('accounts', accId);
+    a.balance += amount; a.available_balance += amount;
+    DB.insert('transactions', {
+      ref: genRef(), user_id: State.user.id, account_id: accId,
+      type: 'deposit', direction: 'in', amount, currency: a.currency,
+      status: 'completed', description: 'Пополнение', created_at: Date.now(), completed_at: Date.now(),
+    });
+    notify(State.user.id, 'transfer', 'Пополнение выполнено', `+${fmt(amount)}`);
+    toast('Счёт пополнен', 'success');
+    Router.navigate('/transactions');
+  });
+}
+
+/* ---------- RECEIVE ---------- */
+async function PageReceive() {
+  const u = State.user;
+  const html = `
+    <div style="max-width:520px;margin:0 auto;text-align:center">
+      <div class="card" style="margin-bottom:16px">
+        <div style="display:inline-block;padding:16px;background:white;border-radius:16px;margin-bottom:16px">
+          ${qrSvg(u.asd_id)}
+        </div>
+        <p class="subtle" style="margin:0 0 8px">Ваш ASD ID</p>
+        <p class="mono" style="font-size:20px;font-weight:700;margin:0 0 16px">${u.asd_id}</p>
+        <button class="btn btn-secondary btn-block" data-action="copy" data-value="${u.asd_id}">${Icons.copy} Скопировать ASD ID</button>
+      </div>
+      <div class="card" style="text-align:left">
+        <div class="row between" style="margin-bottom:10px"><span class="subtle">Телефон</span><span class="mono">${u.phone}</span></div>
+        <div class="row between" style="margin-bottom:10px"><span class="subtle">Email</span><span class="mono">${u.email}</span></div>
+        <div class="row between"><span class="subtle">Ссылка</span><span class="mono" style="font-size:11px">asd.bank/pay?to=${u.asd_id}</span></div>
+      </div>
+    </div>
+  `;
+  render(Shell(html, { title: 'Получить деньги', showBack: true }));
+}
+
+/* ---------- QR ---------- */
+async function PageQR() {
+  const u = State.user;
+  const html = `
+    <div style="max-width:520px;margin:0 auto;text-align:center">
+      <div class="card" style="margin-bottom:16px">
+        <h3 style="margin:0 0 16px;font-size:16px">QR для получения</h3>
+        <div style="display:inline-block;padding:16px;background:white;border-radius:16px">
+          ${qrSvg('asd:' + u.asd_id)}
+        </div>
+        <p class="subtle" style="margin:16px 0 0">Отсканируйте, чтобы перевести деньги</p>
+      </div>
+      <a href="/transfers" data-link class="btn btn-primary btn-block">Перевести по QR вручную</a>
+    </div>
+  `;
+  render(Shell(html, { title: 'QR-перевод', showBack: true }));
+}
+
+/* Псевдо-QR — визуальный, не настоящий. В production — библиотека qrcode. */
+function qrSvg(seed) {
+  const size = 21, cell = 6;
+  let h = parseInt(seed.split('').reduce((a,c) => a + c.charCodeAt(0), 0)) || 12345;
+  const rand = () => { h = (h * 9301 + 49297) % 233280; return h / 233280; };
+  let cells = '';
+  for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) {
+    const corner = (x < 7 && y < 7) || (x > size-8 && y < 7) || (x < 7 && y > size-8);
+    let on;
+    if (corner) {
+      const inPos = (x < 7 && y < 7) || (x > size-8 && y < 7) || (x < 7 && y > size-8);
+      const lx = x < 7 ? x : x - (size - 7);
+      const ly = y < 7 ? y : y - (size - 7);
+      on = (lx === 0 || lx === 6 || ly === 0 || ly === 6 || (lx >= 2 && lx <= 4 && ly >= 2 && ly <= 4));
+    } else {
+      on = rand() > 0.5;
+    }
+    if (on) cells += `<rect x="${x*cell}" y="${y*cell}" width="${cell}" height="${cell}" fill="#0B0D12"/>`;
+  }
+  return `<svg width="${size*cell}" height="${size*cell}" viewBox="0 0 ${size*cell} ${size*cell}">${cells}</svg>`;
+}
+
+/* ---------- NOTIFICATIONS ---------- */
+async function PageNotifications() {
+  const list = await API.notifications(State.user.id);
+  const unread = list.filter(n => !n.is_read).length;
+  const html = `
+    <div class="row between" style="margin-bottom:16px">
+      <span class="subtle">${unread} непрочитанных</span>
+      ${unread > 0 ? `<button class="btn btn-secondary btn-sm" data-action="read-all">Отметить все прочитанными</button>` : ''}
+    </div>
+    <div class="card" style="padding:8px 16px">
+      ${list.length === 0 ? `<div class="empty"><h3>Уведомлений пока нет</h3></div>` : `
+        <div class="list">
+          ${list.map(n => `
+            <div class="list-row" data-notification="${n.id}" style="${!n.is_read ? 'background:var(--accent-soft);border-radius:8px' : ''}">
+              <div class="tx-icon ${n.category === 'security' ? 'out' : n.category === 'transfer' ? 'in' : ''}">${Icons.bell}</div>
+              <div class="tx-meta">
+                <p class="tx-title">${escapeHtml(n.title)}</p>
+                <p class="tx-sub">${escapeHtml(n.body || '')}</p>
+              </div>
+              <div class="subtle" style="font-size:11px">${fmtDate(n.created_at, true)}</div>
+            </div>
+          `).join('')}
+        </div>`}
+    </div>
+  `;
+  render(Shell(html, { title: 'Уведомления' }));
+
+  document.querySelectorAll('[data-notification]').forEach(el => {
+    el.addEventListener('click', () => {
+      const id = +el.dataset.notification;
+      DB.update('notifications', id, { is_read: true });
+      State.emit();
+      PageNotifications();
+    });
+  });
+}
+
+/* ---------- PROFILE ---------- */
+async function PageProfile() {
+  const u = State.user;
+  const accounts = await API.accounts(u.id);
+  const cards = await API.cards(u.id);
+  const txs = await API.transactions(u.id);
+
+  const html = `
+    <div class="grid grid-2" style="align-items:start">
+      <div class="card" style="text-align:center">
+        <div class="avatar" style="width:80px;height:80px;font-size:26px;margin:0 auto 16px">${initials(u)}</div>
+        <h3 style="margin:0 0 4px">${escapeHtml(u.first_name)} ${escapeHtml(u.last_name)}</h3>
+        <p class="subtle mono" style="margin:0 0 12px">${u.asd_id}</p>
+        <div>${UI.badge('Verified', 'success')} ${UI.badge(u.role, 'accent')}</div>
+        <hr style="border:none;border-top:1px solid var(--border);margin:20px 0">
+        <div class="row between" style="margin-bottom:10px"><span class="subtle">Email</span><span>${escapeHtml(u.email)}</span></div>
+        <div class="row between" style="margin-bottom:10px"><span class="subtle">Телефон</span><span class="mono">${u.phone}</span></div>
+        <div class="row between"><span class="subtle">С нами с</span><span>${fmtDate(u.created_at)}</span></div>
+      </div>
+      <div>
+        <div class="card" style="margin-bottom:16px">
+          <h4 style="margin:0 0 14px;font-size:14px">Аккаунт</h4>
+          <div class="row between" style="margin-bottom:10px"><span class="subtle">Счетов</span><b>${accounts.length}</b></div>
+          <div class="row between" style="margin-bottom:10px"><span class="subtle">Карт</span><b>${cards.length}</b></div>
+          <div class="row between"><span class="subtle">Операций</span><b>${txs.length}</b></div>
+        </div>
+        <div class="card" style="margin-bottom:16px">
+          <h4 style="margin:0 0 14px;font-size:14px">Действия</h4>
+          <div class="row" style="gap:8px;flex-wrap:wrap">
+            <a class="btn btn-secondary btn-sm" href="/profile/edit" data-link>Изменить профиль</a>
+            <a class="btn btn-secondary btn-sm" href="/settings/security" data-link>Сменить пароль</a>
+            <a class="btn btn-secondary btn-sm" href="/settings/security" data-link>${Icons.shield} Безопасность</a>
+            <button class="btn btn-danger btn-sm" data-action="logout">${Icons.logout} Выйти</button>
+          </div>
+        </div>
+        <div class="card">
+          <h4 style="margin:0 0 14px;font-size:14px">Статус безопасности</h4>
+          <div class="row between" style="margin-bottom:10px"><span class="subtle">Email подтверждён</span>${u.email_verified ? UI.badge('Да','success') : UI.badge('Нет','danger')}</div>
+          <div class="row between" style="margin-bottom:10px"><span class="subtle">Телефон подтверждён</span>${u.phone_verified ? UI.badge('Да','success') : UI.badge('Нет','danger')}</div>
+          <div class="row between"><span class="subtle">2FA</span>${UI.badge('Не настроено','warning')}</div>
+        </div>
+      </div>
+    </div>
+  `;
+  render(Shell(html, { title: 'Профиль' }));
+}
+
+async function PageProfileEdit() {
+  const u = State.user;
+  const html = `
+    <div style="max-width:520px;margin:0 auto">
+      <div class="card">
+        <h3 style="margin:0 0 16px;font-size:16px">Изменить профиль</h3>
+        <form id="profile-form">
+          <div class="field"><label>Имя</label><input class="input" name="first_name" value="${escapeHtml(u.first_name)}" required /></div>
+          <div class="field"><label>Фамилия</label><input class="input" name="last_name" value="${escapeHtml(u.last_name)}" required /></div>
+          <div class="field"><label>Email</label><input class="input" name="email" type="email" value="${escapeHtml(u.email)}" required /></div>
+          <div class="field"><label>Телефон</label><input class="input" name="phone" value="${escapeHtml(u.phone)}" required /></div>
+          <button class="btn btn-primary btn-block" type="submit">Сохранить</button>
+        </form>
+      </div>
+    </div>
+  `;
+  render(Shell(html, { title: 'Профиль', showBack: true }));
+  document.getElementById('profile-form').addEventListener('submit', e => {
+    e.preventDefault();
+    const fd = new FormData(e.target);
+    DB.update('users', State.user.id, {
+      first_name: fd.get('first_name').trim(),
+      last_name: fd.get('last_name').trim(),
+      email: fd.get('email').trim(),
+      phone: fd.get('phone').trim(),
+      updated_at: Date.now(),
+    });
+    State.user = DB.byId('users', State.user.id);
+    audit('profile_update', {});
+    toast('Профиль сохранён', 'success');
+    Router.navigate('/profile');
+  });
+}
+
+/* ---------- SETTINGS ---------- */
+async function PageSettings() {
+  const sections = [
+    { href: '/settings/security', title: 'Безопасность', desc: 'Пароль, 2FA, сессии' },
+    { href: '/settings/privacy', title: 'Приватность', desc: 'Видимость профиля, маркетинг' },
+    { href: '/settings/notifications', title: 'Уведомления', desc: 'Push, email, SMS' },
+    { href: '/settings/appearance', title: 'Внешний вид', desc: 'Тема, анимации' },
+    { href: '/settings/language', title: 'Язык', desc: 'Русский, English, Eesti' },
+    { href: '/settings/limits', title: 'Лимиты', desc: 'Дневные и месячные' },
+    { href: '/settings/devices', title: 'Устройства и сессии', desc: 'Активные входы' },
+  ];
+  const html = `
+    <div class="grid grid-2">
+      ${sections.map(s => `
+        <a href="${s.href}" data-link class="card hoverable">
+          <div class="row between">
+            <div><b>${s.title}</b><div class="subtle" style="margin-top:4px">${s.desc}</div></div>
+            <span class="muted">→</span>
+          </div>
+        </a>`).join('')}
+    </div>
+  `;
+  render(Shell(html, { title: 'Настройки' }));
+}
+
+async function PageSettingsSecurity() {
+  const u = State.user;
+  const sessions = DB.byUser('sessions', u.id);
+  const html = `
+    <div class="grid grid-2" style="align-items:start">
+      <div class="card">
+        <h4 style="margin:0 0 14px;font-size:14px">Смена пароля</h4>
+        <form id="pwd-form">
+          <div class="field"><label>Текущий пароль</label><input class="input" type="password" name="current" required /></div>
+          <div class="field"><label>Новый пароль</label><input class="input" type="password" name="new" required id="new-pwd" />
+            <div class="pwd-strength" id="pwd-strength" data-level="0"><span></span><span></span><span></span><span></span></div>
+          </div>
+          <div class="field"><label>Повторите пароль</label><input class="input" type="password" name="confirm" required /></div>
+          <button class="btn btn-primary btn-block" type="submit">Изменить пароль</button>
+        </form>
+      </div>
+      <div>
+        <div class="card" style="margin-bottom:16px">
+          <h4 style="margin:0 0 14px;font-size:14px">Двухфакторная аутентификация</h4>
+          <p class="subtle" style="margin:0 0 12px">Дополнительный уровень защиты при входе и крупных операциях.</p>
+          <button class="btn btn-secondary" data-action="toggle-2fa">Настроить 2FA</button>
+        </div>
+        <div class="card">
+          <h4 style="margin:0 0 14px;font-size:14px">Активные сессии (${sessions.length})</h4>
+          <div class="list">
+            ${sessions.length === 0 ? `<div class="subtle">Нет активных сессий</div>` : sessions.map(s => `
+              <div class="list-row">
+                <div class="tx-icon">${Icons.device}</div>
+                <div class="tx-meta">
+                  <p class="tx-title">${escapeHtml(s.device)}</p>
+                  <p class="tx-sub">${fmtDate(s.last_active, true)}${s.current ? ' · текущая' : ''}</p>
+                </div>
+                ${s.current ? UI.badge('Текущая','success') : `<button class="btn btn-ghost btn-sm" data-action="end-session" data-id="${s.id}">Завершить</button>`}
+              </div>
+            `).join('')}
+          </div>
+          <button class="btn btn-danger btn-block" style="margin-top:12px" data-action="logout-all">Выйти со всех устройств</button>
+        </div>
+      </div>
+    </div>
+  `;
+  render(Shell(html, { title: 'Безопасность', showBack: true }));
+
+  const pwd = document.getElementById('new-pwd');
+  const strength = document.getElementById('pwd-strength');
+  pwd.addEventListener('input', () => {
+    const v = pwd.value;
+    let lvl = 0;
+    if (v.length >= 8) lvl++;
+    if (/[A-Z]/.test(v) && /[a-z]/.test(v)) lvl++;
+    if (/\d/.test(v)) lvl++;
+    if (/[^A-Za-z0-9]/.test(v)) lvl++;
+    strength.dataset.level = lvl;
+  });
+
+  document.getElementById('pwd-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    const fd = new FormData(e.target);
+    const currentHash = await Hash.sha256(fd.get('current') + ':asd-salt');
+    if (currentHash !== State.user.password_hash) { toast('Неверный текущий пароль', 'error'); return; }
+    if (fd.get('new') !== fd.get('confirm')) { toast('Пароли не совпадают', 'error'); return; }
+    if (fd.get('new').length < 8) { toast('Пароль слишком короткий', 'error'); return; }
+    const newHash = await Hash.sha256(fd.get('new') + ':asd-salt');
+    DB.update('users', State.user.id, { password_hash: newHash, updated_at: Date.now() });
+    audit('password_change', {});
+    notify(State.user.id, 'security', 'Пароль изменён', 'Если это были не вы — срочно свяжитесь с поддержкой.');
+    toast('Пароль изменён', 'success');
+    Router.navigate('/settings/security');
+  });
+}
+
+async function PageSettingsPrivacy() {
+  const html = `
+    <div style="max-width:640px;margin:0 auto">
+      <div class="card">
+        <h4 style="margin:0 0 14px;font-size:14px">Видимость профиля</h4>
+        <div class="row between" style="margin-bottom:12px"><span>Показывать ASD ID другим пользователям</span><input type="checkbox" checked /></div>
+        <div class="row between" style="margin-bottom:12px"><span>Показывать email в поиске</span><input type="checkbox" checked /></div>
+        <div class="row between"><span>Показывать телефон в поиске</span><input type="checkbox" /></div>
+      </div>
+      <div class="card mt-16">
+        <h4 style="margin:0 0 14px;font-size:14px">Маркетинг</h4>
+        <div class="row between"><span>Персональные предложения</span><input type="checkbox" /></div>
+      </div>
+      <button class="btn btn-primary mt-16" data-action="save-privacy">Сохранить</button>
+    </div>
+  `;
+  render(Shell(html, { title: 'Приватность', showBack: true }));
+}
+
+async function PageSettingsNotifications() {
+  const html = `
+    <div style="max-width:640px;margin:0 auto">
+      <div class="card">
+        <h4 style="margin:0 0 14px;font-size:14px">Каналы</h4>
+        <div class="row between" style="margin-bottom:12px"><span>Push-уведомления</span><input type="checkbox" checked /></div>
+        <div class="row between" style="margin-bottom:12px"><span>Email</span><input type="checkbox" checked /></div>
+        <div class="row between"><span>SMS</span><input type="checkbox" /></div>
+      </div>
+      <div class="card mt-16">
+        <h4 style="margin:0 0 14px;font-size:14px">Категории</h4>
+        <div class="row between" style="margin-bottom:12px"><span>Безопасность</span><input type="checkbox" checked /></div>
+        <div class="row between" style="margin-bottom:12px"><span>Переводы и платежи</span><input type="checkbox" checked /></div>
+        <div class="row between"><span>Новости банка</span><input type="checkbox" /></div>
+      </div>
+      <button class="btn btn-primary mt-16" data-action="save-notifications">Сохранить</button>
+    </div>
+  `;
+  render(Shell(html, { title: 'Уведомления', showBack: true }));
+}
+
+async function PageSettingsAppearance() {
+  const s = State.settings;
+  const html = `
+    <div style="max-width:640px;margin:0 auto">
+      <div class="card">
+        <h4 style="margin:0 0 14px;font-size:14px">Тема</h4>
+        <div class="row" style="gap:8px">
+          ${['light','dark','system'].map(t => `<button class="btn ${s.theme===t?'btn-primary':'btn-secondary'}" data-action="set-theme" data-theme="${t}">${t === 'light' ? 'Светлая' : t === 'dark' ? 'Тёмная' : 'Системная'}</button>`).join('')}
+        </div>
+      </div>
+      <div class="card mt-16">
+        <h4 style="margin:0 0 14px;font-size:14px">Язык</h4>
+        <div class="row" style="gap:8px">
+          ${['ru','en','et'].map(l => `<button class="btn ${s.language===l?'btn-primary':'btn-secondary'}" data-action="set-lang" data-lang="${l}">${l.toUpperCase()}</button>`).join('')}
+        </div>
+        <p class="subtle" style="margin-top:12px">Полная локализация текстов появится в production-версии. Здесь меняется только предпочтение.</p>
+      </div>
+    </div>
+  `;
+  render(Shell(html, { title: 'Внешний вид', showBack: true }));
+}
+
+async function PageSettingsLimits() {
+  const u = State.user;
+  const spentToday = DB.byUser('transactions', u.id).filter(t => t.direction === 'out' && t.created_at > Date.now() - 86400000).reduce((s,t) => s + t.amount, 0);
+  const spentMonth = DB.byUser('transactions', u.id).filter(t => t.direction === 'out' && t.created_at > Date.now() - 30*86400000).reduce((s,t) => s + t.amount, 0);
+  const pctD = Math.min(100, (spentToday / CONFIG.DAILY_LIMIT) * 100);
+  const pctM = Math.min(100, (spentMonth / (CONFIG.DAILY_LIMIT * 20)) * 100);
+  const html = `
+    <div style="max-width:640px;margin:0 auto">
+      <div class="card" style="margin-bottom:16px">
+        <div class="row between" style="margin-bottom:8px"><span class="subtle">Дневной лимит переводов</span><b>${fmt(spentToday)} / ${fmt(CONFIG.DAILY_LIMIT)}</b></div>
+        <div class="progress ${pctD > 80 ? 'warn' : ''} ${pctD >= 100 ? 'danger' : ''}"><div style="width:${pctD}%"></div></div>
+        <p class="subtle" style="margin:8px 0 0">Осталось: ${fmt(Math.max(0, CONFIG.DAILY_LIMIT - spentToday))}</p>
+      </div>
+      <div class="card">
+        <div class="row between" style="margin-bottom:8px"><span class="subtle">Месячный лимит</span><b>${fmt(spentMonth)} / ${fmt(CONFIG.DAILY_LIMIT * 20)}</b></div>
+        <div class="progress"><div style="width:${pctM}%"></div></div>
+      </div>
+    </div>
+  `;
+  render(Shell(html, { title: 'Лимиты', showBack: true }));
+}
+
+async function PageSettingsDevices() {
+  const sessions = DB.byUser('sessions', State.user.id);
+  const html = `
+    <div class="card">
+      <div class="list">
+        ${sessions.map(s => `
+          <div class="list-row">
+            <div class="tx-icon">${Icons.device}</div>
+            <div class="tx-meta">
+              <p class="tx-title">${escapeHtml(s.device)}</p>
+              <p class="tx-sub">${fmtDate(s.last_active, true)} · IP: demo</p>
+            </div>
+            ${s.current ? UI.badge('Текущая','success') : `<button class="btn btn-ghost btn-sm" data-action="end-session" data-id="${s.id}">Завершить</button>`}
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `;
+  render(Shell(html, { title: 'Устройства', showBack: true }));
+}
+
+/* ---------- ANALYTICS ---------- */
+async function PageAnalytics() {
+  const txs = await API.transactions(State.user.id);
+  const out = txs.filter(t => t.direction === 'out');
+  const byCategory = {};
+  out.forEach(t => { const k = t.category || 'other'; byCategory[k] = (byCategory[k] || 0) + t.amount; });
+  const total = Object.values(byCategory).reduce((a,b) => a + b, 0) || 1;
+
+  // Диаграмма расходов за последние 7 дней
+  const days = [];
+  for (let i = 6; i >= 0; i--) {
+    const day = new Date(); day.setDate(day.getDate() - i); day.setHours(0,0,0,0);
+    const next = day.getTime() + 86400000;
+    const amount = out.filter(t => t.created_at >= day.getTime() && t.created_at < next).reduce((s,t) => s + t.amount, 0);
+    days.push({ label: day.toLocaleDateString('ru-RU', { weekday: 'short' }), amount });
+  }
+  const max = Math.max(...days.map(d => d.amount), 1);
+
+  const html = `
+    <div class="grid grid-2" style="margin-bottom:20px">
+      <div class="card">
+        <h4 style="margin:0 0 14px;font-size:14px">Расходы за 7 дней</h4>
+        <svg class="chart-svg" viewBox="0 0 320 220" preserveAspectRatio="none">
+          ${days.map((d, i) => {
+            const w = 320 / days.length;
+            const h = (d.amount / max) * 160;
+            return `<rect x="${i * w + 8}" y="${180 - h}" width="${w - 16}" height="${h}" rx="6" fill="var(--accent)" opacity="0.85"/>`;
+          }).join('')}
+          ${days.map((d, i) => {
+            const w = 320 / days.length;
+            return `<text x="${i * w + w/2}" y="205" text-anchor="middle" font-size="11" fill="var(--fg-subtle)">${d.label}</text>`;
+          }).join('')}
+        </svg>
+      </div>
+      <div class="card">
+        <h4 style="margin:0 0 14px;font-size:14px">Категории расходов</h4>
+        ${Object.keys(byCategory).length === 0 ? '<div class="empty">Нет данных</div>' : `
+          <svg class="chart-svg" viewBox="0 0 220 220" style="height:180px">
+            ${(() => {
+              let start = -Math.PI / 2;
+              const r = 90, cx = 110, cy = 110;
+              return Object.entries(byCategory).map(([cat, val]) => {
+                const pct = val / total;
+                const end = start + pct * Math.PI * 2;
+                const x1 = cx + r * Math.cos(start), y1 = cy + r * Math.sin(start);
+                const x2 = cx + r * Math.cos(end), y2 = cy + r * Math.sin(end);
+                const large = pct > 0.5 ? 1 : 0;
+                const path = `M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 ${large} 1 ${x2} ${y2} Z`;
+                const c = DB.data.categories.find(c => c.id === cat)?.color || '#667085';
+                start = end;
+                return `<path d="${path}" fill="${c}" opacity="0.9"/>`;
+              }).join('');
+            })()}
+          </svg>
+          <div class="chart-legend">
+            ${Object.entries(byCategory).map(([cat, val]) => {
+              const c = DB.data.categories.find(c => c.id === cat);
+              const name = c ? c.name.ru : cat;
+              const color = c ? c.color : '#667085';
+              return `<span><i style="background:${color}"></i>${name} · ${fmt(val)}</span>`;
+            }).join('')}
+          </div>
+        `}
+      </div>
+    </div>
+    <div class="grid grid-3">
+      <div class="card"><p class="card-title">Всего расходов</p><p class="card-value">${fmt(out.reduce((s,t) => s + t.amount, 0))}</p></div>
+      <div class="card"><p class="card-title">Всего доходов</p><p class="card-value" style="color:var(--success)">${fmt(txs.filter(t => t.direction === 'in').reduce((s,t) => s + t.amount, 0))}</p></div>
+      <div class="card"><p class="card-title">Операций</p><p class="card-value">${txs.length}</p></div>
+    </div>
+  `;
+  render(Shell(html, { title: 'Аналитика' }));
+}
+
+/* ---------- BUDGET ---------- */
+async function PageBudget() {
+  const txs = await API.transactions(State.user.id);
+  const limits = { food: 400, transport: 150, fun: 200, shopping: 300, subs: 50 };
+  const html = `
+    <div class="grid grid-2">
+      ${DB.data.categories.map(c => {
+        const spent = txs.filter(t => t.direction === 'out' && t.category === c.id).reduce((s,t) => s + t.amount, 0);
+        const limit = limits[c.id] || 200;
+        const pct = Math.min(100, (spent / limit) * 100);
+        const cls = pct >= 100 ? 'danger' : pct > 80 ? 'warn' : '';
+        return `
+          <div class="card">
+            <div class="row between" style="margin-bottom:10px">
+              <div class="row"><span style="width:10px;height:10px;border-radius:3px;background:${c.color};display:inline-block"></span><b style="margin-left:8px">${c.name.ru}</b></div>
+              <span class="subtle">${fmt(spent)} / ${fmt(limit)}</span>
+            </div>
+            <div class="progress ${cls}"><div style="width:${pct}%"></div></div>
+            <p class="subtle" style="margin:8px 0 0">Осталось: ${fmt(Math.max(0, limit - spent))}</p>
+          </div>`;
+      }).join('')}
+    </div>
+  `;
+  render(Shell(html, { title: 'Бюджет' }));
+}
+
+/* ---------- SEARCH ---------- */
+async function PageSearch(query) {
+  const q = query.q || '';
+  let users = [], txs = [];
+  if (q.length >= 2) {
+    users = await API.searchUsers(q);
+    txs = (await API.transactions(State.user.id)).filter(t => (t.description || '').toLowerCase().includes(q.toLowerCase()) || t.ref.toLowerCase().includes(q.toLowerCase()));
+  }
+  const html = `
+    <div style="margin-bottom:16px">
+      <input class="input" id="global-search" placeholder="Поиск: пользователи, операции, ASD ID, IBAN..." value="${escapeHtml(q)}" style="max-width:520px" />
+    </div>
+    ${q.length < 2 ? `<div class="empty"><h3>Начните вводить запрос</h3><p>Минимум 2 символа</p></div>` : `
+      <h4 style="margin:20px 0 12px;font-size:14px">Пользователи (${users.length})</h4>
+      <div class="card" style="padding:8px 16px">
+        ${users.length === 0 ? `<div class="subtle" style="padding:12px">Не найдено</div>` : users.map(u => `
+          <div class="list-row">
+            <div class="avatar">${initials(u)}</div>
+            <div class="tx-meta"><p class="tx-title">${escapeHtml(u.first_name)} ${escapeHtml(u.last_name)}</p><p class="tx-sub mono">${u.asd_id} · ${u.email}</p></div>
+            <a class="btn btn-secondary btn-sm" href="/transfers" data-link>Перевести</a>
+          </div>`).join('')}
+      </div>
+      <h4 style="margin:24px 0 12px;font-size:14px">Операции (${txs.length})</h4>
+      <div class="card" style="padding:8px 16px">
+        ${txs.length === 0 ? `<div class="subtle" style="padding:12px">Не найдено</div>` : `<div class="list">${txs.slice(0,20).map(UI.txRow).join('')}</div>`}
+      </div>
+    `}
+  `;
+  render(Shell(html, { title: 'Поиск' }));
+  const inp = document.getElementById('global-search');
+  inp.focus();
+  let t;
+  inp.addEventListener('input', () => {
+    clearTimeout(t);
+    t = setTimeout(() => {
+      const v = inp.value.trim();
+      Router.navigate('/search' + (v ? '?q=' + encodeURIComponent(v) : ''), true);
+    }, 350);
+  });
+}
+
+/* ---------- HELP / SUPPORT ---------- */
+async function PageHelp() {
+  const html = `
+    <div class="grid grid-2">
+      ${['Платежи','Переводы','Карты','Безопасность','Счета','Профиль'].map(c => `
+        <div class="card hoverable">
+          <b>${c}</b>
+          <p class="subtle" style="margin:6px 0 12px">Частые вопросы по разделу</p>
+          <a href="/support" data-link class="btn btn-secondary btn-sm">Создать обращение</a>
+        </div>`).join('')}
+    </div>
+  `;
+  render(Shell(html, { title: 'Помощь' }));
+}
+
+async function PageSupport() {
+  const html = `
+    <div style="max-width:640px;margin:0 auto">
+      <div class="card">
+        <h4 style="margin:0 0 14px;font-size:14px">Новое обращение</h4>
+        <form id="support-form">
+          <div class="field"><label>Категория</label>
+            <select class="select" name="category"><option>Платежи</option><option>Переводы</option><option>Карты</option><option>Безопасность</option><option>Другое</option></select>
+          </div>
+          <div class="field"><label>Приоритет</label>
+            <select class="select" name="priority"><option>Обычный</option><option>Высокий</option><option>Срочный</option></select>
+          </div>
+          <div class="field"><label>Описание</label><textarea class="textarea" name="description" rows="5" required></textarea></div>
+          <button class="btn btn-primary btn-block" type="submit">Отправить</button>
+        </form>
+      </div>
+    </div>
+  `;
+  render(Shell(html, { title: 'Поддержка', showBack: true }));
+  document.getElementById('support-form').addEventListener('submit', e => {
+    e.preventDefault();
+    audit('support_ticket', {});
+    toast('Обращение отправлено. Мы свяжемся с вами.', 'success');
+    Router.navigate('/help');
+  });
+}
+
+/* ---------- ADMIN ---------- */
+async function PageAdmin() {
+  if (!['ADMIN','SUPER_ADMIN'].includes(State.user.role)) return render403();
+  const users = DB.data.users;
+  const txs = DB.data.transactions;
+  const cards = DB.data.cards;
+  const total = DB.data.accounts.reduce((s,a) => s + a.balance, 0);
+  const html = `
+    <div class="grid grid-4" style="margin-bottom:20px">
+      <div class="card"><p class="card-title">Пользователи</p><p class="card-value">${users.length}</p></div>
+      <div class="card"><p class="card-title">Счета</p><p class="card-value">${DB.data.accounts.length}</p></div>
+      <div class="card"><p class="card-title">Карты</p><p class="card-value">${cards.length}</p></div>
+      <div class="card"><p class="card-title">Общий баланс</p><p class="card-value">${fmt(total)}</p></div>
+    </div>
+    <div class="grid grid-2">
+      <div class="card">
+        <h4 style="margin:0 0 14px;font-size:14px">Разделы</h4>
+        <div class="list">
+          <a class="list-row" href="/admin/users" data-link><div class="tx-icon">${Icons.user}</div><div class="tx-meta"><p class="tx-title">Пользователи</p><p class="tx-sub">Управление и поиск</p></div><span class="muted">→</span></a>
+          <a class="list-row" href="/admin/transactions" data-link><div class="tx-icon">${Icons.history}</div><div class="tx-meta"><p class="tx-title">Транзакции</p><p class="tx-sub">Все операции системы</p></div><span class="muted">→</span></a>
+          <a class="list-row" href="/admin/security" data-link><div class="tx-icon">${Icons.shield}</div><div class="tx-meta"><p class="tx-title">Безопасность</p><p class="tx-sub">Подозрительные события</p></div><span class="muted">→</span></a>
+          <a class="list-row" href="/admin/audit" data-link><div class="tx-icon">${Icons.analytics}</div><div class="tx-meta"><p class="tx-title">Audit log</p><p class="tx-sub">Действия пользователей</p></div><span class="muted">→</span></a>
+        </div>
+      </div>
+      <div class="card">
+        <h4 style="margin:0 0 14px;font-size:14px">Последние транзакции</h4>
+        <div class="list">
+          ${txs.slice(-5).reverse().map(t => {
+            const u = DB.byId('users', t.user_id);
+            return `<div class="list-row"><div class="tx-meta"><p class="tx-title">${escapeHtml(u ? u.first_name + ' ' + u.last_name : '—')}</p><p class="tx-sub mono">${t.ref}</p></div><div class="tx-amount">${fmt(t.amount)}</div></div>`;
+          }).join('')}
+        </div>
+      </div>
+    </div>
+  `;
+  render(Shell(html, { title: 'Админ-панель' }));
+}
+
+async function PageAdminUsers() {
+  if (!['ADMIN','SUPER_ADMIN'].includes(State.user.role)) return render403();
+  const users = DB.data.users;
+  const html = `
+    <div class="card" style="overflow-x:auto;padding:0">
+      <table style="width:100%;border-collapse:collapse;font-size:13px">
+        <thead style="background:var(--bg-sunken)">
+          <tr>
+            <th style="text-align:left;padding:12px 16px">ID</th>
+            <th style="text-align:left;padding:12px 16px">ASD ID</th>
+            <th style="text-align:left;padding:12px 16px">Имя</th>
+            <th style="text-align:left;padding:12px 16px">Email</th>
+            <th style="text-align:left;padding:12px 16px">Роль</th>
+            <th style="text-align:left;padding:12px 16px">Статус</th>
+            <th style="text-align:left;padding:12px 16px">Последний вход</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${users.map(u => `
+            <tr style="border-top:1px solid var(--border)">
+              <td style="padding:12px 16px" class="mono">${u.id}</td>
+              <td style="padding:12px 16px" class="mono">${u.asd_id}</td>
+              <td style="padding:12px 16px"><b>${escapeHtml(u.first_name)} ${escapeHtml(u.last_name)}</b></td>
+              <td style="padding:12px 16px">${escapeHtml(u.email)}</td>
+              <td style="padding:12px 16px">${UI.badge(u.role, u.role === 'USER' ? '' : 'accent')}</td>
+              <td style="padding:12px 16px">${UI.badge(u.status, u.status === 'active' ? 'success' : 'danger')}</td>
+              <td style="padding:12px 16px">${u.last_login ? fmtDate(u.last_login, true) : '—'}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+  render(Shell(html, { title: 'Пользователи', showBack: true }));
+}
+
+async function PageAdminTransactions() {
+  if (!['ADMIN','SUPER_ADMIN'].includes(State.user.role)) return render403();
+  const txs = [...DB.data.transactions].reverse();
+  const html = `
+    <div class="card" style="overflow-x:auto;padding:0">
+      <table style="width:100%;border-collapse:collapse;font-size:13px">
+        <thead style="background:var(--bg-sunken)">
+          <tr>
+            <th style="text-align:left;padding:12px 16px">Reference</th>
+            <th style="text-align:left;padding:12px 16px">Пользователь</th>
+            <th style="text-align:left;padding:12px 16px">Тип</th>
+            <th style="text-align:left;padding:12px 16px">Сумма</th>
+            <th style="text-align:left;padding:12px 16px">Статус</th>
+            <th style="text-align:left;padding:12px 16px">Дата</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${txs.slice(0, 50).map(t => {
+            const u = DB.byId('users', t.user_id);
+            return `<tr style="border-top:1px solid var(--border)">
+              <td style="padding:12px 16px" class="mono">${t.ref}</td>
+              <td style="padding:12px 16px">${u ? escapeHtml(u.first_name + ' ' + u.last_name) : '—'}</td>
+              <td style="padding:12px 16px">${t.type}</td>
+              <td style="padding:12px 16px"><b>${fmt(t.amount, t.currency)}</b></td>
+              <td style="padding:12px 16px">${UI.badge(t.status, t.status === 'completed' ? 'success' : 'warning')}</td>
+              <td style="padding:12px 16px">${fmtDate(t.created_at, true)}</td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+  render(Shell(html, { title: 'Транзакции', showBack: true }));
+}
+
+async function PageAdminSecurity() {
+  if (!['ADMIN','SUPER_ADMIN'].includes(State.user.role)) return render403();
+  const logs = [...DB.data.audit_logs].reverse();
+  const html = `
+    <div class="card">
+      <h4 style="margin:0 0 14px;font-size:14px">События безопасности</h4>
+      <div class="list">
+        ${logs.length === 0 ? `<div class="subtle">Событий нет</div>` : logs.slice(0, 30).map(l => {
+          const u = l.user_id ? DB.byId('users', l.user_id) : null;
+          return `<div class="list-row">
+            <div class="tx-icon">${Icons.shield}</div>
+            <div class="tx-meta">
+              <p class="tx-title">${l.action}</p>
+              <p class="tx-sub">${u ? escapeHtml(u.first_name + ' ' + u.last_name) : 'system'} · ${fmtDate(l.created_at, true)}</p>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>
+  `;
+  render(Shell(html, { title: 'Безопасность', showBack: true }));
+}
+
+async function PageAdminAudit() {
+  if (!['ADMIN','SUPER_ADMIN'].includes(State.user.role)) return render403();
+  const logs = [...DB.data.audit_logs].reverse();
+  const html = `
+    <div class="card" style="padding:0;overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse;font-size:13px">
+        <thead style="background:var(--bg-sunken)">
+          <tr>
+            <th style="text-align:left;padding:12px 16px">ID</th>
+            <th style="text-align:left;padding:12px 16px">User</th>
+            <th style="text-align:left;padding:12px 16px">Action</th>
+            <th style="text-align:left;padding:12px 16px">Meta</th>
+            <th style="text-align:left;padding:12px 16px">Дата</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${logs.map(l => {
+            const u = l.user_id ? DB.byId('users', l.user_id) : null;
+            return `<tr style="border-top:1px solid var(--border)">
+              <td style="padding:12px 16px" class="mono">${l.id}</td>
+              <td style="padding:12px 16px">${u ? escapeHtml(u.first_name + ' ' + u.last_name) : '—'}</td>
+              <td style="padding:12px 16px"><b>${l.action}</b></td>
+              <td style="padding:12px 16px" class="mono subtle" style="font-size:11px">${escapeHtml(JSON.stringify(l.meta || {}))}</td>
+              <td style="padding:12px 16px">${fmtDate(l.created_at, true)}</td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+  render(Shell(html, { title: 'Audit log', showBack: true }));
+}
+
+/* ---------- AUTH PAGES ---------- */
+async function PageLogin() {
+  const html = `
+    <div class="auth-wrap">
+      <div class="auth-card">
+        <div class="auth-logo"><div class="brand-mark">ASD</div><div class="brand-text" style="font-weight:700">ASD BANK</div></div>
+        <h2>Вход в аккаунт</h2>
+        <p class="sub">Введите данные для доступа к банку</p>
+        <form id="login-form">
+          <div class="field"><label>Email или телефон</label><input class="input" name="login" required autocomplete="username" /></div>
+          <div class="field"><label>Пароль</label><input class="input" name="password" type="password" required autocomplete="current-password" /></div>
+          <button class="btn btn-primary btn-block" type="submit" id="login-btn">Войти</button>
+          <div class="row between" style="margin-top:14px">
+            <a href="/forgot-password" data-link class="muted" style="font-size:13px">Забыли пароль?</a>
+            <a href="/register" data-link class="muted" style="font-size:13px">Создать аккаунт</a>
+          </div>
+        </form>
+        <div class="card" style="background:var(--warning-soft);border-color:var(--warning);margin-top:20px;padding:12px;font-size:12px">
+          <b>DEMO ACCOUNT</b><br>
+          demo@asd-bank.local · Demo123!<br>
+          admin@asd-bank.local · Admin123! (SUPER_ADMIN)
+        </div>
+      </div>
+    </div>
+  `;
+  document.getElementById('app').innerHTML = html;
+
+  document.getElementById('login-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    const fd = new FormData(e.target);
+    const btn = document.getElementById('login-btn');
+    btn.disabled = true; btn.textContent = 'Вход...';
+    try {
+      const { user } = await API.login(fd.get('login').trim(), fd.get('password'));
+      State.user = user;
+      State.emit();
+      toast('Добро пожаловать, ' + user.first_name, 'success');
+      Router.navigate('/');
+    } catch (err) {
+      toast(err.message, 'error');
+      btn.disabled = false; btn.textContent = 'Войти';
+    }
+  });
+}
+
+async function PageRegister() {
+  const html = `
+    <div class="auth-wrap">
+      <div class="auth-card">
+        <div class="auth-logo"><div class="brand-mark">ASD</div><div class="brand-text" style="font-weight:700">ASD BANK</div></div>
+        <h2>Создать аккаунт</h2>
+        <p class="sub">Шаг 1 из 1 · Все данные demo</p>
+        <form id="register-form">
+          <div class="grid grid-2" style="gap:12px">
+            <div class="field"><label>Имя</label><input class="input" name="first_name" required /></div>
+            <div class="field"><label>Фамилия</label><input class="input" name="last_name" required /></div>
+          </div>
+          <div class="field"><label>Email</label><input class="input" name="email" type="email" required autocomplete="email" /></div>
+          <div class="field"><label>Телефон</label><input class="input" name="phone" required placeholder="+372..." /></div>
+          <div class="field"><label>Пароль</label><input class="input" name="password" type="password" required autocomplete="new-password" /></div>
+          <button class="btn btn-primary btn-block" type="submit" id="reg-btn">Создать аккаунт</button>
+          <div class="text-c" style="margin-top:14px;font-size:13px">
+            Уже есть аккаунт? <a href="/login" data-link style="color:var(--accent)">Войти</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  `;
+  document.getElementById('app').innerHTML = html;
+
+  document.getElementById('register-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    const fd = new FormData(e.target);
+    const btn = document.getElementById('reg-btn');
+    btn.disabled = true; btn.textContent = 'Создание...';
+    try {
+      const { user } = await API.register(Object.fromEntries(fd));
+      State.user = user;
+      State.emit();
+      toast('Аккаунт создан. Ваш ASD ID: ' + user.asd_id, 'success');
+      Router.navigate('/');
+    } catch (err) {
+      toast(err.message, 'error');
+      btn.disabled = false; btn.textContent = 'Создать аккаунт';
+    }
+  });
+}
+
+async function PageForgot() {
+  const html = `
+    <div class="auth-wrap">
+      <div class="auth-card">
+        <div class="auth-logo"><div class="brand-mark">ASD</div></div>
+        <h2>Восстановление пароля</h2>
+        <p class="sub">В demo — просто уведомление</p>
+        <form id="forgot-form">
+          <div class="field"><label>Email или телефон</label><input class="input" required /></div>
+          <button class="btn btn-primary btn-block" type="submit">Отправить ссылку</button>
+        </form>
+        <div class="text-c" style="margin-top:14px;font-size:13px">
+          <a href="/login" data-link style="color:var(--accent)">Назад ко входу</a>
+        </div>
+      </div>
+    </div>
+  `;
+  document.getElementById('app').innerHTML = html;
+  document.getElementById('forgot-form').addEventListener('submit', e => {
+    e.preventDefault();
+    toast('В production здесь отправится ссылка на email', 'info');
+    Router.navigate('/login');
+  });
+}
+
+/* ---------- ERROR PAGES ---------- */
+function render404() {
+  document.getElementById('app').innerHTML = `
+    <div class="auth-wrap">
+      <div class="auth-card text-c">
+        <div style="font-size:64px;font-weight:800;color:var(--accent);letter-spacing:-0.04em">404</div>
+        <h2>Страница не найдена</h2>
+        <p class="sub">Возможно, ссылка устарела или введена неверно</p>
+        <a href="/" data-link class="btn btn-primary">На главную</a>
+      </div>
+    </div>`;
+}
+function render403() {
+  document.getElementById('app').innerHTML = `
+    <div class="auth-wrap">
+      <div class="auth-card text-c">
+        <div style="font-size:64px;font-weight:800;color:var(--danger);letter-spacing:-0.04em">403</div>
+        <h2>Доступ запрещён</h2>
+        <p class="sub">У вас нет прав для просмотра этой страницы</p>
+        <a href="/" data-link class="btn btn-primary">На главную</a>
+      </div>
+    </div>`;
+}
+
+/* ==================================================================
+ * SECTION: RENDER + GLOBAL ACTIONS
+ * ================================================================== */
+function render(html) {
+  document.getElementById('app').outerHTML = html;
+  applyTheme();
+}
+
+function applyTheme() {
+  const t = State.settings.theme;
+  const dark = t === 'dark' || (t === 'system' && matchMedia('(prefers-color-scheme: dark)').matches);
+  document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+}
+
+document.addEventListener('click', (e) => {
+  const el = e.target.closest('[data-action]');
+  if (!el) return;
+  const action = el.dataset.action;
+  const val = el.dataset.value;
+
+  if (action === 'copy' && val) {
+    navigator.clipboard.writeText(val);
+    toast('Скопировано', 'success');
+  }
+  if (action === 'back') {
+    history.back();
+  }
+  if (action === 'logout') {
+    audit('logout');
+    State.user = null;
+    sessionStorage.clear();
+    Router.navigate('/login');
+  }
+  if (action === 'logout-all') {
+    audit('logout_all');
+    State.user = null;
+    sessionStorage.clear();
+    toast('Вы вышли со всех устройств', 'success');
+    Router.navigate('/login');
+  }
+  if (action === 'end-session') {
+    const id = +el.dataset.id;
+    DB.update('sessions', id, { revoked: true });
+    toast('Сессия завершена', 'success');
+    render(Shell(document.getElementById('content').innerHTML, { title: 'Безопасность', showBack: true }));
+  }
+  if (action === 'reveal-card') {
+    const card = DB.byId('cards', +el.dataset.id);
+    // Дополнительная проверка (в production — OTP / биометрия)
+    const pan = `•••• •••• •••• ${card.pan_last4}`;
+    toast('В production здесь потребуется биометрия / OTP', 'info');
+    // Демонстрация: показываем маску (никогда не реальный PAN)
+    const el2 = document.getElementById('card-pan');
+    if (el2) el2.textContent = pan;
+  }
+  if (action === 'toggle-card') {
+    const card = DB.byId('cards', +el.dataset.id);
+    card.status = card.status === 'active' ? 'locked' : 'active';
+    audit('card_' + (card.status === 'locked' ? 'lock' : 'unlock'), { card_id: card.id });
+    notify(State.user.id, 'card', 'Статус карты изменён', `Карта •••• ${card.pan_last4}: ${card.status}`);
+    toast('Карта обновлена', 'success');
+    PageCardDetail({ id: card.id });
+  }
+  if (action === 'reissue-card') {
+    toast('Перевыпуск запрошен. В production — через 3 рабочих дня.', 'info');
+    audit('card_reissue', { card_id: +el.dataset.id });
+  }
+  if (action === 'create-card') {
+    const acc = DB.data.accounts.find(a => a.user_id === State.user.id);
+    if (!acc) { toast('Нет счёта для привязки карты', 'error'); return; }
+    const last4 = String(Math.floor(1000 + Math.random() * 9000));
+    const card = DB.insert('cards', {
+      user_id: State.user.id, account_id: acc.id,
+      pan_last4: last4, exp_month: 12, exp_year: new Date().getFullYear() + 4,
+      brand: 'ASD', kind: 'virtual', status: 'active',
+      daily_limit: 1000, color: ['black','blue','purple'][Math.floor(Math.random()*3)],
+      holder: (State.user.first_name + ' ' + State.user.last_name).toUpperCase(),
+      created_at: Date.now(),
+    });
+    audit('card_create', { card_id: card.id });
+    toast('Виртуальная карта создана', 'success');
+    PageCards();
+  }
+  if (action === 'open-account') {
+    DB.insert('accounts', {
+      user_id: State.user.id,
+      account_number: 'EE' + String(30000000000000000000n + BigInt(DB.data.accounts.length)).slice(0,18),
+      currency: 'EUR', kind: 'savings',
+      balance: 0, available_balance: 0, status: 'active',
+      created_at: Date.now(), updated_at: Date.now(),
+    });
+    audit('account_create');
+    toast('Новый счёт открыт', 'success');
+    PageAccounts();
+  }
+  if (action === 'read-all') {
+    DB.byUser('notifications', State.user.id).forEach(n => n.is_read = true);
+    State.emit();
+    PageNotifications();
+  }
+  if (action === 'repeat-tx') {
+    const tx = DB.byId('transactions', +el.dataset.id);
+    if (!tx || tx.direction !== 'out' || !tx.counterparty) { toast('Повтор недоступен', 'error'); return; }
+    sessionStorage.setItem('asd_pending_transfer', JSON.stringify({
+      fromAccountId: tx.account_id, toUserId: tx.counterparty,
+      amount: tx.amount, currency: tx.currency, description: 'Повтор операции',
+      idempotencyKey: genIdempotencyKey(),
+      recipient: (() => { const u = DB.byId('users', tx.counterparty); return { name: u.first_name + ' ' + u.last_name, asd_id: u.asd_id, email: u.email }; })(),
+      account: (() => { const a = DB.byId('accounts', tx.account_id); return { id: a.id, number: a.account_number }; })(),
+    }));
+    Router.navigate('/transfer-confirmation');
+  }
+  if (action === 'report-tx') {
+    toast('Обращение создано. Support свяжется с вами.', 'success');
+    audit('tx_report', { tx_id: +el.dataset.id });
+  }
+  if (action === 'set-theme') {
+    State.settings.theme = el.dataset.theme;
+    applyTheme();
+    PageSettingsAppearance();
+  }
+  if (action === 'set-lang') {
+    State.settings.language = el.dataset.lang;
+    toast('Язык сохранён: ' + el.dataset.lang.toUpperCase(), 'success');
+    PageSettingsAppearance();
+  }
+  if (action === 'toggle-2fa') toast('Настройка 2FA появится после подключения backend', 'info');
+  if (action === 'save-privacy' || action === 'save-notifications') { toast('Настройки сохранены', 'success'); audit(action); }
+});
+
+/* ==================================================================
+ * SECTION: ROUTES
+ * ================================================================== */
+function buildRoutes() {
+  Router.on('/',                    PageHome,                { auth: true });
+  Router.on('/accounts',            PageAccounts,            { auth: true });
+  Router.on('/accounts/:id',        PageAccountDetail,       { auth: true });
+  Router.on('/cards',               PageCards,               { auth: true });
+  Router.on('/cards/:id',           PageCardDetail,          { auth: true });
+  Router.on('/transfers',           PageTransfers,            { auth: true });
+  Router.on('/transfer-confirmation', PageTransferConfirmation, { auth: true });
+  Router.on('/transfer-success',    PageTransferSuccess,     { auth: true });
+  Router.on('/transactions',        PageTransactions,        { auth: true });
+  Router.on('/transactions/:id/receipt', PageReceipt,        { auth: true });
+  Router.on('/transactions/:id',    PageTransactionDetail,   { auth: true });
+  Router.on('/payments',            PagePayments,            { auth: true });
+  Router.on('/payments/:id',        PagePaymentCategory,     { auth: true });
+  Router.on('/deposit',             PageDeposit,             { auth: true });
+  Router.on('/receive',             PageReceive,             { auth: true });
+  Router.on('/qr',                  PageQR,                  { auth: true });
+  Router.on('/notifications',       PageNotifications,       { auth: true });
+  Router.on('/analytics',           PageAnalytics,           { auth: true });
+  Router.on('/budget',              PageBudget,              { auth: true });
+  Router.on('/profile',             PageProfile,             { auth: true });
+  Router.on('/profile/edit',        PageProfileEdit,         { auth: true });
+  Router.on('/settings',            PageSettings,            { auth: true });
+  Router.on('/settings/security',   PageSettingsSecurity,    { auth: true });
+  Router.on('/settings/privacy',    PageSettingsPrivacy,     { auth: true });
+  Router.on('/settings/notifications', PageSettingsNotifications, { auth: true });
+  Router.on('/settings/appearance', PageSettingsAppearance,  { auth: true });
+  Router.on('/settings/limits',     PageSettingsLimits,      { auth: true });
+  Router.on('/settings/devices',    PageSettingsDevices,     { auth: true });
+  Router.on('/search',              PageSearch,              { auth: true });
+  Router.on('/help',                PageHelp,                { auth: true });
+  Router.on('/support',             PageSupport,             { auth: true });
+
+  Router.on('/admin',               PageAdmin,               { auth: true, role: ['ADMIN','SUPER_ADMIN'] });
+  Router.on('/admin/users',         PageAdminUsers,          { auth: true, role: ['ADMIN','SUPER_ADMIN'] });
+  Router.on('/admin/transactions',  PageAdminTransactions,   { auth: true, role: ['ADMIN','SUPER_ADMIN'] });
+  Router.on('/admin/security',      PageAdminSecurity,       { auth: true, role: ['ADMIN','SUPER_ADMIN'] });
+  Router.on('/admin/audit',         PageAdminAudit,          { auth: true, role: ['ADMIN','SUPER_ADMIN'] });
+
+  Router.on('/login',    PageLogin,    { guest: true });
+  Router.on('/register', PageRegister, { guest: true });
+  Router.on('/forgot-password', PageForgot, { guest: true });
+
+  Router.setNotFound(() => render404());
+}
+
+/* ==================================================================
+ * SECTION: BOOTSTRAP
+ * ================================================================== */
+(async function bootstrap() {
+  // Тема
+  const savedTheme = localStorage.getItem('asd_theme');
+  if (savedTheme) State.settings.theme = savedTheme;
+  State.subscribe(() => {
+    localStorage.setItem('asd_theme', State.settings.theme);
+    applyTheme();
+  });
+  applyTheme();
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyTheme);
+
+  // Seed demo
+  await seed();
+
+  // Восстановление сессии
+  const savedUser = localStorage.getItem('asd_user_id');
+  if (savedUser) {
+    const u = DB.byId('users', +savedUser);
+    if (u) State.user = u;
+  }
+  State.subscribe(() => {
+    if (State.user) localStorage.setItem('asd_user_id', State.user.id);
+    else localStorage.removeItem('asd_user_id');
+  });
+
+  // Роутер
+  buildRoutes();
+
+  // Deep link поддержка: при первом заходе если нет пользователя — /login
+  const path = location.pathname;
+  const guestOnly = ['/login', '/register', '/forgot-password'].includes(path);
+  if (!State.user && !guestOnly) {
+    history.replaceState(null, '', '/login');
+    Router.resolve('/login');
+  } else {
+    Router.resolve(path);
+  }
+})();
+</script>
+</body>
+</html>
