@@ -2,15 +2,12 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="theme-color" content="#F2F3F5" />
 <title>ASD BANK</title>
 <link rel="preconnect" href="https://rsms.me/">
 <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
 <style>
-/* ============================================================
-   DESIGN TOKENS — стиль Тинькофф/Альфа: светлый, мягкий, зелёный
-   ============================================================ */
 :root {
   --bg: #F2F3F5;
   --bg-card: #FFFFFF;
@@ -19,15 +16,14 @@
   --fg: #1A1A1A;
   --fg-muted: #8A8F98;
   --fg-subtle: #A8ADB5;
-  --accent: #2A2A2A;         /* чёрный как у Тинькофф */
-  --green: #B4E33D;           /* лаймовый как у Альфы/Тинькофф */
+  --green: #B4E33D;
   --green-fg: #1A1A1A;
   --red: #FF3B30;
   --yellow: #FFCC00;
   --blue: #2E7CFF;
+  --purple: #7C3BFF;
   --card-radius: 24px;
   --tile-radius: 20px;
-  --radius-sm: 12px;
   --radius-pill: 999px;
   --shadow: 0 2px 8px rgba(0,0,0,.04);
   --shadow-md: 0 4px 16px rgba(0,0,0,.06);
@@ -41,11 +37,7 @@
   --fg: #F2F2F5;
   --fg-muted: #8E8E93;
   --fg-subtle: #636366;
-  --accent: #F2F2F5;
-  --green: #B4E33D;
-  --green-fg: #1A1A1A;
 }
-
 *, *::before, *::after { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; height: 100%; }
 body {
@@ -56,258 +48,69 @@ body {
   line-height: 1.4;
   -webkit-font-smoothing: antialiased;
   letter-spacing: -0.01em;
+  display: flex;
+  justify-content: center;
+  min-height: 100vh;
 }
 button { font-family: inherit; cursor: pointer; border: none; background: none; color: inherit; padding: 0; }
 a { color: inherit; text-decoration: none; }
 input, select, textarea { font-family: inherit; font-size: inherit; }
 [hidden] { display: none !important; }
 ::selection { background: var(--green); color: var(--green-fg); }
-
-/* ============================================================
-   APP SHELL — mobile-first, десктоп центрируется как iPhone
-   ============================================================ */
-body {
-  display: flex;
-  justify-content: center;
-  min-height: 100vh;
-  background: var(--bg);
-}
-#app {
-  width: 100%;
-  max-width: 480px;
-  min-height: 100vh;
-  padding-bottom: 100px;
-  position: relative;
-}
+#app { width: 100%; max-width: 480px; min-height: 100vh; padding-bottom: 100px; position: relative; }
 @media (min-width: 768px) {
   body { background: #E5E6E9; padding: 20px 0; }
-  #app {
-    background: var(--bg);
-    min-height: calc(100vh - 40px);
-    border-radius: 32px;
-    box-shadow: 0 20px 60px rgba(0,0,0,.1);
-    overflow: hidden;
-  }
+  #app { background: var(--bg); min-height: calc(100vh - 40px); border-radius: 32px; box-shadow: 0 20px 60px rgba(0,0,0,.1); overflow: hidden; }
 }
 
-/* ============================================================
-   TOP HEADER (Мороф + баланс pill)
-   ============================================================ */
-.topbar {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 16px 20px 12px;
-}
-.topbar .avatar-circle {
-  width: 40px; height: 40px;
-  border-radius: 50%;
-  background: var(--bg-sunken);
-  display: grid; place-items: center;
-  color: var(--fg-muted);
-  flex-shrink: 0;
-}
-.topbar .avatar-circle svg { width: 20px; height: 20px; }
-.topbar .name {
-  font-size: 22px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  display: flex; align-items: center; gap: 4px;
-}
+/* TOPBAR */
+.topbar { display: flex; align-items: center; gap: 12px; padding: 16px 20px 12px; }
+.avatar-circle { width: 40px; height: 40px; border-radius: 50%; background: var(--bg-sunken); display: grid; place-items: center; color: var(--fg-muted); flex-shrink: 0; }
+.avatar-circle svg { width: 20px; height: 20px; }
+.topbar .name { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; display: flex; align-items: center; gap: 4px; }
 .topbar .name svg { width: 16px; height: 16px; color: var(--fg-subtle); }
-.topbar .balance-pill {
-  margin-left: auto;
-  background: var(--green);
-  color: var(--green-fg);
-  font-weight: 700;
-  font-size: 14px;
-  padding: 8px 14px;
-  border-radius: var(--radius-pill);
-  white-space: nowrap;
-}
+.topbar .balance-pill { margin-left: auto; background: var(--green); color: var(--green-fg); font-weight: 700; font-size: 14px; padding: 8px 14px; border-radius: var(--radius-pill); white-space: nowrap; }
 
-/* ============================================================
-   BALANCE CARD
-   ============================================================ */
+/* SECTIONS */
 .section { padding: 0 16px; margin-bottom: 12px; }
-.balance-card {
-  background: var(--bg-card);
-  border-radius: var(--card-radius);
-  padding: 20px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  box-shadow: var(--shadow);
-}
-.balance-card .label {
-  font-size: 15px;
-  color: var(--fg-muted);
-  margin-bottom: 6px;
-}
-.balance-card .amount {
-  font-size: 26px;
-  font-weight: 700;
-  letter-spacing: -0.03em;
-}
+.balance-card { background: var(--bg-card); border-radius: var(--card-radius); padding: 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: var(--shadow); }
+.balance-card .label { font-size: 15px; color: var(--fg-muted); margin-bottom: 6px; }
+.balance-card .amount { font-size: 26px; font-weight: 700; letter-spacing: -0.03em; }
 .balance-card .amount small { font-size: 20px; font-weight: 700; }
-.balance-card .card-mini {
-  width: 68px; height: 46px;
-  border-radius: 8px;
-  background: linear-gradient(135deg, #E63946, #C8102E);
-  color: white;
-  padding: 6px 8px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  position: relative;
-  box-shadow: 0 4px 12px rgba(200,16,46,.25);
-}
-.balance-card .card-mini .brand {
-  font-size: 10px;
-  font-weight: 800;
-}
-.balance-card .card-mini .last4 {
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-}
-.balance-card .card-mini .mir {
-  position: absolute;
-  bottom: 5px; right: 6px;
-  font-size: 8px;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-}
+.balance-card .card-mini { width: 68px; height: 46px; border-radius: 8px; padding: 6px 8px; display: flex; flex-direction: column; justify-content: space-between; position: relative; color: white; }
+.balance-card .card-mini .brand { font-size: 10px; font-weight: 800; }
+.balance-card .card-mini .last4 { font-size: 11px; font-weight: 600; letter-spacing: 0.04em; }
+.balance-card .card-mini .mir { position: absolute; bottom: 5px; right: 6px; font-size: 8px; font-weight: 700; }
 
-/* ============================================================
-   PROMO / HINT CARD (голубая, как "С Альфа-Смарт")
-   ============================================================ */
-.promo {
-  background: var(--bg-card);
-  border-radius: var(--card-radius);
-  overflow: hidden;
-  box-shadow: var(--shadow);
-  margin-top: 12px;
-}
-.promo-top {
-  padding: 18px 20px 14px;
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-}
+/* PROMO */
+.promo { background: var(--bg-card); border-radius: var(--card-radius); overflow: hidden; box-shadow: var(--shadow); margin-top: 12px; }
+.promo-top { padding: 18px 20px 14px; display: flex; justify-content: space-between; align-items: flex-start; }
 .promo-top .txt { font-size: 15px; color: var(--fg-muted); }
-.promo-top .title {
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--fg);
-  margin-top: 4px;
-  letter-spacing: -0.02em;
-}
-.promo-top .close {
-  width: 28px; height: 28px;
-  display: grid; place-items: center;
-  color: var(--fg-subtle);
-}
-.promo-bottom {
-  background: #D9E9FF;
-  color: #1A3A6B;
-  padding: 14px 20px;
-  font-size: 14px;
-  font-weight: 500;
-}
+.promo-top .title { font-size: 18px; font-weight: 700; color: var(--fg); margin-top: 4px; letter-spacing: -0.02em; }
+.promo-top .close { width: 28px; height: 28px; display: grid; place-items: center; color: var(--fg-subtle); }
+.promo-bottom { background: #D9E9FF; color: #1A3A6B; padding: 14px 20px; font-size: 14px; font-weight: 500; }
 [data-theme="dark"] .promo-bottom { background: #0F2547; color: #B7D2FF; }
 
-/* ============================================================
-   SEARCH
-   ============================================================ */
-.search-row {
-  display: flex;
-  gap: 8px;
-  padding: 16px 16px 8px;
-  align-items: center;
-}
-.search-box {
-  flex: 1;
-  height: 48px;
-  background: var(--bg-card);
-  border-radius: var(--radius-pill);
-  padding: 0 16px 0 44px;
-  display: flex;
-  align-items: center;
-  position: relative;
-  color: var(--fg-subtle);
-  font-size: 15px;
-}
-.search-box .icon {
-  position: absolute;
-  left: 14px;
-  width: 22px; height: 22px;
-  color: var(--fg);
-}
-.search-box input {
-  width: 100%; border: none; background: none; outline: none;
-  color: var(--fg);
-  font-size: 15px;
-}
+/* SEARCH */
+.search-row { display: flex; gap: 8px; padding: 16px 16px 8px; align-items: center; }
+.search-box { flex: 1; height: 48px; background: var(--bg-card); border-radius: var(--radius-pill); padding: 0 16px 0 44px; display: flex; align-items: center; position: relative; color: var(--fg-subtle); font-size: 15px; }
+.search-box .icon { position: absolute; left: 14px; width: 22px; height: 22px; color: var(--fg); }
+.search-box input { width: 100%; border: none; background: none; outline: none; color: var(--fg); font-size: 15px; }
 .search-box input::placeholder { color: var(--fg-subtle); }
-.circle-btn {
-  width: 48px; height: 48px;
-  border-radius: 50%;
-  background: var(--bg-card);
-  display: grid; place-items: center;
-  color: var(--fg);
-  transition: transform var(--transition);
-  flex-shrink: 0;
-}
+.circle-btn { width: 48px; height: 48px; border-radius: 50%; background: var(--bg-card); display: grid; place-items: center; color: var(--fg); transition: transform var(--transition); flex-shrink: 0; }
 .circle-btn:active { transform: scale(0.94); }
 .circle-btn svg { width: 22px; height: 22px; }
 
-/* ============================================================
-   SECTION HEADER
-   ============================================================ */
-.sec-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px 20px 12px;
-}
-.sec-head h3 {
-  margin: 0;
-  font-size: 18px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  display: flex; align-items: center; gap: 6px;
-}
+/* SECTION HEAD */
+.sec-head { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px 12px; }
+.sec-head h3 { margin: 0; font-size: 18px; font-weight: 700; letter-spacing: -0.02em; display: flex; align-items: center; gap: 6px; }
 .sec-head h3 svg { width: 16px; height: 16px; color: var(--fg-subtle); }
 
-/* ============================================================
-   QUICK ACTIONS — горизонтальный скролл круглых иконок
-   ============================================================ */
-.quick-scroll {
-  display: flex;
-  gap: 14px;
-  padding: 4px 16px 8px;
-  overflow-x: auto;
-  scrollbar-width: none;
-}
+/* QUICK ACTIONS */
+.quick-scroll { display: flex; gap: 14px; padding: 4px 16px 8px; overflow-x: auto; scrollbar-width: none; }
 .quick-scroll::-webkit-scrollbar { display: none; }
-.quick-item {
-  flex-shrink: 0;
-  width: 76px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  text-align: center;
-}
-.quick-item .icon-circle {
-  width: 68px; height: 68px;
-  border-radius: 50%;
-  background: var(--bg-card);
-  display: grid; place-items: center;
-  transition: transform var(--transition);
-  box-shadow: var(--shadow);
-}
+.quick-item { flex-shrink: 0; width: 76px; display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; }
+.quick-item .icon-circle { width: 68px; height: 68px; border-radius: 50%; background: var(--bg-card); display: grid; place-items: center; transition: transform var(--transition); box-shadow: var(--shadow); }
 .quick-item:active .icon-circle { transform: scale(0.92); }
 .quick-item .icon-circle svg { width: 26px; height: 26px; }
 .quick-item .icon-circle.green { background: var(--green); color: var(--green-fg); }
@@ -316,37 +119,12 @@ body {
 .quick-item .icon-circle.yellow { background: #FFF2CC; color: #B58B00; }
 .quick-item .icon-circle.purple { background: #EDE0FF; color: #7C3BFF; }
 .quick-item .icon-circle.dark { background: #2A2A2A; color: #FFFFFF; }
-.quick-item .label {
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--fg);
-  line-height: 1.25;
-}
+.quick-item .label { font-size: 12px; font-weight: 500; color: var(--fg); line-height: 1.25; }
 
-/* ============================================================
-   PRIVILEGE CARDS (горизонтальный скролл цветных карточек)
-   ============================================================ */
-.priv-scroll {
-  display: flex;
-  gap: 12px;
-  padding: 4px 16px 8px;
-  overflow-x: auto;
-  scrollbar-width: none;
-}
+/* PRIVILEGES */
+.priv-scroll { display: flex; gap: 12px; padding: 4px 16px 8px; overflow-x: auto; scrollbar-width: none; }
 .priv-scroll::-webkit-scrollbar { display: none; }
-.priv-card {
-  flex-shrink: 0;
-  width: 260px;
-  height: 130px;
-  border-radius: var(--tile-radius);
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  color: var(--fg);
-  position: relative;
-  overflow: hidden;
-}
+.priv-card { flex-shrink: 0; width: 260px; height: 130px; border-radius: var(--tile-radius); padding: 16px; display: flex; flex-direction: column; justify-content: space-between; position: relative; overflow: hidden; color: #1A1A1A; }
 .priv-card .title { font-size: 15px; font-weight: 700; }
 .priv-card .desc { font-size: 12px; opacity: 0.85; margin-top: 4px; }
 .priv-card .emoji { font-size: 32px; position: absolute; right: 16px; bottom: 12px; }
@@ -355,32 +133,11 @@ body {
 .priv-card.pink { background: linear-gradient(135deg, #FFD9E5, #FFB8CF); }
 .priv-card.green { background: linear-gradient(135deg, #E0F5B8, #C8E98D); }
 
-/* ============================================================
-   LIST (операции)
-   ============================================================ */
-.list-card {
-  background: var(--bg-card);
-  border-radius: var(--card-radius);
-  padding: 4px 16px;
-  margin: 0 16px;
-  box-shadow: var(--shadow);
-}
-.list-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 0;
-  border-bottom: 1px solid var(--bg-sunken);
-}
+/* LIST */
+.list-card { background: var(--bg-card); border-radius: var(--card-radius); padding: 4px 16px; margin: 0 16px; box-shadow: var(--shadow); }
+.list-row { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--bg-sunken); }
 .list-row:last-child { border-bottom: none; }
-.tx-icon {
-  width: 44px; height: 44px;
-  border-radius: 50%;
-  display: grid; place-items: center;
-  flex-shrink: 0;
-  background: var(--bg-tile);
-  color: var(--fg);
-}
+.tx-icon { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; flex-shrink: 0; background: var(--bg-tile); color: var(--fg); font-weight: 700; font-size: 14px; }
 .tx-icon.in { background: #E0F5B8; color: #4B7A00; }
 .tx-icon.out { background: #FFE0DF; color: #C8102E; }
 .tx-icon svg { width: 20px; height: 20px; }
@@ -390,95 +147,22 @@ body {
 .tx-amount { font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .tx-amount.in { color: #4B7A00; }
 
-/* ============================================================
-   BOTTOM NAV
-   ============================================================ */
-.bottom-nav {
-  position: fixed;
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 100%;
-  max-width: 480px;
-  background: var(--bg-card);
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  padding: 8px 0 calc(8px + env(safe-area-inset-bottom));
-  border-top: 1px solid var(--bg-sunken);
-  z-index: 50;
-}
-@media (min-width: 768px) {
-  .bottom-nav {
-    border-radius: 0 0 32px 32px;
-  }
-}
-.bottom-nav a {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 3px;
-  padding: 4px 0;
-  font-size: 11px;
-  font-weight: 500;
-  color: var(--fg-muted);
-  position: relative;
-}
+/* BOTTOM NAV */
+.bottom-nav { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 480px; background: var(--bg-card); display: grid; grid-template-columns: repeat(5, 1fr); padding: 8px 0 calc(8px + env(safe-area-inset-bottom)); border-top: 1px solid var(--bg-sunken); z-index: 50; }
+@media (min-width: 768px) { .bottom-nav { border-radius: 0 0 32px 32px; } }
+.bottom-nav a { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 4px 0; font-size: 11px; font-weight: 500; color: var(--fg-muted); position: relative; }
 .bottom-nav a.active { color: var(--fg); }
 .bottom-nav svg { width: 24px; height: 24px; }
-.bottom-nav .badge {
-  position: absolute;
-  top: 0;
-  right: 24%;
-  background: var(--red);
-  color: white;
-  font-size: 10px;
-  font-weight: 700;
-  min-width: 16px;
-  height: 16px;
-  border-radius: 8px;
-  display: grid; place-items: center;
-  padding: 0 4px;
-}
+.bottom-nav .badge { position: absolute; top: 0; right: 24%; background: var(--red); color: white; font-size: 10px; font-weight: 700; min-width: 16px; height: 16px; border-radius: 8px; display: grid; place-items: center; padding: 0 4px; }
 
-/* ============================================================
-   INNER PAGES — header с back
-   ============================================================ */
-.page-header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 16px 20px;
-}
-.page-header .back {
-  width: 40px; height: 40px;
-  border-radius: 50%;
-  background: var(--bg-card);
-  display: grid; place-items: center;
-  box-shadow: var(--shadow);
-}
+/* PAGE HEADER */
+.page-header { display: flex; align-items: center; gap: 12px; padding: 16px 20px; }
+.page-header .back { width: 40px; height: 40px; border-radius: 50%; background: var(--bg-card); display: grid; place-items: center; box-shadow: var(--shadow); }
 .page-header .back svg { width: 20px; height: 20px; }
-.page-header h1 {
-  margin: 0;
-  font-size: 22px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-}
+.page-header h1 { margin: 0; font-size: 22px; font-weight: 700; letter-spacing: -0.02em; }
 
-/* ============================================================
-   BUTTONS
-   ============================================================ */
-.btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 14px 20px;
-  border-radius: var(--radius-pill);
-  font-size: 15px;
-  font-weight: 600;
-  transition: all var(--transition);
-  white-space: nowrap;
-}
+/* BUTTONS */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 14px 20px; border-radius: var(--radius-pill); font-size: 15px; font-weight: 600; transition: all var(--transition); white-space: nowrap; }
 .btn svg { width: 18px; height: 18px; }
 .btn:active { transform: scale(0.97); }
 .btn-primary { background: var(--fg); color: var(--bg-card); }
@@ -489,159 +173,50 @@ body {
 .btn-block { width: 100%; }
 .btn-sm { padding: 8px 14px; font-size: 13px; }
 
-/* ============================================================
-   INPUTS
-   ============================================================ */
-.input, .select, .textarea {
-  width: 100%;
-  padding: 16px 18px;
-  border-radius: 16px;
-  border: none;
-  background: var(--bg-card);
-  color: var(--fg);
-  font-size: 16px;
-  transition: box-shadow var(--transition);
-}
-.input:focus, .select:focus, .textarea:focus {
-  outline: none;
-  box-shadow: 0 0 0 2px var(--green);
-}
+/* INPUTS */
+.input, .select, .textarea { width: 100%; padding: 16px 18px; border-radius: 16px; border: none; background: var(--bg-card); color: var(--fg); font-size: 16px; transition: box-shadow var(--transition); }
+.input:focus, .select:focus, .textarea:focus { outline: none; box-shadow: 0 0 0 2px var(--green); }
 .input.error { box-shadow: 0 0 0 2px var(--red); }
 .field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
 .field label { font-size: 13px; font-weight: 500; color: var(--fg-muted); padding-left: 4px; }
 .field .err { font-size: 12px; color: var(--red); padding-left: 4px; }
 
-/* ============================================================
-   CARD VISUAL (полноразмерная банковская карта)
-   ============================================================ */
-.bank-card {
-  aspect-ratio: 1.586;
-  border-radius: 20px;
-  padding: 20px;
-  color: white;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  position: relative;
-  overflow: hidden;
-  background: linear-gradient(135deg, #E63946, #C8102E);
-  box-shadow: 0 10px 30px rgba(200,16,46,.3);
-}
-.bank-card.black { background: linear-gradient(135deg, #2A2A2A, #0E0E10); box-shadow: 0 10px 30px rgba(0,0,0,.3); }
-.bank-card.green { background: linear-gradient(135deg, #B4E33D, #8CB81F); color: #1A1A1A; box-shadow: 0 10px 30px rgba(140,184,31,.35); }
-.bank-card.blue  { background: linear-gradient(135deg, #2E7CFF, #1E4FBF); box-shadow: 0 10px 30px rgba(46,124,255,.3); }
+/* BANK CARD */
+.bank-card { aspect-ratio: 1.586; border-radius: 20px; padding: 20px; color: white; display: flex; flex-direction: column; justify-content: space-between; position: relative; overflow: hidden; background: linear-gradient(135deg, #E63946, #C8102E); box-shadow: 0 10px 30px rgba(200,16,46,.3); }
+.bank-card.black { background: linear-gradient(135deg, #2A2A2A, #0E0E10); }
+.bank-card.green { background: linear-gradient(135deg, #B4E33D, #8CB81F); color: #1A1A1A; }
+.bank-card.blue  { background: linear-gradient(135deg, #2E7CFF, #1E4FBF); }
 .bank-card .bc-brand { font-size: 14px; font-weight: 800; letter-spacing: 0.06em; }
 .bank-card .bc-num { font-family: 'SF Mono', ui-monospace, monospace; font-size: 19px; letter-spacing: 0.14em; margin-top: auto; }
 .bank-card .bc-bottom { display: flex; justify-content: space-between; align-items: end; font-size: 11px; opacity: 0.85; margin-top: 10px; }
 .bank-card .bc-bottom b { display: block; font-size: 13px; font-weight: 600; letter-spacing: 0.04em; }
 
-/* ============================================================
-   TABS
-   ============================================================ */
-.tabs-scroll {
-  display: flex;
-  gap: 8px;
-  padding: 8px 16px 16px;
-  overflow-x: auto;
-  scrollbar-width: none;
-}
+/* CHIPS / TABS */
+.tabs-scroll { display: flex; gap: 8px; padding: 8px 16px 16px; overflow-x: auto; scrollbar-width: none; }
 .tabs-scroll::-webkit-scrollbar { display: none; }
-.chip {
-  padding: 8px 16px;
-  border-radius: var(--radius-pill);
-  font-size: 14px;
-  font-weight: 500;
-  background: var(--bg-card);
-  color: var(--fg-muted);
-  white-space: nowrap;
-  transition: all var(--transition);
-  flex-shrink: 0;
-}
+.chip { padding: 8px 16px; border-radius: var(--radius-pill); font-size: 14px; font-weight: 500; background: var(--bg-card); color: var(--fg-muted); white-space: nowrap; transition: all var(--transition); flex-shrink: 0; }
 .chip.active { background: var(--fg); color: var(--bg-card); font-weight: 600; }
 
-/* ============================================================
-   AUTH
-   ============================================================ */
-.auth-wrap {
-  min-height: 100vh;
-  padding: 32px 24px;
-  display: flex;
-  flex-direction: column;
-}
-.auth-logo {
-  display: flex; align-items: center; gap: 10px;
-  margin-bottom: 40px;
-}
-.auth-logo .mark {
-  width: 40px; height: 40px;
-  border-radius: 12px;
-  background: var(--fg);
-  color: var(--bg-card);
-  display: grid; place-items: center;
-  font-weight: 800;
-  font-size: 15px;
-}
+/* AUTH */
+.auth-wrap { min-height: 100vh; padding: 32px 24px; display: flex; flex-direction: column; }
+.auth-logo { display: flex; align-items: center; gap: 10px; margin-bottom: 40px; }
+.auth-logo .mark { width: 40px; height: 40px; border-radius: 12px; background: var(--fg); color: var(--bg-card); display: grid; place-items: center; font-weight: 800; font-size: 15px; }
 .auth-logo .name { font-size: 18px; font-weight: 800; letter-spacing: -0.02em; }
 .auth-wrap h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.03em; margin: 0 0 8px; }
 .auth-wrap .sub { color: var(--fg-muted); font-size: 15px; margin: 0 0 28px; }
 
-/* ============================================================
-   BADGE
-   ============================================================ */
-.badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 4px 10px;
-  border-radius: var(--radius-pill);
-  font-size: 12px;
-  font-weight: 600;
-  background: var(--bg-sunken);
-  color: var(--fg-muted);
-}
+/* BADGE */
+.badge { display: inline-flex; align-items: center; padding: 4px 10px; border-radius: var(--radius-pill); font-size: 12px; font-weight: 600; background: var(--bg-sunken); color: var(--fg-muted); }
 .badge.success { background: #E0F5B8; color: #4B7A00; }
 .badge.danger { background: #FFE0DF; color: #C8102E; }
-.badge.green { background: var(--green); color: var(--green-fg); }
 
-/* ============================================================
-   TOAST
-   ============================================================ */
-.toast-wrap {
-  position: fixed;
-  bottom: 100px;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  z-index: 200;
-  width: calc(100% - 32px);
-  max-width: 448px;
-  pointer-events: none;
-}
-.toast {
-  background: var(--fg);
-  color: var(--bg-card);
-  padding: 14px 18px;
-  border-radius: 16px;
-  font-size: 14px;
-  font-weight: 500;
-  box-shadow: var(--shadow-md);
-  animation: toastIn 240ms cubic-bezier(0.2, 0.8, 0.2, 1);
-  pointer-events: auto;
-}
-@keyframes toastIn {
-  from { opacity: 0; transform: translateY(12px); }
-  to { opacity: 1; transform: translateY(0); }
-}
+/* TOAST */
+.toast-wrap { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; gap: 8px; z-index: 200; width: calc(100% - 32px); max-width: 448px; pointer-events: none; }
+.toast { background: var(--fg); color: var(--bg-card); padding: 14px 18px; border-radius: 16px; font-size: 14px; font-weight: 500; box-shadow: var(--shadow-md); animation: toastIn 240ms cubic-bezier(0.2, 0.8, 0.2, 1); pointer-events: auto; }
+@keyframes toastIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
 
-/* ============================================================
-   UTILS
-   ============================================================ */
-.empty {
-  padding: 40px 20px;
-  text-align: center;
-  color: var(--fg-muted);
-}
+/* UTILS */
+.empty { padding: 40px 20px; text-align: center; color: var(--fg-muted); }
 .empty h3 { margin: 0 0 6px; color: var(--fg); font-size: 16px; font-weight: 600; }
 .empty p { margin: 0 0 16px; font-size: 14px; }
 .row { display: flex; align-items: center; gap: 10px; }
@@ -651,10 +226,7 @@ body {
 .mono { font-family: 'SF Mono', ui-monospace, monospace; }
 .text-c { text-align: center; }
 .page-anim { animation: pageIn 240ms cubic-bezier(0.2, 0.8, 0.2, 1); }
-@keyframes pageIn {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
-}
+@keyframes pageIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 </style>
 </head>
 <body>
@@ -664,20 +236,14 @@ body {
 
 <script>
 /* ==================================================================
- * ASD BANK — Мобильный SPA в стиле Тинькофф / Альфа-Банк
- * Архитектура разделена по секциям (см. комментарии)
+ * ASD BANK — Mobile SPA
  * ================================================================== */
 
-/* ===================== APP CONFIG ===================== */
 const CONFIG = {
   APP_NAME: 'ASD BANK',
-  DEMO_MODE: true,
-  CURRENCY: 'EUR',
-  CURRENCIES: ['EUR','USD','GBP','RUB'],
-  DEMO_PILL: '18 000 ₽', // декоративный pill как на скрине
+  CURRENCY: 'RUB',
 };
 
-/* ===================== STATE ===================== */
 const State = {
   user: null,
   settings: { theme: 'light', language: 'ru' },
@@ -686,12 +252,9 @@ const State = {
   emit() { this.listeners.forEach(fn => fn(this)); },
 };
 
-/* ===================== DB (in-memory + localStorage) ===================== */
+/* ===================== DB ===================== */
 const DB = (() => {
-  const data = {
-    users: [], accounts: [], cards: [], transactions: [],
-    notifications: [], sessions: [], audit_logs: [],
-  };
+  const data = { users: [], accounts: [], cards: [], transactions: [], notifications: [], sessions: [], audit_logs: [] };
   let nextId = { users: 10000, accounts: 20000, cards: 30000, transactions: 40000, notifications: 50000 };
   const id = t => ++nextId[t];
   const insert = (t, row) => { row.id = id(t); data[t].push(row); return row; };
@@ -706,11 +269,11 @@ async function seed() {
   if (DB.data.users.length > 0) return;
   const pwd = async (p) => await Hash.sha256(p + ':asd-salt');
   const users = [
-    { asd_id: 'ASD-10000001', first_name: 'Александр', last_name: 'Морозов', email: 'alice@asd.local',   phone: '+37250000001', password_hash: await pwd('Demo123!'), role: 'USER', status: 'active' },
-    { asd_id: 'ASD-10000002', first_name: 'Борис',     last_name: 'Иванов',  email: 'bob@asd.local',     phone: '+37250000002', password_hash: await pwd('Demo123!'), role: 'USER', status: 'active' },
-    { asd_id: 'ASD-10000003', first_name: 'Чарли',     last_name: 'Смит',    email: 'charlie@asd.local', phone: '+37250000003', password_hash: await pwd('Demo123!'), role: 'USER', status: 'active' },
-    { asd_id: 'ASD-10000004', first_name: 'Морф',      last_name: 'Пользователь', email: 'demo@asd.local', phone: '+37250000004', password_hash: await pwd('Demo123!'), role: 'USER', status: 'active' },
-    { asd_id: 'ASD-10000099', first_name: 'Admin',     last_name: 'Root',    email: 'admin@asd.local',   phone: '+37250000099', password_hash: await pwd('Admin123!'), role: 'SUPER_ADMIN', status: 'active' },
+    { asd_id: 'ASD-10000001', first_name: 'Александр', last_name: 'Морозов', email: 'alex@asd.ru', phone: '+79001112233', password_hash: await pwd('Demo123!'), role: 'USER', status: 'active' },
+    { asd_id: 'ASD-10000002', first_name: 'Борис', last_name: 'Иванов', email: 'boris@asd.ru', phone: '+79001112244', password_hash: await pwd('Demo123!'), role: 'USER', status: 'active' },
+    { asd_id: 'ASD-10000003', first_name: 'Чарли', last_name: 'Смит', email: 'charlie@asd.ru', phone: '+79001112255', password_hash: await pwd('Demo123!'), role: 'USER', status: 'active' },
+    { asd_id: 'ASD-10000004', first_name: 'Морф', last_name: 'Пользователь', email: 'demo@asd.ru', phone: '+79001112266', password_hash: await pwd('Demo123!'), role: 'USER', status: 'active' },
+    { asd_id: 'ASD-10000099', first_name: 'Admin', last_name: 'Root', email: 'admin@asd.ru', phone: '+79001112299', password_hash: await pwd('Admin123!'), role: 'SUPER_ADMIN', status: 'active' },
   ];
   for (const u of users) {
     u.created_at = Date.now() - 30 * 86400000;
@@ -718,52 +281,46 @@ async function seed() {
     const user = DB.insert('users', u);
     DB.insert('accounts', {
       user_id: user.id,
-      account_number: 'EE' + String(10000000000000000000n + BigInt(user.id)).slice(0, 18),
-      currency: 'EUR', kind: 'main', balance: 0, available_balance: 0, status: 'active',
+      account_number: '40817810099' + String(1000000000 + user.id),
+      currency: 'RUB', kind: 'main', balance: 0, available_balance: 0, status: 'active',
       created_at: Date.now(), updated_at: Date.now(),
     });
   }
-  const init = [
-    ['ASD-10000001', 5000], ['ASD-10000002', 1200],
-    ['ASD-10000003', 850], ['ASD-10000004', 1692.53],
-  ];
+  const init = [['ASD-10000001', 125400.50], ['ASD-10000002', 42300], ['ASD-10000003', 18700.25], ['ASD-10000004', 84520.10]];
   for (const [asdId, amount] of init) {
     const u = DB.data.users.find(x => x.asd_id === asdId);
     const acc = DB.data.accounts.find(a => a.user_id === u.id);
     acc.balance = amount; acc.available_balance = amount;
   }
-  // Карта для Морфа (демо)
-  const demo = DB.data.users.find(u => u.email === 'demo@asd.local');
+  const demo = DB.data.users.find(u => u.email === 'demo@asd.ru');
   const demoAcc = DB.data.accounts.find(a => a.user_id === demo.id);
   DB.insert('cards', {
-    user_id: demo.id, account_id: demoAcc.id,
-    pan_last4: '4383', exp_month: 12, exp_year: 29,
-    brand: 'ASD', kind: 'virtual', status: 'active',
-    daily_limit: 1000, color: 'red', holder: 'MORF USER',
-    created_at: Date.now(),
+    user_id: demo.id, account_id: demoAcc.id, pan_last4: '4383',
+    exp_month: 12, exp_year: 29, brand: 'ASD', kind: 'debit', status: 'active',
+    daily_limit: 150000, color: 'red', holder: 'MORF USER', created_at: Date.now(),
   });
-  // История для Морфа
   const sampleTx = [
-    { type: 'payment', direction: 'out', amount: 289.90, description: 'Супермаркет', category: 'food', days: 1 },
-    { type: 'transfer', direction: 'out', amount: 500, description: 'Перевод Александру', counterparty: DB.data.users[0].id, days: 2 },
-    { type: 'deposit', direction: 'in', amount: 1500, description: 'Зарплата', days: 3 },
-    { type: 'payment', direction: 'out', amount: 65, description: 'Такси', category: 'transport', days: 4 },
-    { type: 'payment', direction: 'out', amount: 299, description: 'Подписка', category: 'subs', days: 6 },
-    { type: 'transfer', direction: 'in', amount: 1000, description: 'Перевод от Бориса', counterparty: DB.data.users[1].id, days: 8 },
+    { type: 'payment', direction: 'out', amount: 2890.90, description: 'Супермаркет «Пятёрочка»', category: 'food', days: 1 },
+    { type: 'transfer', direction: 'out', amount: 15000, description: 'Перевод Александру', counterparty: DB.data.users[0].id, days: 2 },
+    { type: 'deposit', direction: 'in', amount: 85000, description: 'Зарплата', days: 3 },
+    { type: 'payment', direction: 'out', amount: 650, description: 'Яндекс.Такси', category: 'transport', days: 4 },
+    { type: 'payment', direction: 'out', amount: 2990, description: 'Иви', category: 'subs', days: 6 },
+    { type: 'transfer', direction: 'in', amount: 30000, description: 'Перевод от Бориса', counterparty: DB.data.users[1].id, days: 8 },
+    { type: 'payment', direction: 'out', amount: 8900, description: 'Спортмастер', category: 'shopping', days: 10 },
+    { type: 'payment', direction: 'out', amount: 4520, description: 'Ресторан «Пушкин»', category: 'fun', days: 12 },
   ];
   for (const tx of sampleTx) {
     const d = Date.now() - tx.days * 86400000;
     DB.insert('transactions', {
       ref: genRef(), user_id: demo.id, account_id: demoAcc.id,
-      type: tx.type, direction: tx.direction, amount: tx.amount, currency: 'EUR',
+      type: tx.type, direction: tx.direction, amount: tx.amount, currency: 'RUB',
       status: 'completed', description: tx.description,
       counterparty: tx.counterparty || null, category: tx.category || null,
       created_at: d, completed_at: d,
     });
   }
-  // Уведомления
-  DB.insert('notifications', { user_id: demo.id, category: 'transfer', title: 'Вам поступили деньги', body: '+1 000,00 € от Бориса', is_read: false, created_at: Date.now() - 3600000 });
-  DB.insert('notifications', { user_id: demo.id, category: 'card', title: 'Карта выпущена', body: 'Виртуальная карта •••• 4383', is_read: false, created_at: Date.now() - 7200000 });
+  DB.insert('notifications', { user_id: demo.id, category: 'transfer', title: 'Вам поступили деньги', body: '+30 000 ₽ от Бориса', is_read: false, created_at: Date.now() - 3600000 });
+  DB.insert('notifications', { user_id: demo.id, category: 'card', title: 'Карта выпущена', body: 'Дебетовая карта •••• 4383', is_read: false, created_at: Date.now() - 7200000 });
   DB.insert('notifications', { user_id: demo.id, category: 'security', title: 'Новый вход', body: 'iOS · Safari', is_read: true, created_at: Date.now() - 86400000 });
 }
 
@@ -813,7 +370,7 @@ function toast(msg) {
   }, 2800);
 }
 
-/* ===================== API (mock) ===================== */
+/* ===================== API ===================== */
 const API = {
   async login(login, password) {
     await sleep(300);
@@ -837,8 +394,8 @@ const API = {
     });
     DB.insert('accounts', {
       user_id: u.id,
-      account_number: 'EE' + String(20000000000000000000n + BigInt(u.id)).slice(0, 18),
-      currency: 'EUR', kind: 'main', balance: 100, available_balance: 100, status: 'active',
+      account_number: '40817810099' + String(2000000000 + u.id),
+      currency: 'RUB', kind: 'main', balance: 0, available_balance: 0, status: 'active',
       created_at: Date.now(), updated_at: Date.now(),
     });
     notify(u.id, 'system', 'Добро пожаловать в ASD BANK', 'Ваш ASD ID: ' + asdId);
@@ -895,9 +452,12 @@ const API = {
 };
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
-/* ===================== FORMATTING ===================== */
-function fmt(a, c = 'EUR') {
-  return new Intl.NumberFormat('ru-RU', { style: 'currency', currency: c, minimumFractionDigits: 2 }).format(a);
+/* ===================== FORMAT ===================== */
+function fmt(a, c = 'RUB') {
+  return new Intl.NumberFormat('ru-RU', { style: 'currency', currency: c, minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(a).replace('RUB','₽').replace(/\s/g,' ');
+}
+function fmtNum(a) {
+  return new Intl.NumberFormat('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(a);
 }
 function fmtDate(ts, withTime = false) {
   const d = new Date(ts);
@@ -987,17 +547,6 @@ const Icons = {
 
 /* ===================== UI HELPERS ===================== */
 const UI = {
-  btn(label, { variant='primary', icon='', href='', action='', size='', block=false, disabled=false, id='' } = {}) {
-    const cls = ['btn', `btn-${variant}`, size && `btn-${size}`, block && 'btn-block'].filter(Boolean).join(' ');
-    const attrs = [
-      `class="${cls}"`,
-      id ? `id="${id}"` : '',
-      disabled ? 'disabled' : '',
-      href ? `data-link href="${href}"` : 'type="button"',
-      action ? `data-action="${action}"` : '',
-    ].filter(Boolean).join(' ');
-    return `<${href ? 'a' : 'button'} ${attrs}>${icon}${label ? `<span>${label}</span>` : ''}</${href ? 'a' : 'button'}>`;
-  },
   txRow(tx) {
     const isIn = tx.direction === 'in';
     const cp = tx.counterparty ? DB.byId('users', tx.counterparty) : null;
@@ -1041,7 +590,7 @@ function BottomNav() {
     </nav>`;
 }
 
-/* ===================== TOP BAR ===================== */
+/* ===================== TOPBAR ===================== */
 function TopBar() {
   const u = State.user;
   const total = DB.byUser('accounts', u.id).reduce((s,a) => s + a.balance, 0);
@@ -1049,7 +598,7 @@ function TopBar() {
     <div class="topbar">
       <div class="avatar-circle">${Icons.user}</div>
       <a href="/profile" data-link class="name">${escapeHtml(u.first_name)} ${Icons.chevronRight}</a>
-      <div class="balance-pill">${fmt(total, 'RUB').replace('RUB','₽')}</div>
+      <div class="balance-pill">${fmt(total)}</div>
     </div>`;
 }
 
@@ -1061,7 +610,6 @@ function render(html, opts = {}) {
 
 /* ===================== PAGES ===================== */
 
-/* ---------- HOME ---------- */
 async function PageHome() {
   const u = State.user;
   const accounts = await API.accounts(u.id);
@@ -1077,14 +625,14 @@ async function PageHome() {
       <div class="balance-card">
         <div>
           <div class="label">Текущий счёт</div>
-          <div class="amount">${fmt(acc.balance).replace('€','')}<small> €</small></div>
+          <div class="amount">${fmtNum(acc.balance)}<small> ₽</small></div>
         </div>
         ${card ? `
           <a href="/cards/${card.id}" data-link>
             <div class="card-mini" style="background:linear-gradient(135deg,#E63946,#C8102E)">
               <div class="brand">ASD</div>
               <div class="last4">${card.pan_last4}</div>
-              <div class="mir">MIR</div>
+              <div class="mir">МИР</div>
             </div>
           </a>` : ''}
       </div>
@@ -1109,7 +657,7 @@ async function PageHome() {
         <input placeholder="Поиск" readonly onclick="location.href='/search'" />
       </div>
       <button class="circle-btn" onclick="location.href='/qr'">${Icons.qr}</button>
-      <button class="circle-btn" onclick="toast('Голосовой поиск в разработке')">${Icons.voice}</button>
+      <button class="circle-btn" onclick="toast('Голосовой поиск')">${Icons.voice}</button>
     </div>
 
     <div class="sec-head">
@@ -1173,7 +721,6 @@ async function PageHome() {
   render(html);
 }
 
-/* ---------- ACCOUNTS ---------- */
 async function PageAccounts() {
   const accs = await API.accounts(State.user.id);
   const html = `
@@ -1218,7 +765,7 @@ async function PageAccountDetail({ id }) {
         </div>
         <div class="mono muted" style="font-size:13px">${a.account_number}</div>
         <div class="row" style="gap:8px;width:100%">
-          <button class="btn btn-secondary btn-sm" data-action="copy" data-value="${a.account_number}">${Icons.copy} Копировать IBAN</button>
+          <button class="btn btn-secondary btn-sm" data-action="copy" data-value="${a.account_number}">${Icons.copy} Копировать</button>
           <a class="btn btn-primary btn-sm" href="/transfers?from=${a.id}" data-link>${Icons.send} Перевести</a>
         </div>
       </div>
@@ -1232,7 +779,6 @@ async function PageAccountDetail({ id }) {
   render(html);
 }
 
-/* ---------- CARDS ---------- */
 async function PageCards() {
   const cards = await API.cards(State.user.id);
   const html = `
@@ -1244,7 +790,7 @@ async function PageCards() {
       ${cards.length === 0 ? `
         <div class="empty">
           <h3>У вас пока нет карт</h3>
-          <p>Откройте виртуальную карту за 10 секунд</p>
+          <p>Откройте карту за 10 секунд</p>
           <button class="btn btn-primary" data-action="create-card">${Icons.plus} Создать карту</button>
         </div>
       ` : cards.map(c => `
@@ -1296,7 +842,6 @@ async function PageCardDetail({ id }) {
   render(html);
 }
 
-/* ---------- TRANSFERS ---------- */
 async function PageTransfers(query) {
   const accounts = await API.accounts(State.user.id);
   const fromId = query.from ? +query.from : accounts[0].id;
@@ -1327,10 +872,10 @@ async function PageTransfers(query) {
             ${accounts.map(a => `<option value="${a.id}" ${a.id === fromId ? 'selected' : ''}>${a.kind === 'main' ? 'Основной' : a.kind} · ${fmt(a.available_balance)}</option>`).join('')}
           </select>
         </div>
-        <button class="btn btn-primary btn-block" type="submit">Продолжить</button>
+        <button class="btn btn-green btn-block" type="submit">Продолжить</button>
       </form>
     </div>
-    <div class="sec-head"><h3>Быстрые получатели</h3></div>
+    <div class="sec-head"><h3>Получатели</h3></div>
     <div class="list-card">
       ${DB.data.users.filter(x => x.id !== State.user.id).map(u => `
         <div class="list-row">
@@ -1374,7 +919,7 @@ function attachTransferForm() {
     if (!b) return;
     selected = DB.byId('users', +b.dataset.pick);
     search.value = `${selected.first_name} ${selected.last_name}`;
-    result.innerHTML = `<div class="mt-8" style="font-size:13px;color:var(--green-fg);background:#E0F5B8;padding:8px 12px;border-radius:12px"><b>${escapeHtml(selected.first_name)}</b> · ${selected.asd_id}</div>`;
+    result.innerHTML = `<div class="mt-8" style="font-size:13px;background:#E0F5B8;padding:8px 12px;border-radius:12px"><b>${escapeHtml(selected.first_name)}</b> · ${selected.asd_id}</div>`;
   });
 
   form.addEventListener('submit', e => {
@@ -1414,7 +959,7 @@ async function PageTransferConfirmation() {
         <div class="row between"><span class="muted">Получатель</span><b>${escapeHtml(t.recipient.name)}</b></div>
         <div class="row between"><span class="muted">ASD ID</span><span class="mono">${t.recipient.asd_id}</span></div>
         <div class="row between"><span class="muted">Счёт списания</span><span class="mono">${t.account.number}</span></div>
-        <div class="row between"><span class="muted">Комиссия</span><b>0,00 €</b></div>
+        <div class="row between"><span class="muted">Комиссия</span><b>0 ₽</b></div>
         ${t.description ? `<div class="row between"><span class="muted">Комментарий</span><span>${escapeHtml(t.description)}</span></div>` : ''}
       </div>
     </div>
@@ -1456,21 +1001,20 @@ async function PageTransferSuccess() {
     </div>
     <div class="section">
       <div class="balance-card" style="flex-direction:column;align-items:stretch;gap:10px">
-        <div class="row between"><span class="muted">Transaction ID</span><span class="mono" style="font-size:12px">${tx.ref}</span></div>
+        <div class="row between"><span class="muted">ID</span><span class="mono" style="font-size:12px">${tx.ref}</span></div>
         <div class="row between"><span class="muted">Статус</span><span class="badge success">Выполнено</span></div>
         <div class="row between"><span class="muted">Дата</span><span>${fmtDate(tx.created_at, true)}</span></div>
       </div>
     </div>
     <div class="section mt-16" style="display:flex;gap:8px">
       <a class="btn btn-secondary" style="flex:1" href="/transactions/${tx.id}" data-link>Детали</a>
-      <a class="btn btn-primary" style="flex:1" href="/" data-link>Готово</a>
+      <a class="btn btn-green" style="flex:1" href="/" data-link>Готово</a>
     </div>
     ${BottomNav()}
   `;
   render(html);
 }
 
-/* ---------- TRANSACTIONS ---------- */
 async function PageTransactions(query) {
   const all = await API.transactions(State.user.id);
   const filter = query.filter || 'all';
@@ -1559,7 +1103,6 @@ async function PageReceipt({ id }) {
   render(html);
 }
 
-/* ---------- PAYMENTS ---------- */
 async function PagePayments() {
   const items = [
     { id: 'phone', name: 'Мобильная связь', icon: Icons.phone, color: 'green' },
@@ -1598,13 +1141,13 @@ async function PagePaymentCategory({ id }) {
     </div>
     <div class="section">
       <form id="payment-form" style="display:flex;flex-direction:column;gap:12px">
-        <div class="field"><label>Провайдер</label><input class="input" name="provider" required placeholder="Например: Elisa" /></div>
+        <div class="field"><label>Провайдер</label><input class="input" name="provider" required placeholder="Название" /></div>
         <div class="field"><label>Номер договора / телефон</label><input class="input" name="ref" required /></div>
         <div class="field"><label>Сумма</label><input class="input" name="amount" type="number" step="0.01" min="0.01" required /></div>
         <div class="field"><label>Со счёта</label>
           <select class="select" name="acc">${accounts.map(a => `<option value="${a.id}">${a.kind} · ${fmt(a.available_balance)}</option>`).join('')}</select>
         </div>
-        <button class="btn btn-primary btn-block" type="submit">Оплатить</button>
+        <button class="btn btn-green btn-block" type="submit">Оплатить</button>
       </form>
     </div>
     ${BottomNav()}
@@ -1629,7 +1172,6 @@ async function PagePaymentCategory({ id }) {
   });
 }
 
-/* ---------- DEPOSIT ---------- */
 async function PageDeposit() {
   const accounts = await API.accounts(State.user.id);
   const html = `
@@ -1669,7 +1211,6 @@ async function PageDeposit() {
   });
 }
 
-/* ---------- RECEIVE / QR ---------- */
 async function PageReceive() {
   const u = State.user;
   const html = `
@@ -1710,7 +1251,7 @@ async function PageQR() {
       <div class="balance-card" style="flex-direction:column;gap:16px;padding:24px">
         <div style="background:white;padding:16px;border-radius:20px;display:inline-block">${qrSvg('asd:' + u.asd_id)}</div>
         <div class="muted">Отсканируйте, чтобы перевести</div>
-        <a class="btn btn-primary btn-block" href="/transfers" data-link>Перевести по QR вручную</a>
+        <a class="btn btn-green btn-block" href="/transfers" data-link>Перевести по QR вручную</a>
       </div>
     </div>
     ${BottomNav()}
@@ -1735,7 +1276,6 @@ function qrSvg(seed) {
   return `<svg width="${size*cell}" height="${size*cell}" viewBox="0 0 ${size*cell} ${size*cell}">${cells}</svg>`;
 }
 
-/* ---------- NOTIFICATIONS ---------- */
 async function PageNotifications() {
   const list = await API.notifications(State.user.id);
   const html = `
@@ -1760,7 +1300,6 @@ async function PageNotifications() {
   render(html);
 }
 
-/* ---------- PROFILE ---------- */
 async function PageProfile() {
   const u = State.user;
   const accounts = await API.accounts(u.id);
@@ -1809,7 +1348,7 @@ async function PageProfileEdit() {
         <div class="field"><label>Фамилия</label><input class="input" name="last_name" value="${escapeHtml(u.last_name)}" required /></div>
         <div class="field"><label>Email</label><input class="input" name="email" type="email" value="${escapeHtml(u.email)}" required /></div>
         <div class="field"><label>Телефон</label><input class="input" name="phone" value="${escapeHtml(u.phone)}" required /></div>
-        <button class="btn btn-primary btn-block" type="submit">Сохранить</button>
+        <button class="btn btn-green btn-block" type="submit">Сохранить</button>
       </form>
     </div>
     ${BottomNav()}
@@ -1828,7 +1367,6 @@ async function PageProfileEdit() {
   });
 }
 
-/* ---------- SETTINGS ---------- */
 async function PageSettings() {
   const sections = [
     { href: '/settings/security', title: 'Безопасность', desc: 'Пароль, 2FA, сессии' },
@@ -1871,7 +1409,7 @@ async function PageSettingsSecurity() {
         <div class="field"><label>Текущий пароль</label><input class="input" type="password" name="current" required /></div>
         <div class="field"><label>Новый пароль</label><input class="input" type="password" name="new" required /></div>
         <div class="field"><label>Повторите</label><input class="input" type="password" name="confirm" required /></div>
-        <button class="btn btn-primary btn-block" type="submit">Сменить пароль</button>
+        <button class="btn btn-green btn-block" type="submit">Сменить пароль</button>
       </form>
     </div>
     <div class="section mt-16">
@@ -1891,7 +1429,7 @@ async function PageSettingsSecurity() {
     if (fd.get('new') !== fd.get('confirm')) { toast('Пароли не совпадают'); return; }
     if (fd.get('new').length < 8) { toast('Пароль слишком короткий'); return; }
     DB.update('users', State.user.id, { password_hash: await Hash.sha256(fd.get('new') + ':asd-salt') });
-    notify(State.user.id, 'security', 'Пароль изменён', 'Если это не вы — обратитесь в поддержку');
+    notify(State.user.id, 'security', 'Пароль изменён', '');
     toast('Пароль изменён');
     Router.navigate('/settings');
   });
@@ -1909,7 +1447,7 @@ async function PageSettingsPrivacy() {
         <div class="row between"><span>Email в поиске</span><input type="checkbox" checked /></div>
         <div class="row between"><span>Телефон в поиске</span><input type="checkbox" /></div>
       </div>
-      <button class="btn btn-primary btn-block mt-16" data-action="save-privacy">Сохранить</button>
+      <button class="btn btn-green btn-block mt-16" data-action="save-privacy">Сохранить</button>
     </div>
     ${BottomNav()}
   `;
@@ -1927,7 +1465,7 @@ async function PageSettingsNotifications() {
         <div class="row between"><span>Email</span><input type="checkbox" checked /></div>
         <div class="row between"><span>SMS</span><input type="checkbox" /></div>
       </div>
-      <button class="btn btn-primary btn-block mt-16" data-action="save-notifications">Сохранить</button>
+      <button class="btn btn-green btn-block mt-16" data-action="save-notifications">Сохранить</button>
     </div>
     ${BottomNav()}
   `;
@@ -1953,7 +1491,7 @@ async function PageSettingsAppearance() {
 async function PageSettingsLimits() {
   const u = State.user;
   const spent = DB.byUser('transactions', u.id).filter(t => t.direction === 'out' && t.created_at > Date.now() - 86400000).reduce((s,t) => s + t.amount, 0);
-  const limit = 5000;
+  const limit = 150000;
   const pct = Math.min(100, (spent / limit) * 100);
   const html = `
     <div class="page-header">
@@ -1991,13 +1529,13 @@ async function PageSettingsDevices() {
   render(html);
 }
 
-/* ---------- ANALYTICS ---------- */
 async function PageAnalytics() {
   const txs = await API.transactions(State.user.id);
   const out = txs.filter(t => t.direction === 'out');
   const total = out.reduce((s,t) => s + t.amount, 0) || 1;
   const byCat = {};
   out.forEach(t => { const k = t.category || 'other'; byCat[k] = (byCat[k] || 0) + t.amount; });
+  const names = { food: 'Продукты', transport: 'Транспорт', fun: 'Развлечения', shopping: 'Покупки', subs: 'Подписки', other: 'Другое' };
   const html = `
     <div class="page-header">
       <h1>Аналитика</h1>
@@ -2028,7 +1566,7 @@ async function PageAnalytics() {
     <div class="list-card">
       ${Object.entries(byCat).length === 0 ? `<div class="empty">Нет данных</div>` : Object.entries(byCat).map(([k,v]) => `
         <div class="list-row">
-          <div class="tx-meta"><p class="tx-title">${k}</p><p class="tx-sub">${((v/total)*100).toFixed(0)}% от расходов</p></div>
+          <div class="tx-meta"><p class="tx-title">${names[k] || k}</p><p class="tx-sub">${((v/total)*100).toFixed(0)}% от расходов</p></div>
           <div class="tx-amount">${fmt(v)}</div>
         </div>
       `).join('')}
@@ -2038,7 +1576,6 @@ async function PageAnalytics() {
   render(html);
 }
 
-/* ---------- SEARCH ---------- */
 async function PageSearch(query) {
   const q = query.q || '';
   let users = [], txs = [];
@@ -2080,7 +1617,6 @@ async function PageSearch(query) {
   }
 }
 
-/* ---------- SUPPORT / HELP ---------- */
 async function PageSupport() {
   const html = `
     <div class="page-header">
@@ -2103,7 +1639,6 @@ async function PageSupport() {
   render(html);
 }
 
-/* ---------- ADMIN ---------- */
 async function PageAdmin() {
   if (!['ADMIN','SUPER_ADMIN'].includes(State.user.role)) return render403();
   const html = `
@@ -2187,7 +1722,6 @@ async function PageAdminSecurity() {
   render(html);
 }
 
-/* ---------- AUTH ---------- */
 async function PageLogin() {
   const html = `
     <div class="auth-wrap">
@@ -2203,11 +1737,6 @@ async function PageLogin() {
           <a class="muted" href="/register" data-link>Создать аккаунт</a>
         </div>
       </form>
-      <div class="balance-card mt-20" style="flex-direction:column;align-items:flex-start;gap:6px;font-size:13px">
-        <div><b>DEMO</b></div>
-        <div class="muted">demo@asd.local · Demo123!</div>
-        <div class="muted">admin@asd.local · Admin123!</div>
-      </div>
     </div>`;
   render(html, { noScroll: true });
   document.getElementById('login-form').addEventListener('submit', async e => {
@@ -2239,7 +1768,7 @@ async function PageRegister() {
         <div class="field"><label>Имя</label><input class="input" name="first_name" required /></div>
         <div class="field"><label>Фамилия</label><input class="input" name="last_name" required /></div>
         <div class="field"><label>Email</label><input class="input" name="email" type="email" required /></div>
-        <div class="field"><label>Телефон</label><input class="input" name="phone" required placeholder="+372..." /></div>
+        <div class="field"><label>Телефон</label><input class="input" name="phone" required placeholder="+7..." /></div>
         <div class="field"><label>Пароль</label><input class="input" name="password" type="password" required /></div>
         <button class="btn btn-green btn-block" type="submit" id="reg-btn">Создать аккаунт</button>
         <div class="text-c mt-8" style="font-size:13px">
@@ -2282,12 +1811,11 @@ async function PageForgot() {
   render(html, { noScroll: true });
   document.getElementById('f-form').addEventListener('submit', e => {
     e.preventDefault();
-    toast('Ссылка отправлена (demo)');
+    toast('Ссылка отправлена');
     Router.navigate('/login');
   });
 }
 
-/* ---------- ERRORS ---------- */
 function render404() {
   render(`
     <div class="auth-wrap text-c" style="justify-content:center">
@@ -2307,7 +1835,6 @@ function render403() {
     </div>`);
 }
 
-/* ===================== GLOBAL ACTIONS ===================== */
 document.addEventListener('click', e => {
   const el = e.target.closest('[data-action]');
   if (!el) return;
@@ -2323,7 +1850,7 @@ document.addEventListener('click', e => {
     DB.insert('cards', {
       user_id: State.user.id, account_id: acc.id,
       pan_last4: last4, exp_month: 12, exp_year: new Date().getFullYear() + 4,
-      brand: 'ASD', kind: 'virtual', status: 'active', daily_limit: 1000,
+      brand: 'ASD', kind: 'debit', status: 'active', daily_limit: 150000,
       color: ['red','black','green','blue'][Math.floor(Math.random()*4)],
       holder: (State.user.first_name + ' ' + State.user.last_name).toUpperCase(),
       created_at: Date.now(),
@@ -2332,9 +1859,7 @@ document.addEventListener('click', e => {
     toast('Карта выпущена');
     PageCards();
   }
-  if (a === 'reveal-card') {
-    toast('В production здесь потребуется биометрия');
-  }
+  if (a === 'reveal-card') toast('Требуется подтверждение');
   if (a === 'toggle-card') {
     const c = DB.byId('cards', +el.dataset.id);
     c.status = c.status === 'active' ? 'locked' : 'active';
@@ -2342,12 +1867,12 @@ document.addEventListener('click', e => {
     toast(c.status === 'locked' ? 'Карта заблокирована' : 'Карта разблокирована');
     PageCardDetail({ id: c.id });
   }
-  if (a === 'reissue-card') { toast('Перевыпуск запрошен (demo)'); }
+  if (a === 'reissue-card') toast('Перевыпуск запрошен');
   if (a === 'open-account') {
     DB.insert('accounts', {
       user_id: State.user.id,
-      account_number: 'EE' + String(30000000000000000000n + BigInt(DB.data.accounts.length)).slice(0, 18),
-      currency: 'EUR', kind: 'savings', balance: 0, available_balance: 0, status: 'active',
+      account_number: '40817810099' + String(3000000000 + DB.data.accounts.length),
+      currency: 'RUB', kind: 'savings', balance: 0, available_balance: 0, status: 'active',
       created_at: Date.now(), updated_at: Date.now(),
     });
     toast('Счёт открыт');
@@ -2373,10 +1898,9 @@ document.addEventListener('click', e => {
     PageSettingsAppearance();
   }
   if (a === 'save-privacy' || a === 'save-notifications') toast('Сохранено');
-  if (a === 'start-chat') toast('Чат откроется после подключения backend');
+  if (a === 'start-chat') toast('Чат откроется после подключения');
 });
 
-/* ===================== ROUTES ===================== */
 function buildRoutes() {
   Router.on('/',                     PageHome,                { auth: true });
   Router.on('/accounts',             PageAccounts,            { auth: true });
@@ -2417,7 +1941,6 @@ function buildRoutes() {
   Router.setNotFound(() => render404());
 }
 
-/* ===================== BOOTSTRAP ===================== */
 (async () => {
   await seed();
   const uid = localStorage.getItem('asd_uid');
