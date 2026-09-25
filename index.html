@@ -2,75 +2,73 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="mobile-web-app-capable" content="yes">
-<title>MMA 3D — Mobile</title>
+<title>MMA 3D — Realistic</title>
 <style>
-  * { -webkit-tap-highlight-color: transparent; user-select: none; }
-  html, body { margin:0; padding:0; overflow:hidden; background:#111; font-family:Arial; color:#fff;
-               touch-action:none; height:100%; width:100%; position:fixed; }
-  canvas { display:block; }
+  * { -webkit-tap-highlight-color: transparent; user-select: none; box-sizing: border-box; }
+  html, body { margin:0; padding:0; overflow:hidden; background:#000; font-family:'Arial Black',Arial,sans-serif;
+               color:#fff; touch-action:none; height:100%; position:fixed; }
 
-  #hud { position:fixed; top:8px; left:0; width:100%; pointer-events:none; z-index:10; }
-  .bar { position:absolute; width:38%; height:16px; background:#222; border:2px solid #555; border-radius:4px; }
-  .fill { height:100%; transition:width 0.15s; border-radius:2px; }
-  #p1bar { left:2%; top:0; }
-  #p1fill { background:linear-gradient(90deg,#0f0,#8f8); width:100%; }
-  #p2bar { right:2%; top:0; }
-  #p2fill { background:linear-gradient(90deg,#f88,#f00); width:100%; float:right; }
-  .stam { position:absolute; width:38%; height:6px; background:#222; border:1px solid #444; top:22px; border-radius:3px; }
-  #p1stam { left:2%; }
-  #p2stam { right:2%; }
-  .sfill { height:100%; background:#fc0; width:100%; transition:width 0.1s; border-radius:3px; }
+  #hud { position:fixed; top:0; left:0; width:100%; padding:10px 4%; pointer-events:none; z-index:10;
+         display:flex; justify-content:space-between; gap:2%; }
+  .fighter-info { width:48%; }
+  .name-row { display:flex; justify-content:space-between; font-size:13px; letter-spacing:1px;
+              text-transform:uppercase; margin-bottom:3px; text-shadow:0 2px 4px #000; }
+  .bar { position:relative; width:100%; height:18px; background:#1a1a1a; border:2px solid #333;
+         border-radius:3px; overflow:hidden; box-shadow:0 2px 8px rgba(0,0,0,0.6); }
+  .fill { height:100%; transition:width 0.4s ease-out; border-radius:2px; }
+  #p1fill { background:linear-gradient(180deg,#4a9,#1a6); width:100%; }
+  #p2fill { background:linear-gradient(180deg,#f55,#a11); width:100%; float:right; }
+  .stam { width:100%; height:7px; background:#111; border:1px solid #333; margin-top:3px;
+          border-radius:2px; overflow:hidden; }
+  .sfill { height:100%; background:linear-gradient(90deg,#fc0,#fa0); width:100%; transition:width 0.15s; }
 
-  #msg { position:fixed; top:42%; width:100%; text-align:center; font-size:14vw; font-weight:bold;
-         text-shadow:0 0 20px #000; pointer-events:none; opacity:0; transition:opacity 0.3s; z-index:20; }
+  #msg { position:fixed; top:40%; width:100%; text-align:center; font-size:11vw; font-weight:900;
+         text-shadow:0 0 40px #000,0 0 20px currentColor; pointer-events:none; opacity:0;
+         transition:opacity 0.3s; z-index:20; letter-spacing:6px; }
 
-  /* --- Сенсорные кнопки --- */
-  #touchUI { position:fixed; bottom:0; left:0; width:100%; height:45%; display:none; z-index:30; pointer-events:none; }
+  #touchUI { position:fixed; bottom:0; left:0; width:100%; height:48%; display:none; z-index:30; pointer-events:none; }
   #touchUI.active { display:block; }
   .tbtn {
-    position:absolute; bottom:12px;
-    width:70px; height:70px; border-radius:50%;
-    background:rgba(255,255,255,0.12);
-    border:2px solid rgba(255,255,255,0.35);
-    color:#fff; font-size:22px; font-weight:bold;
-    display:flex; align-items:center; justify-content:center;
+    position:absolute; width:68px; height:68px; border-radius:50%;
+    background:rgba(255,255,255,0.1); border:2px solid rgba(255,255,255,0.3);
+    color:#fff; font-size:22px; display:flex; align-items:center; justify-content:center;
     pointer-events:auto; touch-action:none;
-    backdrop-filter:blur(4px);
-    transition:transform 0.08s, background 0.08s;
-    text-align:center; line-height:1;
+    backdrop-filter:blur(6px); transition:transform 0.07s, background 0.07s;
   }
-  .tbtn.pressed { background:rgba(255,255,255,0.35); transform:scale(0.92); }
+  .tbtn.pressed { background:rgba(255,255,255,0.35); transform:scale(0.9); }
+  #btnLeft  { left:10px; bottom:80px; }
+  #btnRight { left:90px; bottom:80px; }
+  #btnJump  { left:50px; bottom:10px; }
+  #btnPunch { right:10px; bottom:80px; background:rgba(220,60,60,0.22); border-color:rgba(255,90,90,0.6); }
+  #btnKick  { right:90px; bottom:80px; background:rgba(230,140,40,0.22); border-color:rgba(255,160,60,0.6); font-size:26px; }
+  #btnBlock { right:10px; bottom:10px; background:rgba(70,130,230,0.22); border-color:rgba(100,160,255,0.6); }
+  #btnDodge { right:90px; bottom:10px; background:rgba(60,190,110,0.22); border-color:rgba(90,220,140,0.6); }
 
-  #btnLeft  { left:12px; bottom:90px; }
-  #btnRight { left:100px; bottom:90px; }
-  #btnJump  { left:56px;  bottom:12px; font-size:20px; }
-
-  #btnPunch { right:12px; bottom:90px; background:rgba(255,80,80,0.2); border-color:rgba(255,80,80,0.6); }
-  #btnKick  { right:100px; bottom:90px; background:rgba(255,140,60,0.2); border-color:rgba(255,140,60,0.6); font-size:26px; }
-  #btnBlock { right:12px; bottom:12px; background:rgba(80,140,255,0.2); border-color:rgba(80,140,255,0.6); font-size:20px; }
-  #btnDodge { right:100px; bottom:12px; background:rgba(80,200,120,0.2); border-color:rgba(80,200,120,0.6); font-size:20px; }
-
-  /* Подсказка для десктопа */
-  #hint { position:fixed; bottom:8px; width:100%; text-align:center; font-size:12px; opacity:0.5; z-index:5; pointer-events:none; }
+  #hint { position:fixed; bottom:6px; width:100%; text-align:center; font-size:11px;
+          opacity:0.45; z-index:5; pointer-events:none; letter-spacing:1px; }
   #hint.mobile { display:none; }
 
-  /* Кнопка поворота экрана */
-  #rotateHint { position:fixed; top:0; left:0; width:100%; height:100%;
-    background:rgba(0,0,0,0.9); color:#fff; display:none; align-items:center; justify-content:center;
-    font-size:20px; text-align:center; z-index:100; flex-direction:column; gap:20px; }
+  #rotateHint { position:fixed; inset:0; background:rgba(0,0,0,0.95); color:#fff;
+    display:none; align-items:center; justify-content:center; font-size:18px; text-align:center;
+    z-index:100; flex-direction:column; gap:16px; }
   #rotateHint.show { display:flex; }
 </style>
 </head>
 <body>
 
 <div id="hud">
-  <div id="p1bar" class="bar"><div id="p1fill" class="fill"></div></div>
-  <div id="p2bar" class="bar"><div id="p2fill" class="fill"></div></div>
-  <div id="p1stam" class="stam"><div id="p1sfill" class="sfill"></div></div>
-  <div id="p2stam" class="stam"><div id="p2sfill" class="sfill"></div></div>
+  <div class="fighter-info">
+    <div class="name-row"><span id="p1name">YOU</span><span id="p1hp">100</span></div>
+    <div class="bar"><div id="p1fill" class="fill"></div></div>
+    <div class="stam"><div id="p1sfill" class="sfill"></div></div>
+  </div>
+  <div class="fighter-info">
+    <div class="name-row"><span id="p2hp">100</span><span id="p2name">RIVAL</span></div>
+    <div class="bar"><div id="p2fill" class="fill"></div></div>
+    <div class="stam"><div id="p2sfill" class="sfill"></div></div>
+  </div>
 </div>
 <div id="msg"></div>
 
@@ -83,254 +81,598 @@
   <div class="tbtn" id="btnBlock">🛡</div>
   <div class="tbtn" id="btnDodge">↩</div>
 </div>
+<div id="hint">A/D · W · J · K · L · Space</div>
 
-<div id="hint">A/D — двигаться · W — прыжок · J — рука · K — нога · L — блок · Space — уклонение</div>
-
-<div id="rotateHint">
-  <div style="font-size:60px;">📱↻</div>
-  <div>Поверни телефон горизонтально<br>для лучшего обзора</div>
-</div>
+<div id="rotateHint"><div style="font-size:60px;">📱↻</div><div>Поверни телефон горизонтально</div></div>
 
 <script type="importmap">
-{ "imports": {
-  "three": "https://unpkg.com/three@0.160.0/build/three.module.js"
-} }
+{ "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js" } }
 </script>
 
 <script type="module">
 import * as THREE from 'three';
 
-// --- Детект мобильного ---
 const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) ||
-                 ('ontouchstart' in window && window.innerWidth < 1024);
+                 ('ontouchstart' in window && innerWidth < 1024);
 
-// --- Сцена ---
+// ============ SCENE ============
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x1a1a2a);
-scene.fog = new THREE.Fog(0x1a1a2a, 15, 40);
+scene.background = new THREE.Color(0x05050a);
+scene.fog = new THREE.Fog(0x05050a, 12, 30);
 
-const camera = new THREE.PerspectiveCamera(60, innerWidth/innerHeight, 0.1, 100);
-camera.position.set(0, 6, 12);
-camera.lookAt(0, 1.2, 0);
+const camera = new THREE.PerspectiveCamera(52, innerWidth/innerHeight, 0.1, 100);
+camera.position.set(0, 4.5, 10.5);
+camera.lookAt(0, 1.4, 0);
 
-const renderer = new THREE.WebGLRenderer({ antialias: !isMobile, powerPreference:'high-performance' });
+const renderer = new THREE.WebGLRenderer({ antialias:!isMobile, powerPreference:'high-performance' });
 renderer.setSize(innerWidth, innerHeight);
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, isMobile ? 1.5 : 2));
-renderer.shadowMap.enabled = !isMobile; // на мобилке тени выкл для FPS
+renderer.setPixelRatio(Math.min(devicePixelRatio, isMobile ? 1.5 : 2));
+renderer.shadowMap.enabled = !isMobile;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.1;
 document.body.appendChild(renderer.domElement);
 
-// --- Свет ---
-scene.add(new THREE.AmbientLight(0xffffff, 0.5));
-const key = new THREE.DirectionalLight(0xffffff, 1.0);
-key.position.set(5, 10, 5);
-if (!isMobile) { key.castShadow = true; key.shadow.mapSize.set(1024,1024);
-  key.shadow.camera.left=-10; key.shadow.camera.right=10;
-  key.shadow.camera.top=10; key.shadow.camera.bottom=-10; }
-scene.add(key);
-const rim = new THREE.DirectionalLight(0x88aaff, 0.5);
-rim.position.set(-5, 5, -5);
-scene.add(rim);
+// ============ LIGHTS (arena style) ============
+scene.add(new THREE.AmbientLight(0x8899bb, 0.35));
 
-// --- Октагон ---
+// Main overhead spotlights
+const spot1 = new THREE.SpotLight(0xffffff, 2.2, 30, Math.PI/6, 0.5, 1.5);
+spot1.position.set(0, 12, 2);
+spot1.target.position.set(0, 0, 0);
+scene.add(spot1); scene.add(spot1.target);
+
+const spot2 = new THREE.SpotLight(0xaaccff, 1.4, 25, Math.PI/5, 0.6, 1.8);
+spot2.position.set(-5, 9, -3);
+spot2.target.position.set(0, 1, 0);
+scene.add(spot2); scene.add(spot2.target);
+
+const spot3 = new THREE.SpotLight(0xffccaa, 1.2, 25, Math.PI/5, 0.6, 1.8);
+spot3.position.set(5, 9, -3);
+spot3.target.position.set(0, 1, 0);
+scene.add(spot3); scene.add(spot3.target);
+
+// Rim lights
+const rim1 = new THREE.PointLight(0x4466ff, 0.8, 15);
+rim1.position.set(-6, 3, -6);
+scene.add(rim1);
+const rim2 = new THREE.PointLight(0xff6644, 0.8, 15);
+rim2.position.set(6, 3, -6);
+scene.add(rim2);
+
+// ============ OCTAGON ============
+// Canvas floor (dark mat)
+const floorCanvas = document.createElement('canvas');
+floorCanvas.width = 512; floorCanvas.height = 512;
+const fctx = floorCanvas.getContext('2d');
+const grd = fctx.createRadialGradient(256, 256, 50, 256, 256, 256);
+grd.addColorStop(0, '#2a3550');
+grd.addColorStop(1, '#0a1020');
+fctx.fillStyle = grd;
+fctx.fillRect(0, 0, 512, 512);
+// subtle noise
+for (let i = 0; i < 3000; i++) {
+  fctx.fillStyle = `rgba(255,255,255,${Math.random()*0.04})`;
+  fctx.fillRect(Math.random()*512, Math.random()*512, 2, 2);
+}
+const floorTex = new THREE.CanvasTexture(floorCanvas);
+floorTex.wrapS = floorTex.wrapT = THREE.RepeatWrapping;
+
 const floor = new THREE.Mesh(
   new THREE.CircleGeometry(7, 8),
-  new THREE.MeshStandardMaterial({ color:0x334466, roughness:0.7 })
+  new THREE.MeshStandardMaterial({ map:floorTex, roughness:0.85, metalness:0.05 })
 );
 floor.rotation.x = -Math.PI/2;
-floor.receiveShadow = !isMobile;
+floor.receiveShadow = true;
 scene.add(floor);
 
-const wall = new THREE.Mesh(
-  new THREE.CylinderGeometry(7, 7, 2.2, 8, 1, true),
-  new THREE.MeshStandardMaterial({ color:0x6688aa, transparent:true, opacity:0.15, side:THREE.DoubleSide })
-);
-wall.position.y = 1.1;
+// Cage walls — semi-transparent hex fence with posts
+const wallGeo = new THREE.CylinderGeometry(7, 7, 2.4, 8, 1, true);
+const wallMat = new THREE.MeshStandardMaterial({
+  color:0x445566, transparent:true, opacity:0.14, side:THREE.DoubleSide, metalness:0.4, roughness:0.5
+});
+const wall = new THREE.Mesh(wallGeo, wallMat);
+wall.position.y = 1.2;
 scene.add(wall);
 
-const grid = new THREE.GridHelper(14, 14, 0x4466aa, 0x223355);
-grid.position.y = 0.01;
-scene.add(grid);
+// Cage wire texture (vertical lines)
+const wireCanvas = document.createElement('canvas');
+wireCanvas.width = 256; wireCanvas.height = 256;
+const wctx = wireCanvas.getContext('2d');
+wctx.fillStyle = 'rgba(0,0,0,0)';
+wctx.fillRect(0, 0, 256, 256);
+wctx.strokeStyle = 'rgba(140,170,200,0.55)';
+wctx.lineWidth = 2;
+for (let x = 0; x < 256; x += 16) {
+  wctx.beginPath(); wctx.moveTo(x, 0); wctx.lineTo(x, 256); wctx.stroke();
+}
+for (let y = 0; y < 256; y += 24) {
+  wctx.beginPath(); wctx.moveTo(0, y); wctx.lineTo(256, y); wctx.stroke();
+}
+const wireTex = new THREE.CanvasTexture(wireCanvas);
+wireTex.wrapS = wireTex.wrapT = THREE.RepeatWrapping;
+wireTex.repeat.set(10, 2);
 
-// --- Боец ---
+const cageMat = new THREE.MeshBasicMaterial({
+  map:wireTex, transparent:true, opacity:0.35, side:THREE.DoubleSide, depthWrite:false
+});
+const cage = new THREE.Mesh(wallGeo, cageMat);
+cage.position.y = 1.2;
+scene.add(cage);
+
+// Cage posts (8 vertical bars)
+for (let i = 0; i < 8; i++) {
+  const a = (i / 8) * Math.PI * 2;
+  const post = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.06, 0.06, 2.4, 8),
+    new THREE.MeshStandardMaterial({ color:0x223344, metalness:0.7, roughness:0.3 })
+  );
+  post.position.set(Math.cos(a)*7, 1.2, Math.sin(a)*7);
+  scene.add(post);
+}
+
+// ============ FIGHTER MODEL ============
+class FighterModel {
+  constructor(color, skinColor, x) {
+    this.group = new THREE.Group();
+    this.group.position.set(x, 0, 0);
+
+    const bodyMat = new THREE.MeshStandardMaterial({ color, roughness:0.7, metalness:0.05 });
+    const skinMat = new THREE.MeshStandardMaterial({ color:skinColor, roughness:0.85 });
+    const shortMat = new THREE.MeshStandardMaterial({ color:0x111122, roughness:0.6 });
+    const gloveMat = new THREE.MeshStandardMaterial({ color:0x880000, roughness:0.5, metalness:0.1 });
+
+    // === TORSO (chest + abs) ===
+    // Chest
+    const chest = new THREE.Mesh(new THREE.BoxGeometry(0.85, 0.55, 0.42), bodyMat);
+    chest.position.y = 1.55;
+    chest.castShadow = true;
+    this.group.add(chest);
+    this.chest = chest;
+
+    // Abs
+    const abs = new THREE.Mesh(new THREE.BoxGeometry(0.72, 0.5, 0.36), skinMat);
+    abs.position.y = 1.08;
+    abs.castShadow = true;
+    this.group.add(abs);
+
+    // Shoulders
+    const shL = new THREE.Mesh(new THREE.SphereGeometry(0.19, 12, 12), bodyMat);
+    shL.position.set(-0.52, 1.72, 0);
+    this.group.add(shL);
+    const shR = new THREE.Mesh(new THREE.SphereGeometry(0.19, 12, 12), bodyMat);
+    shR.position.set(0.52, 1.72, 0);
+    this.group.add(shR);
+
+    // Hips / shorts
+    const hips = new THREE.Mesh(new THREE.BoxGeometry(0.72, 0.42, 0.4), shortMat);
+    hips.position.y = 0.72;
+    hips.castShadow = true;
+    this.group.add(hips);
+    this.hips = hips;
+
+    // === HEAD ===
+    this.headPivot = new THREE.Group();
+    this.headPivot.position.set(0, 1.9, 0);
+    this.group.add(this.headPivot);
+
+    const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.15, 0.15, 10), skinMat);
+    neck.position.y = 0.02;
+    this.headPivot.add(neck);
+
+    const head = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.42, 0.36), skinMat);
+    head.position.y = 0.28;
+    head.castShadow = true;
+    this.headPivot.add(head);
+    this.headMesh = head;
+
+    // Simple face (eyes)
+    const eyeMat = new THREE.MeshBasicMaterial({ color:0x000000 });
+    const eyeL = new THREE.Mesh(new THREE.SphereGeometry(0.03, 6, 6), eyeMat);
+    eyeL.position.set(-0.08, 0.32, 0.18);
+    this.headPivot.add(eyeL);
+    const eyeR = new THREE.Mesh(new THREE.SphereGeometry(0.03, 6, 6), eyeMat);
+    eyeR.position.set(0.08, 0.32, 0.18);
+    this.headPivot.add(eyeR);
+
+    // === ARMS (upper + forearm + glove) ===
+    // Left arm
+    this.lArmPivot = new THREE.Group();
+    this.lArmPivot.position.set(-0.62, 1.65, 0);
+    this.group.add(this.lArmPivot);
+
+    const lUpper = new THREE.Mesh(new THREE.CapsuleGeometry(0.11, 0.36, 6, 10), skinMat);
+    lUpper.position.y = -0.24;
+    lUpper.castShadow = true;
+    this.lArmPivot.add(lUpper);
+
+    this.lForearmPivot = new THREE.Group();
+    this.lForearmPivot.position.y = -0.46;
+    this.lArmPivot.add(this.lForearmPivot);
+
+    const lForearm = new THREE.Mesh(new THREE.CapsuleGeometry(0.10, 0.34, 6, 10), skinMat);
+    lForearm.position.y = -0.22;
+    lForearm.castShadow = true;
+    this.lForearmPivot.add(lForearm);
+
+    // Glove (the hitbox)
+    const lGlove = new THREE.Mesh(new THREE.SphereGeometry(0.145, 12, 12), gloveMat);
+    lGlove.position.y = -0.48;
+    lGlove.castShadow = true;
+    this.lForearmPivot.add(lGlove);
+    this.lGlove = lGlove;
+
+    // Right arm (mirrored)
+    this.rArmPivot = new THREE.Group();
+    this.rArmPivot.position.set(0.62, 1.65, 0);
+    this.group.add(this.rArmPivot);
+
+    const rUpper = new THREE.Mesh(new THREE.CapsuleGeometry(0.11, 0.36, 6, 10), skinMat);
+    rUpper.position.y = -0.24;
+    rUpper.castShadow = true;
+    this.rArmPivot.add(rUpper);
+
+    this.rForearmPivot = new THREE.Group();
+    this.rForearmPivot.position.y = -0.46;
+    this.rArmPivot.add(this.rForearmPivot);
+
+    const rForearm = new THREE.Mesh(new THREE.CapsuleGeometry(0.10, 0.34, 6, 10), skinMat);
+    rForearm.position.y = -0.22;
+    rForearm.castShadow = true;
+    this.rForearmPivot.add(rForearm);
+
+    const rGlove = new THREE.Mesh(new THREE.SphereGeometry(0.145, 12, 12), gloveMat);
+    rGlove.position.y = -0.48;
+    rGlove.castShadow = true;
+    this.rForearmPivot.add(rGlove);
+    this.rGlove = rGlove;
+
+    // === LEGS (thigh + shin + foot) ===
+    // Left leg
+    this.lLegPivot = new THREE.Group();
+    this.lLegPivot.position.set(-0.2, 0.72, 0);
+    this.group.add(this.lLegPivot);
+
+    const lThigh = new THREE.Mesh(new THREE.CapsuleGeometry(0.15, 0.42, 6, 10), skinMat);
+    lThigh.position.y = -0.28;
+    lThigh.castShadow = true;
+    this.lLegPivot.add(lThigh);
+
+    this.lShinPivot = new THREE.Group();
+    this.lShinPivot.position.y = -0.55;
+    this.lLegPivot.add(this.lShinPivot);
+
+    const lShin = new THREE.Mesh(new THREE.CapsuleGeometry(0.12, 0.38, 6, 10), skinMat);
+    lShin.position.y = -0.25;
+    lShin.castShadow = true;
+    this.lShinPivot.add(lShin);
+
+    const lFoot = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.1, 0.32), shortMat);
+    lFoot.position.set(0, -0.5, 0.08);
+    this.lShinPivot.add(lFoot);
+
+    // Right leg (mirrored)
+    this.rLegPivot = new THREE.Group();
+    this.rLegPivot.position.set(0.2, 0.72, 0);
+    this.group.add(this.rLegPivot);
+
+    const rThigh = new THREE.Mesh(new THREE.CapsuleGeometry(0.15, 0.42, 6, 10), skinMat);
+    rThigh.position.y = -0.28;
+    rThigh.castShadow = true;
+    this.rLegPivot.add(rThigh);
+
+    this.rShinPivot = new THREE.Group();
+    this.rShinPivot.position.y = -0.55;
+    this.rLegPivot.add(this.rShinPivot);
+
+    const rShin = new THREE.Mesh(new THREE.CapsuleGeometry(0.12, 0.38, 6, 10), skinMat);
+    rShin.position.y = -0.25;
+    rShin.castShadow = true;
+    this.rShinPivot.add(rShin);
+
+    const rFoot = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.1, 0.32), shortMat);
+    rFoot.position.set(0, -0.5, 0.08);
+    this.rShinPivot.add(rFoot);
+
+    scene.add(this.group);
+  }
+}
+
+// ============ FIGHTER (logic + animation) ============
 class Fighter {
-  constructor(color, x, facing) {
-    this.hp = 100;
+  constructor(opts) {
+    this.hp = 300;
+    this.maxHp = 300;
     this.stamina = 100;
     this.maxStamina = 100;
-    this.speed = 0.09;
+    this.speed = 0.055;
     this.velY = 0; this.y = 0; this.onGround = true;
-    this.facing = facing;
+    this.facing = opts.facing;
     this.blocking = false;
+    this.alive = true;
+
+    this.punchTimer = 0;   // duration left of current punch anim (0..1)
+    this.kickTimer = 0;
+    this.hitReactTimer = 0;
     this.attackCooldown = 0;
     this.hitCooldown = 0;
     this.dodgeCooldown = 0;
     this.dodgeTimer = 0;
     this.dodgeDir = 0;
-    this.alive = true;
-    this.punchAnim = 0;
-    this.kickAnim = 0;
+    this.hasHitThisAttack = false;
+    this.currentAttack = null; // 'punch' | 'kick'
 
-    this.group = new THREE.Group();
-    this.group.position.set(x, 0, 0);
-
-    const bodyMat = new THREE.MeshStandardMaterial({ color, roughness:0.6 });
-    const skinMat = new THREE.MeshStandardMaterial({ color:0xddaa88, roughness:0.8 });
-
-    const torso = new THREE.Mesh(new THREE.CapsuleGeometry(0.35, 0.8, 6, 12), bodyMat);
-    torso.position.y = 1.4; torso.castShadow = !isMobile;
-    this.group.add(torso);
-
-    const head = new THREE.Mesh(new THREE.SphereGeometry(0.28, 16, 16), skinMat);
-    head.position.y = 2.15; head.castShadow = !isMobile;
-    this.group.add(head);
-
-    const armGeo = new THREE.CapsuleGeometry(0.11, 0.65, 5, 8);
-    this.lArm = new THREE.Mesh(armGeo, skinMat);
-    this.lArm.position.set(-0.5, 1.55, 0.15); this.lArm.rotation.z = 0.15;
-    this.group.add(this.lArm);
-    this.rArm = new THREE.Mesh(armGeo, skinMat);
-    this.rArm.position.set(0.5, 1.55, 0.15); this.rArm.rotation.z = -0.15;
-    this.group.add(this.rArm);
-
-    const legGeo = new THREE.CapsuleGeometry(0.13, 0.7, 5, 8);
-    this.lLeg = new THREE.Mesh(legGeo, bodyMat);
-    this.lLeg.position.set(-0.18, 0.55, 0); this.group.add(this.lLeg);
-    this.rLeg = new THREE.Mesh(legGeo, bodyMat);
-    this.rLeg.position.set(0.18, 0.55, 0); this.group.add(this.rLeg);
-
-    this.group.rotation.y = facing === 1 ? Math.PI/2 : -Math.PI/2;
-    scene.add(this.group);
+    this.model = new FighterModel(opts.color, opts.skin, opts.x);
+    this.group = this.model.group;
   }
 
   get x() { return this.group.position.x; }
   set x(v) { this.group.position.x = v; }
 
+  worldPosOf(mesh) {
+    const v = new THREE.Vector3();
+    mesh.getWorldPosition(v);
+    return v;
+  }
+
   update(dt, opponent) {
+    // timers
     if (this.attackCooldown > 0) this.attackCooldown -= dt;
     if (this.hitCooldown > 0) this.hitCooldown -= dt;
     if (this.dodgeCooldown > 0) this.dodgeCooldown -= dt;
-    if (this.punchAnim > 0) this.punchAnim = Math.max(0, this.punchAnim - dt*6);
-    if (this.kickAnim > 0) this.kickAnim = Math.max(0, this.kickAnim - dt*5);
+    if (this.punchTimer > 0) this.punchTimer = Math.max(0, this.punchTimer - dt * 2.6);
+    if (this.kickTimer > 0) this.kickTimer = Math.max(0, this.kickTimer - dt * 2.2);
+    if (this.hitReactTimer > 0) this.hitReactTimer = Math.max(0, this.hitReactTimer - dt * 3);
 
+    // stamina
     if (this.stamina < this.maxStamina) {
-      this.stamina = Math.min(this.maxStamina, this.stamina + dt * (this.blocking ? 8 : 15));
+      this.stamina = Math.min(this.maxStamina, this.stamina + dt * (this.blocking ? 7 : 13));
     }
 
+    // dodge movement
     if (this.dodgeTimer > 0) {
       this.dodgeTimer -= dt;
-      this.x += this.dodgeDir * this.speed * 3.2;
+      this.x += this.dodgeDir * this.speed * 3;
     }
 
+    // jump / gravity
     if (!this.onGround) {
-      this.velY -= 0.02;
+      this.velY -= 0.022;
       this.y += this.velY;
       if (this.y <= 0) { this.y = 0; this.velY = 0; this.onGround = true; }
       this.group.position.y = this.y;
     }
 
+    // face opponent smoothly
     const dx = opponent.x - this.x;
     this.facing = dx > 0 ? 1 : -1;
-    this.group.rotation.y = THREE.MathUtils.lerp(
-      this.group.rotation.y,
-      this.facing === 1 ? Math.PI/2 : -Math.PI/2,
-      dt * 10
-    );
+    const targetRotY = this.facing === 1 ? Math.PI/2 : -Math.PI/2;
+    this.group.rotation.y += (targetRotY - this.group.rotation.y) * Math.min(1, dt * 12);
 
-    const punchOffset = Math.sin(this.punchAnim * Math.PI) * 0.6;
-    this.lArm.rotation.z = 0.15 + punchOffset * 0.5;
-    this.rArm.rotation.z = -0.15 - punchOffset * 0.5;
-    this.lArm.position.z = 0.15 + punchOffset;
-    this.rArm.position.z = 0.15 + punchOffset;
+    // ===== ANIMATION =====
+    const m = this.model;
 
-    const kickOffset = Math.sin(this.kickAnim * Math.PI) * 0.8;
-    this.rLeg.rotation.x = -kickOffset;
-    this.rLeg.position.z = kickOffset * 0.5;
+    // idle stance: boxing guard, slight bounce
+    const t = performance.now() * 0.003;
+    const bounce = Math.sin(t) * 0.02;
 
-    if (this.blocking) {
-      this.lArm.position.y = 1.9;
-      this.rArm.position.y = 1.9;
+    // base arm pose (guard near face)
+    let lArmRotX = -0.6, rArmRotX = -0.6;
+    let lArmRotZ = 0.25, rArmRotZ = -0.25;
+    let lForeRotX = -1.5, rForeRotX = -1.5;
+    let lArmPosY = 0, rArmPosY = 0;
+
+    // ===== PUNCH =====
+    // punchTimer goes 1 -> 0. Peak extension at ~0.5
+    if (this.punchTimer > 0) {
+      const p = 1 - this.punchTimer;       // 0 -> 1
+      const ext = Math.sin(p * Math.PI);   // 0 -> 1 -> 0
+      // right hand punches (jab/cross style)
+      rArmRotX = -0.6 + ext * -0.1;
+      rArmRotZ = -0.25 + ext * 0.05;
+      rForeRotX = -1.5 + ext * 1.5;        // extend forearm
+      rArmPosY = ext * 0.15;
+      // torso rotates slightly with punch
+      this.model.chest.rotation.y = -ext * 0.4;
+      this.model.headPivot.rotation.y = -ext * 0.15;
+      // left arm stays in guard
+      lForeRotX = -1.6;
+      // hips rotate
+      this.model.hips.rotation.y = -ext * 0.3;
     } else {
-      this.lArm.position.y = 1.55;
-      this.rArm.position.y = 1.55;
+      this.model.chest.rotation.y *= 0.85;
+      this.model.headPivot.rotation.y *= 0.85;
+      this.model.hips.rotation.y *= 0.85;
     }
 
-    const r = Math.sqrt(this.x*this.x);
-    if (r > 6.5) this.x = (this.x / r) * 6.5;
+    // ===== KICK =====
+    if (this.kickTimer > 0) {
+      const k = 1 - this.kickTimer;
+      const ext = Math.sin(k * Math.PI);
+      // right leg kicks forward (front kick to body/head)
+      this.model.rLegPivot.rotation.x = -ext * 1.9;
+      this.model.rShinPivot.rotation.x = -ext * 0.6 + (1-ext) * 0.1;
+      // body leans back for balance
+      this.group.rotation.z = ext * 0.08;
+      // arms swing for balance
+      lArmRotX = -0.6 - ext * 0.4;
+      rArmRotX = -0.6 + ext * 0.3;
+      rForeRotX = -1.5 + ext * 0.4;
+      // hips rotate
+      this.model.hips.rotation.y = ext * 0.5;
+    } else {
+      this.group.rotation.z *= 0.88;
+      this.model.rLegPivot.rotation.x *= 0.85;
+      this.model.rShinPivot.rotation.x *= 0.85;
+    }
 
+    // ===== BLOCK =====
+    if (this.blocking) {
+      lArmRotX = -1.3;
+      rArmRotX = -1.3;
+      lForeRotX = -1.9;
+      rForeRotX = -1.9;
+      lArmRotZ = 0.35;
+      rArmRotZ = -0.35;
+    }
+
+    // ===== HIT REACTION =====
+    if (this.hitReactTimer > 0) {
+      const h = this.hitReactTimer; // 0..1
+      const punch = Math.sin(h * Math.PI);
+      this.model.headPivot.rotation.x = punch * 0.5;
+      this.model.headPivot.position.z = -punch * 0.15;
+      this.model.chest.rotation.x = -punch * 0.15;
+    } else {
+      this.model.headPivot.rotation.x *= 0.8;
+      this.model.headPivot.position.z *= 0.8;
+      this.model.chest.rotation.x *= 0.8;
+    }
+
+    // Apply arm pose
+    m.lArmPivot.rotation.x = lArmRotX;
+    m.lArmPivot.rotation.z = lArmRotZ;
+    m.lForearmPivot.rotation.x = lForeRotX;
+    m.lArmPivot.position.y = 1.65 + lArmPosY + bounce;
+
+    m.rArmPivot.rotation.x = rArmRotX;
+    m.rArmPivot.rotation.z = rArmRotZ;
+    m.rForearmPivot.rotation.x = rForeRotX;
+    m.rArmPivot.position.y = 1.65 + rArmPosY + bounce;
+
+    // Legs idle stance (knees slightly bent)
+    if (this.kickTimer <= 0) {
+      m.lLegPivot.rotation.x = 0.06;
+      m.lShinPivot.rotation.x = -0.15;
+      m.rLegPivot.rotation.x = 0.06;
+      m.rShinPivot.rotation.x = -0.15;
+    }
+
+    // bounds
+    const r = Math.sqrt(this.x*this.x);
+    if (r > 6.2) this.x = (this.x / r) * 6.2;
+
+    // body collision push
     const dist = Math.abs(opponent.x - this.x);
-    if (dist < 0.9 && this.onGround && opponent.onGround) {
-      const push = (0.9 - dist) * 0.5;
+    if (dist < 0.85 && this.onGround && opponent.onGround) {
+      const push = (0.85 - dist) * 0.5;
       const dir = this.x < opponent.x ? -1 : 1;
       this.x += dir * push;
     }
   }
 
-  attack(type, opponent) {
-    if (this.attackCooldown > 0 || !this.alive) return;
-    const cost = type === 'punch' ? 8 : 15;
-    if (this.stamina < cost) return;
+  startAttack(type) {
+    if (this.attackCooldown > 0 || !this.alive) return false;
+    const cost = type === 'punch' ? 7 : 13;
+    if (this.stamina < cost) return false;
 
     this.stamina -= cost;
-    const range = type === 'punch' ? 1.6 : 1.9;
-    const damage = type === 'punch' ? 6 : 11;
-    const cooldown = type === 'punch' ? 0.32 : 0.55;
+    this.attackCooldown = type === 'punch' ? 0.45 : 0.75;
+    this.hasHitThisAttack = false;
+    this.currentAttack = type;
 
-    if (type === 'punch') this.punchAnim = 1;
-    else this.kickAnim = 1;
+    if (type === 'punch') this.punchTimer = 1;
+    else this.kickTimer = 1;
 
-    this.attackCooldown = cooldown;
+    return true;
+  }
 
-    const dist = Math.abs(opponent.x - this.x);
-    if (dist <= range) {
-      const dir = Math.sign(opponent.x - this.x);
-      if (dir === this.facing) {
-        if (opponent.blocking && opponent.stamina > 5) {
-          opponent.stamina -= damage * 0.5;
-          return;
-        }
-        if (opponent.hitCooldown > 0) return;
-        opponent.hp = Math.max(0, opponent.hp - damage);
-        opponent.hitCooldown = 0.25;
-        opponent.stamina = Math.max(0, opponent.stamina - 5);
-        opponent.x += this.facing * 0.15;
+  // called every frame; checks if attack lands by actual glove/foot position
+  checkHit(opponent) {
+    if (!this.currentAttack || this.hasHitThisAttack || !this.alive || !opponent.alive) return;
 
-        if (opponent.hp <= 0) {
-          opponent.alive = false;
-          opponent.group.rotation.z = this.facing * Math.PI/2 * 0.9;
-        }
-      }
+    const weapon = this.currentAttack === 'punch' ? this.model.rGlove : this.model.rShinPivot;
+    const weaponWorld = this.worldPosOf(weapon);
+
+    // opponent's hit zones
+    const headPos = this.worldPosOf(opponent.model.headMesh);
+    const chestPos = this.worldPosOf(opponent.model.chest);
+    const hipsPos = this.worldPosOf(opponent.model.hips);
+
+    // distance to each zone
+    const dHead = weaponWorld.distanceTo(headPos);
+    const dChest = weaponWorld.distanceTo(chestPos);
+    const dHips = weaponWorld.distanceTo(hipsPos);
+
+    // hit radii (generous, feels better)
+    const R_HEAD = 0.42;
+    const R_BODY = 0.55;
+
+    let zone = null;
+    if (dHead < R_HEAD) zone = 'head';
+    else if (dChest < R_BODY || dHips < R_BODY) zone = 'body';
+
+    if (!zone) return;
+
+    // Hit landed!
+    this.hasHitThisAttack = true;
+
+    // Block check — opponent blocking and roughly facing us
+    const blocked = opponent.blocking &&
+                    Math.sign(this.x - opponent.x) === opponent.facing;
+
+    if (blocked && opponent.stamina > 3) {
+      // blocked hit: minor chip stamina damage, no HP loss
+      opponent.stamina = Math.max(0, opponent.stamina - 4);
+      opponent.hitReactTimer = 0.4;
+      return;
+    }
+
+    // damage by attack type & zone
+    let dmg;
+    if (this.currentAttack === 'punch') {
+      dmg = zone === 'head' ? 11 : 8;
+    } else {
+      dmg = zone === 'head' ? 22 : 15;
+    }
+    // random variance ±15%
+    dmg *= 0.85 + Math.random() * 0.3;
+
+    // stun/knockback
+    opponent.hp = Math.max(0, opponent.hp - dmg);
+    opponent.stamina = Math.max(0, opponent.stamina - 6);
+    opponent.hitReactTimer = 1;
+    opponent.hitCooldown = 0.15;
+
+    // knockback in facing direction
+    opponent.x += this.facing * (this.currentAttack === 'kick' ? 0.22 : 0.12);
+
+    // KO check
+    if (opponent.hp <= 0) {
+      opponent.alive = false;
+      opponent.group.rotation.z = this.facing * Math.PI * 0.45;
+      opponent.group.position.y = 0.1;
     }
   }
 }
 
-const player = new Fighter(0x2255cc, -2, 1);
-const enemy  = new Fighter(0xcc2222,  2, -1);
+// ============ CREATE FIGHTERS ============
+const player = new Fighter({ x:-1.8, facing:1, color:0x2244cc, skin:0xd9a888 });
+const enemy  = new Fighter({ x: 1.8, facing:-1, color:0xcc2222, skin:0xc09070 });
 
-// --- Клавиатура ---
+// ============ INPUT ============
 const keys = {};
 addEventListener('keydown', e => {
   keys[e.code] = true;
   if (e.code === 'Space') e.preventDefault();
-  if (e.code === 'KeyJ' && player.alive) player.attack('punch', enemy);
-  if (e.code === 'KeyK' && player.alive) player.attack('kick', enemy);
-  if (e.code === 'Space' && player.alive && player.dodgeCooldown <= 0 && player.stamina >= 12) {
-    player.stamina -= 12;
-    player.dodgeTimer = 0.18;
+  if (e.code === 'KeyJ' && player.alive) player.startAttack('punch');
+  if (e.code === 'KeyK' && player.alive) player.startAttack('kick');
+  if (e.code === 'Space' && player.alive && player.dodgeCooldown <= 0 && player.stamina >= 10) {
+    player.stamina -= 10;
+    player.dodgeTimer = 0.15;
     player.dodgeDir = -player.facing;
-    player.dodgeCooldown = 0.5;
+    player.dodgeCooldown = 0.7;
   }
 });
 addEventListener('keyup', e => keys[e.code] = false);
 
-// --- Сенсорные кнопки ---
+// ============ TOUCH ============
 const touchState = { left:false, right:false, block:false };
-
-function setupTouch(id, onDown, onUp) {
+function bindTouch(id, onDown, onUp) {
   const el = document.getElementById(id);
   if (!el) return;
-  const down = (e) => { e.preventDefault(); el.classList.add('pressed'); onDown && onDown(); };
-  const up = (e) => { e.preventDefault(); el.classList.remove('pressed'); onUp && onUp(); };
-
+  const down = e => { e.preventDefault(); el.classList.add('pressed'); onDown && onDown(); };
+  const up   = e => { e.preventDefault(); el.classList.remove('pressed'); onUp && onUp(); };
   el.addEventListener('touchstart', down, { passive:false });
   el.addEventListener('touchend', up, { passive:false });
   el.addEventListener('touchcancel', up, { passive:false });
@@ -343,133 +685,138 @@ if (isMobile) {
   document.getElementById('touchUI').classList.add('active');
   document.getElementById('hint').classList.add('mobile');
 
-  setupTouch('btnLeft', () => touchState.left = true, () => touchState.left = false);
-  setupTouch('btnRight', () => touchState.right = true, () => touchState.right = false);
-  setupTouch('btnBlock', () => touchState.block = true, () => touchState.block = false);
-
-  setupTouch('btnJump', () => {
-    if (player.alive && player.onGround && player.stamina >= 10) {
-      player.velY = 0.35; player.onGround = false; player.stamina -= 10;
+  bindTouch('btnLeft', () => touchState.left = true, () => touchState.left = false);
+  bindTouch('btnRight', () => touchState.right = true, () => touchState.right = false);
+  bindTouch('btnBlock', () => touchState.block = true, () => touchState.block = false);
+  bindTouch('btnJump', () => {
+    if (player.alive && player.onGround && player.stamina >= 8) {
+      player.velY = 0.32; player.onGround = false; player.stamina -= 8;
     }
   });
-
-  setupTouch('btnPunch', () => player.alive && player.attack('punch', enemy));
-  setupTouch('btnKick',  () => player.alive && player.attack('kick', enemy));
-
-  setupTouch('btnDodge', () => {
-    if (player.alive && player.dodgeCooldown <= 0 && player.stamina >= 12) {
-      player.stamina -= 12;
-      player.dodgeTimer = 0.18;
+  bindTouch('btnPunch', () => player.alive && player.startAttack('punch'));
+  bindTouch('btnKick',  () => player.alive && player.startAttack('kick'));
+  bindTouch('btnDodge', () => {
+    if (player.alive && player.dodgeCooldown <= 0 && player.stamina >= 10) {
+      player.stamina -= 10;
+      player.dodgeTimer = 0.15;
       player.dodgeDir = -player.facing;
-      player.dodgeCooldown = 0.5;
+      player.dodgeCooldown = 0.7;
     }
   });
 }
 
-// --- HUD ---
-const p1fill = document.getElementById('p1fill');
-const p2fill = document.getElementById('p2fill');
-const p1sfill = document.getElementById('p1sfill');
-const p2sfill = document.getElementById('p2sfill');
-const msgEl = document.getElementById('msg');
-
+// ============ HUD ============
+const $ = id => document.getElementById(id);
 function updateHUD() {
-  p1fill.style.width = player.hp + '%';
-  p2fill.style.width = enemy.hp + '%';
-  p1sfill.style.width = player.stamina + '%';
-  p2sfill.style.width = enemy.stamina + '%';
+  $('p1fill').style.width = (player.hp / player.maxHp * 100) + '%';
+  $('p2fill').style.width = (enemy.hp  / enemy.maxHp  * 100) + '%';
+  $('p1sfill').style.width = player.stamina + '%';
+  $('p2sfill').style.width = enemy.stamina + '%';
+  $('p1hp').textContent = Math.ceil(player.hp);
+  $('p2hp').textContent = Math.ceil(enemy.hp);
 }
-
 function showMsg(text, color='#fff') {
-  msgEl.textContent = text;
-  msgEl.style.color = color;
-  msgEl.style.opacity = 1;
+  const el = $('msg');
+  el.textContent = text;
+  el.style.color = color;
+  el.style.opacity = 1;
 }
 
-// --- ИИ ---
+// ============ AI ============
 let aiTimer = 0;
 function updateAI(dt) {
   if (!enemy.alive || !player.alive) return;
   aiTimer -= dt;
   const dist = Math.abs(player.x - enemy.x);
 
-  if (dist > 1.4) {
+  // approach
+  if (dist > 1.5) {
     const dir = Math.sign(player.x - enemy.x);
-    enemy.x += dir * enemy.speed * 0.8;
+    enemy.x += dir * enemy.speed * 0.85;
   }
 
-  enemy.blocking = (dist < 1.8 && enemy.stamina > 30 && Math.random() < 0.3 && aiTimer <= 0);
+  // block sometimes
+  enemy.blocking = dist < 1.8 && enemy.stamina > 30 && Math.random() < 0.28 && aiTimer <= 0;
 
-  if (aiTimer <= 0 && dist < 1.9) {
+  // attack
+  if (aiTimer <= 0 && dist < 1.85) {
     const r = Math.random();
-    if (r < 0.5) { enemy.attack('punch', player); aiTimer = 0.5 + Math.random()*0.4; }
-    else if (r < 0.85) { enemy.attack('kick', player); aiTimer = 0.7 + Math.random()*0.5; }
-    else { enemy.blocking = true; aiTimer = 0.3; }
+    if (r < 0.55) { enemy.startAttack('punch'); aiTimer = 0.55 + Math.random()*0.4; }
+    else if (r < 0.85) { enemy.startAttack('kick'); aiTimer = 0.8 + Math.random()*0.5; }
+    else { enemy.blocking = true; aiTimer = 0.4; }
   }
 }
 
-// --- Игровой цикл ---
+// ============ GAME LOOP ============
 let last = performance.now();
 let gameOver = false;
 
-function animate(now) {
-  requestAnimationFrame(animate);
+function loop(now) {
+  requestAnimationFrame(loop);
   const dt = Math.min(0.05, (now - last) / 1000);
   last = now;
 
   if (!gameOver) {
+    // player input
     if (player.alive) {
-      // Управление: клавиатура ИЛИ тач
       const goLeft  = keys['KeyA'] || touchState.left;
       const goRight = keys['KeyD'] || touchState.right;
       const block   = keys['KeyL'] || touchState.block;
 
       player.blocking = block;
       if (!player.blocking && player.dodgeTimer <= 0) {
-        if (goLeft)  player.x -= player.speed * (player.stamina > 20 ? 1 : 0.6);
-        if (goRight) player.x += player.speed * (player.stamina > 20 ? 1 : 0.6);
+        if (goLeft)  player.x -= player.speed * (player.stamina > 25 ? 1 : 0.65);
+        if (goRight) player.x += player.speed * (player.stamina > 25 ? 1 : 0.65);
       }
-      if (keys['KeyW'] && player.onGround && player.stamina >= 10) {
-        player.velY = 0.35; player.onGround = false; player.stamina -= 10;
+      if (keys['KeyW'] && player.onGround && player.stamina >= 8) {
+        player.velY = 0.32; player.onGround = false; player.stamina -= 8;
       }
     }
 
     updateAI(dt);
     player.update(dt, enemy);
     enemy.update(dt, player);
+
+    // hit detection (both fighters)
+    player.checkHit(enemy);
+    enemy.checkHit(player);
+
+    // end-of-attack cleanup
+    if (player.punchTimer <= 0 && player.kickTimer <= 0) player.currentAttack = null;
+    if (enemy.punchTimer  <= 0 && enemy.kickTimer  <= 0) enemy.currentAttack  = null;
+
     updateHUD();
 
+    // camera follow (smooth)
     const centerX = (player.x + enemy.x) / 2;
-    camera.position.x = THREE.MathUtils.lerp(camera.position.x, centerX * 0.5, dt * 3);
-    camera.lookAt(centerX * 0.5, 1.3, 0);
+    camera.position.x += (centerX * 0.6 - camera.position.x) * Math.min(1, dt * 2.5);
+    camera.position.y = 4.5;
+    camera.position.z = 10.5;
+    camera.lookAt(centerX * 0.6, 1.35, 0);
 
     if (!player.alive || !enemy.alive) {
       gameOver = true;
-      if (enemy.alive) showMsg('ПОРАЖЕНИЕ', '#f44');
-      else if (player.alive) showMsg('ПОБЕДА!', '#4f4');
-      else showMsg('НИЧЬЯ', '#ff0');
-      setTimeout(() => {
-        showMsg('Перезагрузка...', '#aaa');
-        setTimeout(() => location.reload(), 1500);
-      }, 2000);
+      if (enemy.alive) showMsg('ПОРАЖЕНИЕ', '#ff3344');
+      else if (player.alive) showMsg('ПОБЕДА', '#33ff77');
+      else showMsg('НИЧЬЯ', '#ffcc00');
+      setTimeout(() => { showMsg('...', '#888'); setTimeout(() => location.reload(), 1400); }, 2400);
     }
   }
 
   renderer.render(scene, camera);
 }
-requestAnimationFrame(animate);
+requestAnimationFrame(loop);
 
-// --- Ресайз ---
+// ============ RESIZE ============
 function onResize() {
   camera.aspect = innerWidth/innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(innerWidth, innerHeight);
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, isMobile ? 1.5 : 2));
+  renderer.setPixelRatio(Math.min(devicePixelRatio, isMobile ? 1.5 : 2));
 
-  // Подсказка про поворот
-  const rotate = document.getElementById('rotateHint');
-  if (isMobile && innerHeight > innerWidth) rotate.classList.add('show');
-  else rotate.classList.remove('show');
+  const rot = $('rotateHint');
+  if (isMobile && innerHeight > innerWidth) rot.classList.add('show');
+  else rot.classList.remove('show');
 }
 addEventListener('resize', onResize);
 addEventListener('orientationchange', () => setTimeout(onResize, 200));
