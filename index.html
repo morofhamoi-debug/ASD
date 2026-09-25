@@ -2,412 +2,469 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<title>Приора на дороге</title>
+<title>Приора 3D</title>
 <style>
-  body {
-    margin: 0;
-    background: #111;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-    font-family: Arial, sans-serif;
-    overflow: hidden;
+  body { margin: 0; overflow: hidden; background: #87ceeb; font-family: Arial, sans-serif; }
+  canvas { display: block; }
+  #hud {
+    position: fixed; top: 15px; left: 15px;
+    color: #fff; font-size: 22px; font-weight: bold;
+    text-shadow: 2px 2px 4px #000;
+    pointer-events: none;
   }
-  canvas {
-    border: 3px solid #333;
+  #hud small { display: block; font-size: 14px; color: #ddd; font-weight: normal; margin-top: 5px; }
+  #gameover {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.75);
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    text-align: center;
+  }
+  #gameover h1 { color: #ff3333; font-size: 60px; margin: 0; }
+  #gameover p { font-size: 24px; margin: 15px 0; }
+  #gameover button {
+    margin-top: 20px;
+    padding: 15px 40px;
+    font-size: 20px;
+    font-weight: bold;
+    background: #ffcc00;
+    border: none;
     border-radius: 10px;
-    box-shadow: 0 0 30px #000;
+    cursor: pointer;
+  }
+  #controls {
+    position: fixed; bottom: 15px; left: 15px;
+    color: #fff; font-size: 14px;
+    text-shadow: 1px 1px 3px #000;
+    pointer-events: none;
   }
 </style>
 </head>
 <body>
-<canvas id="game" width="480" height="720"></canvas>
 
+<div id="hud">Счёт: <span id="score">0</span><small id="speed">Скорость: 120 км/ч</small></div>
+<div id="controls">← → или A/D — руль | Пробел — заново</div>
+
+<div id="gameover">
+  <h1>АВАРИЯ!</h1>
+  <p>Счёт: <span id="finalScore">0</span></p>
+  <button onclick="resetGame()">ЗАНОВО</button>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
-const canvas = document.getElementById('game');
-const ctx = canvas.getContext('2d');
+// ================== СЦЕНА ==================
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x87ceeb);
+scene.fog = new THREE.Fog(0x87ceeb, 100, 400);
 
-const W = canvas.width;
-const H = canvas.height;
+const camera = new THREE.PerspectiveCamera(70, window.innerWidth/window.innerHeight, 0.1, 1000);
+camera.position.set(0, 6, 12);
+camera.lookAt(0, 1, 0);
 
-// Игрок — чёрная Приора
-const car = {
-  x: W / 2 - 30,
-  y: H - 170,
-  w: 62,
-  h: 112,
-  speed: 6,
-  color: '#0a0a0a' // чёрная
-};
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+document.body.appendChild(renderer.domElement);
 
-// Дорога
-const road = {
-  width: 320,
-  x: (W - 320) / 2,
-  lineOffset: 0
-};
+// ================== СВЕТ ==================
+const ambient = new THREE.AmbientLight(0xffffff, 0.6);
+scene.add(ambient);
 
+const sun = new THREE.DirectionalLight(0xffffff, 0.9);
+sun.position.set(30, 50, 20);
+sun.castShadow = true;
+sun.shadow.mapSize.width = 2048;
+sun.shadow.mapSize.height = 2048;
+sun.shadow.camera.left = -100;
+sun.shadow.camera.right = 100;
+sun.shadow.camera.top = 100;
+sun.shadow.camera.bottom = -100;
+scene.add(sun);
+
+// ================== ЗЕМЛЯ ==================
+const groundGeo = new THREE.PlaneGeometry(2000, 2000);
+const groundMat = new THREE.MeshLambertMaterial({ color: 0x2d5c2d });
+const ground = new THREE.Mesh(groundGeo, groundMat);
+ground.rotation.x = -Math.PI / 2;
+ground.receiveShadow = true;
+scene.add(ground);
+
+// ================== ДОРОГА ==================
+const ROAD_WIDTH = 16;
+const roadGeo = new THREE.PlaneGeometry(ROAD_WIDTH, 2000);
+const roadMat = new THREE.MeshLambertMaterial({ color: 0x2a2a2a });
+const road = new THREE.Mesh(roadGeo, roadMat);
+road.rotation.x = -Math.PI / 2;
+road.position.y = 0.01;
+road.receiveShadow = true;
+scene.add(road);
+
+// Обочины
+const shoulderMat = new THREE.MeshLambertMaterial({ color: 0x666666 });
+const shoulderL = new THREE.Mesh(new THREE.PlaneGeometry(2, 2000), shoulderMat);
+shoulderL.rotation.x = -Math.PI / 2;
+shoulderL.position.set(-ROAD_WIDTH/2 - 1, 0.02, 0);
+scene.add(shoulderL);
+const shoulderR = shoulderL.clone();
+shoulderR.position.x = ROAD_WIDTH/2 + 1;
+scene.add(shoulderR);
+
+// Разметка (прерывистая)
+const lineMat = new THREE.MeshBasicMaterial({ color: 0xffdd00 });
+const lineGeo = new THREE.PlaneGeometry(0.5, 4);
+const lineGroup = new THREE.Group();
+const TOTAL_LINES = 60;
+const SPACING = 15;
+for (let i = 0; i < TOTAL_LINES; i++) {
+  const line = new THREE.Mesh(lineGeo, lineMat);
+  line.rotation.x = -Math.PI / 2;
+  line.position.set(0, 0.03, -i * SPACING);
+  lineGroup.add(line);
+}
+scene.add(lineGroup);
+
+// Белые боковые линии
+const whiteMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+const edgeL = new THREE.Mesh(new THREE.PlaneGeometry(0.3, 2000), whiteMat);
+edgeL.rotation.x = -Math.PI / 2;
+edgeL.position.set(-ROAD_WIDTH/2 + 0.5, 0.03, 0);
+scene.add(edgeL);
+const edgeR = edgeL.clone();
+edgeR.position.x = ROAD_WIDTH/2 - 0.5;
+scene.add(edgeR);
+
+// ================== МОДЕЛЬ ПРИОРЫ ==================
+function createPriora(color = 0x000000) {
+  const car = new THREE.Group();
+
+  const bodyMat = new THREE.MeshPhongMaterial({
+    color: color,
+    shininess: 90,
+    specular: 0x555555
+  });
+  const glassMat = new THREE.MeshPhongMaterial({
+    color: 0x0a0a0a,
+    shininess: 100,
+    specular: 0xffffff,
+    transparent: true,
+    opacity: 0.85
+  });
+  const tireMat = new THREE.MeshLambertMaterial({ color: 0x0a0a0a });
+  const chromeMat = new THREE.MeshPhongMaterial({ color: 0xc0c0c0, shininess: 100 });
+  const redMat = new THREE.MeshPhongMaterial({ color: 0xff1111, emissive: 0x330000 });
+  const whiteMat = new THREE.MeshPhongMaterial({ color: 0xfff4c8, emissive: 0x332200 });
+
+  // Основной кузов — низ
+  const lowerBody = new THREE.Mesh(
+    new THREE.BoxGeometry(2, 0.6, 4.4),
+    bodyMat
+  );
+  lowerBody.position.y = 0.65;
+  lowerBody.castShadow = true;
+  car.add(lowerBody);
+
+  // Капот (слегка скошен вперёд)
+  const hood = new THREE.Mesh(
+    new THREE.BoxGeometry(1.9, 0.25, 1.2),
+    bodyMat
+  );
+  hood.position.set(0, 1.0, 1.5);
+  hood.castShadow = true;
+  car.add(hood);
+
+  // Багажник
+  const trunk = new THREE.Mesh(
+    new THREE.BoxGeometry(1.9, 0.25, 1.0),
+    bodyMat
+  );
+  trunk.position.set(0, 1.0, -1.6);
+  trunk.castShadow = true;
+  car.add(trunk);
+
+  // Кабина (средняя часть с крышей)
+  const cabin = new THREE.Mesh(
+    new THREE.BoxGeometry(1.85, 0.65, 2.2),
+    bodyMat
+  );
+  cabin.position.set(0, 1.15, 0);
+  cabin.castShadow = true;
+  car.add(cabin);
+
+  // Крыша
+  const roof = new THREE.Mesh(
+    new THREE.BoxGeometry(1.7, 0.08, 1.9),
+    bodyMat
+  );
+  roof.position.set(0, 1.5, 0);
+  roof.castShadow = true;
+  car.add(roof);
+
+  // Лобовое стекло
+  const windshield = new THREE.Mesh(
+    new THREE.BoxGeometry(1.7, 0.55, 0.1),
+    glassMat
+  );
+  windshield.position.set(0, 1.25, 1.05);
+  windshield.rotation.x = -0.35;
+  car.add(windshield);
+
+  // Заднее стекло
+  const rearGlass = new THREE.Mesh(
+    new THREE.BoxGeometry(1.7, 0.5, 0.1),
+    glassMat
+  );
+  rearGlass.position.set(0, 1.25, -1.05);
+  rearGlass.rotation.x = 0.4;
+  car.add(rearGlass);
+
+  // Боковые стёкла
+  const sideGlassL = new THREE.Mesh(
+    new THREE.BoxGeometry(0.05, 0.45, 1.9),
+    glassMat
+  );
+  sideGlassL.position.set(-0.9, 1.3, 0);
+  car.add(sideGlassL);
+  const sideGlassR = sideGlassL.clone();
+  sideGlassR.position.x = 0.9;
+  car.add(sideGlassR);
+
+  // Решётка радиатора (чёрная полоса)
+  const grill = new THREE.Mesh(
+    new THREE.BoxGeometry(1.4, 0.2, 0.05),
+    new THREE.MeshPhongMaterial({ color: 0x000000 })
+  );
+  grill.position.set(0, 0.85, 2.21);
+  car.add(grill);
+
+  // Хром-полоска на решётке
+  const chrome = new THREE.Mesh(
+    new THREE.BoxGeometry(1.4, 0.04, 0.02),
+    chromeMat
+  );
+  chrome.position.set(0, 0.95, 2.22);
+  car.add(chrome);
+
+  // Фары
+  const headlightGeo = new THREE.BoxGeometry(0.5, 0.25, 0.1);
+  const hlL = new THREE.Mesh(headlightGeo, whiteMat);
+  hlL.position.set(-0.65, 0.85, 2.21);
+  car.add(hlL);
+  const hlR = hlL.clone();
+  hlR.position.x = 0.65;
+  car.add(hlR);
+
+  // Задние фонари
+  const taillightGeo = new THREE.BoxGeometry(0.55, 0.3, 0.1);
+  const tlL = new THREE.Mesh(taillightGeo, redMat);
+  tlL.position.set(-0.65, 0.9, -2.21);
+  car.add(tlL);
+  const tlR = tlL.clone();
+  tlR.position.x = 0.65;
+  car.add(tlR);
+
+  // Зеркала
+  const mirrorGeo = new THREE.BoxGeometry(0.15, 0.12, 0.25);
+  const mL = new THREE.Mesh(mirrorGeo, bodyMat);
+  mL.position.set(-1.05, 1.35, 1.0);
+  car.add(mL);
+  const mR = mL.clone();
+  mR.position.x = 1.05;
+  car.add(mR);
+
+  // Колёса (чёрные штамповки)
+  const wheelGeo = new THREE.CylinderGeometry(0.38, 0.38, 0.28, 20);
+  const wheelPositions = [
+    [-1.0, 0.38, 1.4],
+    [1.0, 0.38, 1.4],
+    [-1.0, 0.38, -1.4],
+    [1.0, 0.38, -1.4]
+  ];
+  wheelPositions.forEach(pos => {
+    const wheel = new THREE.Mesh(wheelGeo, tireMat);
+    wheel.rotation.z = Math.PI / 2;
+    wheel.position.set(...pos);
+    wheel.castShadow = true;
+    car.add(wheel);
+
+    // Диск (тёмный, штамповка)
+    const discGeo = new THREE.CylinderGeometry(0.2, 0.2, 0.3, 12);
+    const disc = new THREE.Mesh(discGeo, new THREE.MeshPhongMaterial({ color: 0x1a1a1a }));
+    disc.rotation.z = Math.PI / 2;
+    disc.position.set(...pos);
+    car.add(disc);
+  });
+
+  // Номерной знак спереди
+  const plateGeo = new THREE.BoxGeometry(0.7, 0.18, 0.03);
+  const plateMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+  const plate = new THREE.Mesh(plateGeo, plateMat);
+  plate.position.set(0, 0.6, 2.22);
+  car.add(plate);
+
+  // Задний номер
+  const plateRear = new THREE.Mesh(plateGeo, plateMat);
+  plateRear.position.set(0, 0.65, -2.22);
+  car.add(plateRear);
+
+  return car;
+}
+
+// ================== ИГРОК ==================
+const playerCar = createPriora(0x000000); // ЧЁРНАЯ как на фото
+playerCar.position.set(0, 0, 0);
+scene.add(playerCar);
+
+// ================== ВРАГИ ==================
+const enemyColors = [0xe74c3c, 0x3498db, 0xf39c12, 0x9b59b6, 0x2ecc71, 0xecf0f1, 0x7f8c8d];
 const enemies = [];
-const enemyColors = ['#e74c3c', '#3498db', '#f39c12', '#9b59b6', '#2ecc71', '#ecf0f1', '#7f8c8d'];
 
-let score = 0;
-let gameOver = false;
-let frameCount = 0;
+function spawnEnemy() {
+  const car = createPriora(enemyColors[Math.floor(Math.random() * enemyColors.length)]);
+  // Случайная полоса (левая или правая)
+  const lane = Math.random() < 0.5 ? -1 : 1;
+  const laneX = lane * (ROAD_WIDTH / 4);
+  // Небольшой сдвиг внутри полосы
+  const offset = (Math.random() - 0.5) * 2;
 
+  car.position.set(laneX + offset, 0, -150 - Math.random() * 50);
+  // Развернуть врагов навстречу (они едут в нашу сторону)
+  car.rotation.y = Math.PI;
+  car.userData.speed = 25 + Math.random() * 15;
+  car.userData.lane = lane;
+  scene.add(car);
+  enemies.push(car);
+}
+
+// ================== УПРАВЛЕНИЕ ==================
 const keys = {};
-document.addEventListener('keydown', (e) => {
+document.addEventListener('keydown', e => {
   keys[e.key] = true;
   if (e.key === ' ' && gameOver) resetGame();
 });
-document.addEventListener('keyup', (e) => keys[e.key] = false);
+document.addEventListener('keyup', e => keys[e.key] = false);
 
+// Мобильное управление
 let touchX = null;
-canvas.addEventListener('touchstart', (e) => { touchX = e.touches[0].clientX; e.preventDefault(); }, {passive:false});
-canvas.addEventListener('touchmove', (e) => { touchX = e.touches[0].clientX; e.preventDefault(); }, {passive:false});
-canvas.addEventListener('touchend', () => touchX = null);
+document.addEventListener('touchstart', e => { touchX = e.touches[0].clientX; });
+document.addEventListener('touchmove', e => { touchX = e.touches[0].clientX; });
+document.addEventListener('touchend', () => touchX = null);
 
-function drawRoad() {
-  ctx.fillStyle = '#3a3a3a';
-  ctx.fillRect(road.x, 0, road.width, H);
+// ================== ЛОГИКА ИГРЫ ==================
+let gameOver = false;
+let score = 0;
+let frameCount = 0;
+const scoreEl = document.getElementById('score');
+const speedEl = document.getElementById('speed');
+const finalScoreEl = document.getElementById('finalScore');
+const gameoverEl = document.getElementById('gameover');
 
-  ctx.fillStyle = '#555';
-  ctx.fillRect(road.x - 20, 0, 20, H);
-  ctx.fillRect(road.x + road.width, 0, 20, H);
-
-  // Прерывистая разметка
-  ctx.fillStyle = '#ffdd00';
-  const lineW = 8, lineH = 55, gap = 55;
-  const total = lineH + gap;
-  const offset = road.lineOffset % total;
-  for (let y = -total + offset; y < H; y += total) {
-    ctx.fillRect(W / 2 - lineW / 2, y, lineW, lineH);
-  }
-
-  // Крайние линии
-  ctx.fillStyle = '#fff';
-  ctx.fillRect(road.x + 8, 0, 4, H);
-  ctx.fillRect(road.x + road.width - 12, 0, 4, H);
-}
-
-// ====== РИСУЕМ ПРИОРУ (вид сверху) ======
-function drawPriora(x, y, w, h, bodyColor, isPlayer) {
-  ctx.save();
-  ctx.translate(x + w / 2, y + h / 2);
-
-  // Тень
-  ctx.fillStyle = 'rgba(0,0,0,0.5)';
-  roundRect(-w/2 + 3, -h/2 + 4, w, h, 16);
-  ctx.fill();
-
-  // ===== Кузов =====
-  ctx.fillStyle = bodyColor;
-  roundRect(-w/2, -h/2, w, h, 16);
-  ctx.fill();
-
-  // Блик (глянец)
-  const grad = ctx.createLinearGradient(-w/2, 0, w/2, 0);
-  grad.addColorStop(0, 'rgba(255,255,255,0.05)');
-  grad.addColorStop(0.35, 'rgba(255,255,255,0.25)');
-  grad.addColorStop(0.5, 'rgba(255,255,255,0.35)');
-  grad.addColorStop(0.65, 'rgba(255,255,255,0.15)');
-  grad.addColorStop(1, 'rgba(255,255,255,0.02)');
-  ctx.fillStyle = grad;
-  roundRect(-w/2, -h/2, w, h, 16);
-  ctx.fill();
-
-  // Тёмная окантовка кузова
-  ctx.strokeStyle = 'rgba(0,0,0,0.8)';
-  ctx.lineWidth = 1.5;
-  roundRect(-w/2, -h/2, w, h, 16);
-  ctx.stroke();
-
-  // ===== Капот =====
-  ctx.fillStyle = shade(bodyColor, 6);
-  roundRect(-w/2 + 5, -h/2 + 5, w - 10, 24, 9);
-  ctx.fill();
-
-  // Линии капота
-  ctx.strokeStyle = 'rgba(255,255,255,0.15)';
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.moveTo(-w/2 + 14, -h/2 + 14);
-  ctx.lineTo(w/2 - 14, -h/2 + 14);
-  ctx.stroke();
-
-  // ===== Решётка радиатора (чёрная сетка) =====
-  ctx.fillStyle = '#000';
-  roundRect(-w/2 + 11, -h/2 + 7, w - 22, 6, 2);
-  ctx.fill();
-  // Хром-окантовка
-  ctx.strokeStyle = '#b8b8b8';
-  ctx.lineWidth = 1;
-  roundRect(-w/2 + 11, -h/2 + 7, w - 22, 6, 2);
-  ctx.stroke();
-  // Логотип Лада (ладья) — маленький овал
-  ctx.fillStyle = '#d0d0d0';
-  ctx.beginPath();
-  ctx.ellipse(0, -h/2 + 10, 5, 2.5, 0, 0, Math.PI * 2);
-  ctx.fill();
-
-  // ===== Фары (передние) =====
-  // Левая
-  ctx.fillStyle = '#fff4c8';
-  roundRect(-w/2 + 6, -h/2 + 2, 15, 7, 3);
-  ctx.fill();
-  // Правая
-  roundRect(w/2 - 21, -h/2 + 2, 15, 7, 3);
-  ctx.fill();
-  // Окантовка фар
-  ctx.strokeStyle = 'rgba(0,0,0,0.5)';
-  ctx.lineWidth = 1;
-  roundRect(-w/2 + 6, -h/2 + 2, 15, 7, 3);
-  ctx.stroke();
-  roundRect(w/2 - 21, -h/2 + 2, 15, 7, 3);
-  ctx.stroke();
-
-  // ===== Лобовое стекло (тонированное — тёмное) =====
-  const glassGrad = ctx.createLinearGradient(0, -h/2 + 30, 0, -h/2 + 50);
-  glassGrad.addColorStop(0, '#0a0a0a');
-  glassGrad.addColorStop(1, '#1a1a1a');
-  ctx.fillStyle = glassGrad;
-  roundRect(-w/2 + 9, -h/2 + 30, w - 18, 20, 7);
-  ctx.fill();
-  // Блик на лобовом
-  ctx.fillStyle = 'rgba(255,255,255,0.12)';
-  roundRect(-w/2 + 12, -h/2 + 32, w - 24, 4, 2);
-  ctx.fill();
-
-  // ===== Крыша =====
-  ctx.fillStyle = shade(bodyColor, 4);
-  roundRect(-w/2 + 9, -h/2 + 52, w - 18, 26, 6);
-  ctx.fill();
-
-  // ===== Заднее стекло (тонированное) =====
-  ctx.fillStyle = glassGrad;
-  roundRect(-w/2 + 10, -h/2 + 80, w - 20, 18, 7);
-  ctx.fill();
-  // Блик
-  ctx.fillStyle = 'rgba(255,255,255,0.08)';
-  roundRect(-w/2 + 13, -h/2 + 82, w - 26, 3, 2);
-  ctx.fill();
-
-  // ===== Багажник =====
-  ctx.fillStyle = shade(bodyColor, 8);
-  roundRect(-w/2 + 6, h/2 - 20, w - 12, 14, 6);
-  ctx.fill();
-
-  // ===== Задние фонари (стопы) =====
-  ctx.fillStyle = isPlayer ? '#ff1a1a' : '#b01010';
-  roundRect(-w/2 + 6, h/2 - 7, 15, 6, 2);
-  ctx.fill();
-  roundRect(w/2 - 21, h/2 - 7, 15, 6, 2);
-  ctx.fill();
-  // Окантовка
-  ctx.strokeStyle = 'rgba(0,0,0,0.6)';
-  ctx.lineWidth = 1;
-  roundRect(-w/2 + 6, h/2 - 7, 15, 6, 2);
-  ctx.stroke();
-  roundRect(w/2 - 21, h/2 - 7, 15, 6, 2);
-  ctx.stroke();
-
-  // ===== Боковые зеркала =====
-  ctx.fillStyle = shade(bodyColor, 10);
-  roundRect(-w/2 - 5, -h/2 + 32, 6, 8, 2);
-  ctx.fill();
-  roundRect(w/2 - 1, -h/2 + 32, 6, 8, 2);
-  ctx.fill();
-
-  // ===== Ручки дверей =====
-  ctx.fillStyle = shade(bodyColor, 25);
-  roundRect(-w/2 + 2, -h/2 + 62, 3, 8, 1);
-  ctx.fill();
-  roundRect(w/2 - 5, -h/2 + 62, 3, 8, 1);
-  ctx.fill();
-  roundRect(-w/2 + 2, -h/2 + 88, 3, 8, 1);
-  ctx.fill();
-  roundRect(w/2 - 5, -h/2 + 88, 3, 8, 1);
-  ctx.fill();
-
-  // ===== Колёса (чёрные штамповки, как на фото) =====
-  // Передние
-  ctx.fillStyle = '#050505';
-  roundRect(-w/2 - 6, -h/2 + 20, 8, 22, 3);
-  ctx.fill();
-  roundRect(w/2 - 2, -h/2 + 20, 8, 22, 3);
-  ctx.fill();
-  // Задние
-  roundRect(-w/2 - 6, h/2 - 44, 8, 22, 3);
-  ctx.fill();
-  roundRect(w/2 - 2, h/2 - 44, 8, 22, 3);
-  ctx.fill();
-  // Блик на резине
-  ctx.fillStyle = 'rgba(255,255,255,0.08)';
-  roundRect(-w/2 - 5, -h/2 + 24, 6, 14, 2);
-  ctx.fill();
-  roundRect(w/2 - 1, -h/2 + 24, 6, 14, 2);
-  ctx.fill();
-  roundRect(-w/2 - 5, h/2 - 40, 6, 14, 2);
-  ctx.fill();
-  roundRect(w/2 - 1, h/2 - 40, 6, 14, 2);
-  ctx.fill();
-
-  // ===== Номер (белый с чёрными буквами) =====
-  if (isPlayer) {
-    // Фон номера
-    ctx.fillStyle = '#fff';
-    roundRect(-16, h/2 - 18, 32, 11, 2);
-    ctx.fill();
-    ctx.strokeStyle = '#000';
-    ctx.lineWidth = 1;
-    roundRect(-16, h/2 - 18, 32, 11, 2);
-    ctx.stroke();
-
-    // Флаг РФ (маленький прямоугольник справа)
-    ctx.fillStyle = '#fff';
-    ctx.fillRect(10, h/2 - 17, 4, 9);
-    ctx.fillStyle = '#0039a6';
-    ctx.fillRect(10, h/2 - 17, 4, 3);
-    ctx.fillStyle = '#d52b1e';
-    ctx.fillRect(10, h/2 - 14, 4, 3);
-
-    // Текст номера
-    ctx.fillStyle = '#000';
-    ctx.font = 'bold 7px Arial';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('В511КР', -3, h/2 - 12);
-  }
-
-  ctx.restore();
-}
-
-function roundRect(x, y, w, h, r) {
-  ctx.beginPath();
-  ctx.moveTo(x + r, y);
-  ctx.lineTo(x + w - r, y);
-  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-  ctx.lineTo(x + w, y + h - r);
-  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-  ctx.lineTo(x + r, y + h);
-  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-  ctx.lineTo(x, y + r);
-  ctx.quadraticCurveTo(x, y, x + r, y);
-  ctx.closePath();
-}
-
-function shade(hex, percent) {
-  let r = parseInt(hex.substr(1,2),16);
-  let g = parseInt(hex.substr(3,2),16);
-  let b = parseInt(hex.substr(5,2),16);
-  r = Math.max(0, Math.min(255, r + percent));
-  g = Math.max(0, Math.min(255, g + percent));
-  b = Math.max(0, Math.min(255, b + percent));
-  return '#' + [r,g,b].map(v => v.toString(16).padStart(2,'0')).join('');
-}
-
-function spawnEnemy() {
-  const w = 62, h = 112;
-  const lane = Math.random() < 0.5 ? 0 : 1;
-  const laneWidth = road.width / 2;
-  const x = road.x + lane * laneWidth + (laneWidth - w) / 2;
-
-  enemies.push({
-    x, y: -h - 20, w, h,
-    speed: 3 + Math.random() * 3,
-    color: enemyColors[Math.floor(Math.random() * enemyColors.length)]
-  });
-}
-
-function checkCollision(a, b) {
-  const pad = 6;
-  return a.x + pad < b.x + b.w - pad &&
-         a.x + a.w - pad > b.x + pad &&
-         a.y + pad < b.y + b.h - pad &&
-         a.y + a.h - pad > b.y + pad;
-}
+const CAR_SPEED = 0.5; // скорость бокового движения
+const FORWARD_SPEED = 60; // визуальная скорость движения вперёд
 
 function resetGame() {
   gameOver = false;
   score = 0;
-  frameCount = 0;
+  scoreEl.textContent = '0';
+  gameoverEl.style.display = 'none';
+  playerCar.position.x = 0;
+  enemies.forEach(e => scene.remove(e));
   enemies.length = 0;
-  car.x = W / 2 - car.w / 2;
 }
 
-function update() {
+function updateGame(dt) {
   if (gameOver) return;
-  frameCount++;
-  road.lineOffset += car.speed;
 
-  if (keys['ArrowLeft'] || keys['a'] || keys['A'] || keys['ф'] || keys['Ф']) car.x -= car.speed;
-  if (keys['ArrowRight'] || keys['d'] || keys['D'] || keys['в'] || keys['В']) car.x += car.speed;
+  frameCount++;
+
+  // Боковое управление
+  let dx = 0;
+  if (keys['ArrowLeft'] || keys['a'] || keys['A'] || keys['ф'] || keys['Ф']) dx -= CAR_SPEED;
+  if (keys['ArrowRight'] || keys['d'] || keys['D'] || keys['в'] || keys['В']) dx += CAR_SPEED;
 
   if (touchX !== null) {
-    const target = touchX - car.w / 2;
-    car.x += (target - car.x) * 0.25;
+    const target = ((touchX / window.innerWidth) * 2 - 1) * (ROAD_WIDTH / 2 - 2);
+    dx = (target - playerCar.position.x) * 0.08;
   }
 
-  if (car.x < road.x + 5) car.x = road.x + 5;
-  if (car.x + car.w > road.x + road.width - 5) car.x = road.x + road.width - car.w - 5;
+  playerCar.position.x += dx;
 
-  if (frameCount % 48 === 0) spawnEnemy();
+  // Ограничение по дороге
+  const limit = ROAD_WIDTH / 2 - 1.2;
+  if (playerCar.position.x < -limit) playerCar.position.x = -limit;
+  if (playerCar.position.x > limit) playerCar.position.x = limit;
 
+  // Наклон при повороте (эффект)
+  playerCar.rotation.z = -dx * 0.15;
+  playerCar.rotation.y = -dx * 0.08;
+
+  // Движение разметки (эффект движения)
+  lineGroup.children.forEach(line => {
+    line.position.z += FORWARD_SPEED * dt;
+    if (line.position.z > 50) {
+      line.position.z -= TOTAL_LINES * SPACING;
+    }
+  });
+
+  // Спавн врагов
+  if (frameCount % 45 === 0) {
+    spawnEnemy();
+  }
+
+  // Обновление врагов
   for (let i = enemies.length - 1; i >= 0; i--) {
     const e = enemies[i];
-    e.y += e.speed + car.speed * 0.3;
-    if (checkCollision(car, e)) gameOver = true;
-    if (e.y > H + 120) {
+    e.position.z += (e.userData.speed + FORWARD_SPEED) * dt;
+
+    // Столкновение
+    const dx2 = Math.abs(e.position.x - playerCar.position.x);
+    const dz2 = Math.abs(e.position.z - playerCar.position.z);
+    if (dx2 < 1.6 && dz2 < 3.8) {
+      gameOver = true;
+      finalScoreEl.textContent = score;
+      gameoverEl.style.display = 'flex';
+      return;
+    }
+
+    // Удаление
+    if (e.position.z > 30) {
+      scene.remove(e);
       enemies.splice(i, 1);
       score += 10;
+      scoreEl.textContent = score;
     }
   }
 }
 
-function draw() {
-  ctx.fillStyle = '#1e3a1e';
-  ctx.fillRect(0, 0, W, H);
+// ================== АНИМАЦИЯ ==================
+const clock = new THREE.Clock();
 
-  drawRoad();
+function animate() {
+  requestAnimationFrame(animate);
+  const dt = Math.min(clock.getDelta(), 0.05);
+  updateGame(dt);
 
-  enemies.forEach(e => drawPriora(e.x, e.y, e.w, e.h, e.color, false));
-  drawPriora(car.x, car.y, car.w, car.h, car.color, true);
+  // Камера следует за машиной
+  camera.position.x += (playerCar.position.x * 0.6 - camera.position.x) * 0.08;
+  camera.position.y = 5.5;
+  camera.position.z = 11;
+  camera.lookAt(playerCar.position.x * 0.3, 1, -5);
 
-  // HUD
-  ctx.fillStyle = '#fff';
-  ctx.font = 'bold 22px Arial';
-  ctx.textAlign = 'left';
-  ctx.textBaseline = 'alphabetic';
-  ctx.fillText('Счёт: ' + score, 15, 35);
-
-  ctx.font = '14px Arial';
-  ctx.fillStyle = '#aaa';
-  ctx.fillText('Скорость: ' + Math.round(car.speed * 20) + ' км/ч', 15, 58);
-
-  if (gameOver) {
-    ctx.fillStyle = 'rgba(0,0,0,0.75)';
-    ctx.fillRect(0, 0, W, H);
-    ctx.fillStyle = '#ff3333';
-    ctx.font = 'bold 48px Arial';
-    ctx.textAlign = 'center';
-    ctx.fillText('АВАРИЯ!', W/2, H/2 - 40);
-    ctx.fillStyle = '#fff';
-    ctx.font = 'bold 28px Arial';
-    ctx.fillText('Счёт: ' + score, W/2, H/2 + 10);
-    ctx.font = '20px Arial';
-    ctx.fillStyle = '#ffdd00';
-    ctx.fillText('Нажми ПРОБЕЛ', W/2, H/2 + 60);
-    ctx.fillText('чтобы начать заново', W/2, H/2 + 90);
-  }
+  renderer.render(scene, camera);
 }
 
-function loop() {
-  update();
-  draw();
-  requestAnimationFrame(loop);
-}
+animate();
 
-loop();
+// ================== РЕСАЙЗ ==================
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
 </script>
 </body>
 </html>
