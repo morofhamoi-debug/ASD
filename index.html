@@ -2,245 +2,412 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Генератор банковского QR (EPC / GiroCode)</title>
+<title>Приора на дороге</title>
 <style>
-  * { box-sizing: border-box; }
   body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    background: #0f172a;
-    color: #e2e8f0;
     margin: 0;
-    padding: 24px;
+    background: #111;
     display: flex;
     justify-content: center;
+    align-items: center;
+    height: 100vh;
+    font-family: Arial, sans-serif;
+    overflow: hidden;
   }
-  .wrap { width: 100%; max-width: 520px; }
-  h1 { font-size: 22px; margin: 0 0 4px; }
-  .sub { color: #94a3b8; font-size: 14px; margin-bottom: 24px; }
-  .card {
-    background: #1e293b;
-    border: 1px solid #334155;
-    border-radius: 14px;
-    padding: 20px;
-    margin-bottom: 18px;
-  }
-  label {
-    display: block;
-    font-size: 13px;
-    color: #94a3b8;
-    margin: 12px 0 4px;
-  }
-  label:first-of-type { margin-top: 0; }
-  input {
-    width: 100%;
-    padding: 10px 12px;
-    border-radius: 8px;
-    border: 1px solid #475569;
-    background: #0f172a;
-    color: #e2e8f0;
-    font-size: 15px;
-    outline: none;
-  }
-  input:focus { border-color: #38bdf8; }
-  button {
-    width: 100%;
-    margin-top: 18px;
-    padding: 12px;
-    border: none;
+  canvas {
+    border: 3px solid #333;
     border-radius: 10px;
-    background: #38bdf8;
-    color: #0f172a;
-    font-size: 16px;
-    font-weight: 600;
-    cursor: pointer;
+    box-shadow: 0 0 30px #000;
   }
-  button:hover { background: #7dd3fc; }
-  .qr-box {
-    text-align: center;
-    padding: 16px 0 4px;
-  }
-  #qrcode img, #qrcode canvas { border-radius: 8px; }
-  .empty { color: #64748b; font-size: 14px; padding: 20px 0; }
-  .hint { font-size: 12px; color: #64748b; margin-top: 10px; text-align: center; }
-  .tabbar {
-    display: flex;
-    gap: 8px;
-    margin-bottom: 18px;
-  }
-  .tabbar button {
-    margin: 0;
-    flex: 1;
-    background: #1e293b;
-    color: #94a3b8;
-    border: 1px solid #334155;
-    font-weight: 500;
-  }
-  .tabbar button.active {
-    background: #38bdf8;
-    color: #0f172a;
-    border-color: #38bdf8;
-  }
-  .hidden { display: none; }
 </style>
 </head>
 <body>
-<div class="wrap">
-
-  <h1>Генератор QR</h1>
-  <p class="sub">Банковский QR (EPC / GiroCode) + обычный QR из ссылки</p>
-
-  <div class="tabbar">
-    <button id="tabPay" class="active" onclick="showTab('pay')">Оплата на счёт</button>
-    <button id="tabUrl" onclick="showTab('url')">QR из ссылки</button>
-  </div>
-
-  <!-- Вкладка: банковский QR -->
-  <div id="payTab" class="card">
-    <label>Имя получателя</label>
-    <input id="payName" placeholder="Mario Rossi" value="Mario Rossi">
-
-    <label>IBAN получателя</label>
-    <input id="payIban" placeholder="EE382200221020145685" value="EE382200221020145685">
-
-    <label>Сумма (EUR) — можно оставить пустой</label>
-    <input id="payAmount" placeholder="0.00" type="number" step="0.01" min="0">
-
-    <label>Назначение платежа — необязательно</label>
-    <input id="payMsg" placeholder="Оплата услуги">
-
-    <button onclick="generatePayQR()">Сгенерировать банковский QR</button>
-
-    <div class="qr-box">
-      <div id="qrcode-pay" class="empty">Здесь появится код</div>
-    </div>
-    <p class="hint">Сканируется в приложении любого банка (LHV, Swedbank, SEB, Coop…)</p>
-  </div>
-
-  <!-- Вкладка: QR из ссылки -->
-  <div id="urlTab" class="card hidden">
-    <label>Введите URL</label>
-    <input id="urlInput" placeholder="https://example.com" value="https://example.com">
-    <button onclick="generateUrlQR()">Сгенерировать QR из ссылки</button>
-
-    <div class="qr-box">
-      <div id="qrcode-url" class="empty">Здесь появится код</div>
-    </div>
-    <p class="hint">Просто кодирует ссылку — откроется в браузере телефона</p>
-  </div>
-
-</div>
-
-<!-- Библиотека генерации QR -->
-<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+<canvas id="game" width="480" height="720"></canvas>
 
 <script>
-/* ---------- Переключение вкладок ---------- */
-function showTab(name) {
-  const pay = document.getElementById('payTab');
-  const url = document.getElementById('urlTab');
-  const tPay = document.getElementById('tabPay');
-  const tUrl = document.getElementById('tabUrl');
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
 
-  if (name === 'pay') {
-    pay.classList.remove('hidden');
-    url.classList.add('hidden');
-    tPay.classList.add('active');
-    tUrl.classList.remove('active');
-  } else {
-    url.classList.remove('hidden');
-    pay.classList.add('hidden');
-    tUrl.classList.add('active');
-    tPay.classList.remove('active');
+const W = canvas.width;
+const H = canvas.height;
+
+// Игрок — чёрная Приора
+const car = {
+  x: W / 2 - 30,
+  y: H - 170,
+  w: 62,
+  h: 112,
+  speed: 6,
+  color: '#0a0a0a' // чёрная
+};
+
+// Дорога
+const road = {
+  width: 320,
+  x: (W - 320) / 2,
+  lineOffset: 0
+};
+
+const enemies = [];
+const enemyColors = ['#e74c3c', '#3498db', '#f39c12', '#9b59b6', '#2ecc71', '#ecf0f1', '#7f8c8d'];
+
+let score = 0;
+let gameOver = false;
+let frameCount = 0;
+
+const keys = {};
+document.addEventListener('keydown', (e) => {
+  keys[e.key] = true;
+  if (e.key === ' ' && gameOver) resetGame();
+});
+document.addEventListener('keyup', (e) => keys[e.key] = false);
+
+let touchX = null;
+canvas.addEventListener('touchstart', (e) => { touchX = e.touches[0].clientX; e.preventDefault(); }, {passive:false});
+canvas.addEventListener('touchmove', (e) => { touchX = e.touches[0].clientX; e.preventDefault(); }, {passive:false});
+canvas.addEventListener('touchend', () => touchX = null);
+
+function drawRoad() {
+  ctx.fillStyle = '#3a3a3a';
+  ctx.fillRect(road.x, 0, road.width, H);
+
+  ctx.fillStyle = '#555';
+  ctx.fillRect(road.x - 20, 0, 20, H);
+  ctx.fillRect(road.x + road.width, 0, 20, H);
+
+  // Прерывистая разметка
+  ctx.fillStyle = '#ffdd00';
+  const lineW = 8, lineH = 55, gap = 55;
+  const total = lineH + gap;
+  const offset = road.lineOffset % total;
+  for (let y = -total + offset; y < H; y += total) {
+    ctx.fillRect(W / 2 - lineW / 2, y, lineW, lineH);
   }
+
+  // Крайние линии
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(road.x + 8, 0, 4, H);
+  ctx.fillRect(road.x + road.width - 12, 0, 4, H);
 }
 
-/* ---------- Формирование строки EPC / GiroCode ----------
-   Формат (каждое поле с новой строки):
-   1. BCD
-   2. 002 (версия)
-   3. 1 (кодировка UTF-8)
-   4. SCT (SEPA Credit Transfer)
-   5. BIC (пусто = необязательно)
-   6. Имя получателя (макс 70)
-   7. IBAN
-   8. Сумма: EUR12.50 (или пусто)
-   9. Назначение (макс 140)
-   10. пусто (инфо получателю)
-   11. пусто (инфо плательщику)
-------------------------------------------------- */
-function buildEpcString(name, iban, amount, msg) {
-  // Убираем пробелы из IBAN
-  iban = iban.replace(/\s+/g, '').toUpperCase();
+// ====== РИСУЕМ ПРИОРУ (вид сверху) ======
+function drawPriora(x, y, w, h, bodyColor, isPlayer) {
+  ctx.save();
+  ctx.translate(x + w / 2, y + h / 2);
 
-  let amountStr = '';
-  if (amount && parseFloat(amount) > 0) {
-    amountStr = 'EUR' + parseFloat(amount).toFixed(2);
+  // Тень
+  ctx.fillStyle = 'rgba(0,0,0,0.5)';
+  roundRect(-w/2 + 3, -h/2 + 4, w, h, 16);
+  ctx.fill();
+
+  // ===== Кузов =====
+  ctx.fillStyle = bodyColor;
+  roundRect(-w/2, -h/2, w, h, 16);
+  ctx.fill();
+
+  // Блик (глянец)
+  const grad = ctx.createLinearGradient(-w/2, 0, w/2, 0);
+  grad.addColorStop(0, 'rgba(255,255,255,0.05)');
+  grad.addColorStop(0.35, 'rgba(255,255,255,0.25)');
+  grad.addColorStop(0.5, 'rgba(255,255,255,0.35)');
+  grad.addColorStop(0.65, 'rgba(255,255,255,0.15)');
+  grad.addColorStop(1, 'rgba(255,255,255,0.02)');
+  ctx.fillStyle = grad;
+  roundRect(-w/2, -h/2, w, h, 16);
+  ctx.fill();
+
+  // Тёмная окантовка кузова
+  ctx.strokeStyle = 'rgba(0,0,0,0.8)';
+  ctx.lineWidth = 1.5;
+  roundRect(-w/2, -h/2, w, h, 16);
+  ctx.stroke();
+
+  // ===== Капот =====
+  ctx.fillStyle = shade(bodyColor, 6);
+  roundRect(-w/2 + 5, -h/2 + 5, w - 10, 24, 9);
+  ctx.fill();
+
+  // Линии капота
+  ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(-w/2 + 14, -h/2 + 14);
+  ctx.lineTo(w/2 - 14, -h/2 + 14);
+  ctx.stroke();
+
+  // ===== Решётка радиатора (чёрная сетка) =====
+  ctx.fillStyle = '#000';
+  roundRect(-w/2 + 11, -h/2 + 7, w - 22, 6, 2);
+  ctx.fill();
+  // Хром-окантовка
+  ctx.strokeStyle = '#b8b8b8';
+  ctx.lineWidth = 1;
+  roundRect(-w/2 + 11, -h/2 + 7, w - 22, 6, 2);
+  ctx.stroke();
+  // Логотип Лада (ладья) — маленький овал
+  ctx.fillStyle = '#d0d0d0';
+  ctx.beginPath();
+  ctx.ellipse(0, -h/2 + 10, 5, 2.5, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // ===== Фары (передние) =====
+  // Левая
+  ctx.fillStyle = '#fff4c8';
+  roundRect(-w/2 + 6, -h/2 + 2, 15, 7, 3);
+  ctx.fill();
+  // Правая
+  roundRect(w/2 - 21, -h/2 + 2, 15, 7, 3);
+  ctx.fill();
+  // Окантовка фар
+  ctx.strokeStyle = 'rgba(0,0,0,0.5)';
+  ctx.lineWidth = 1;
+  roundRect(-w/2 + 6, -h/2 + 2, 15, 7, 3);
+  ctx.stroke();
+  roundRect(w/2 - 21, -h/2 + 2, 15, 7, 3);
+  ctx.stroke();
+
+  // ===== Лобовое стекло (тонированное — тёмное) =====
+  const glassGrad = ctx.createLinearGradient(0, -h/2 + 30, 0, -h/2 + 50);
+  glassGrad.addColorStop(0, '#0a0a0a');
+  glassGrad.addColorStop(1, '#1a1a1a');
+  ctx.fillStyle = glassGrad;
+  roundRect(-w/2 + 9, -h/2 + 30, w - 18, 20, 7);
+  ctx.fill();
+  // Блик на лобовом
+  ctx.fillStyle = 'rgba(255,255,255,0.12)';
+  roundRect(-w/2 + 12, -h/2 + 32, w - 24, 4, 2);
+  ctx.fill();
+
+  // ===== Крыша =====
+  ctx.fillStyle = shade(bodyColor, 4);
+  roundRect(-w/2 + 9, -h/2 + 52, w - 18, 26, 6);
+  ctx.fill();
+
+  // ===== Заднее стекло (тонированное) =====
+  ctx.fillStyle = glassGrad;
+  roundRect(-w/2 + 10, -h/2 + 80, w - 20, 18, 7);
+  ctx.fill();
+  // Блик
+  ctx.fillStyle = 'rgba(255,255,255,0.08)';
+  roundRect(-w/2 + 13, -h/2 + 82, w - 26, 3, 2);
+  ctx.fill();
+
+  // ===== Багажник =====
+  ctx.fillStyle = shade(bodyColor, 8);
+  roundRect(-w/2 + 6, h/2 - 20, w - 12, 14, 6);
+  ctx.fill();
+
+  // ===== Задние фонари (стопы) =====
+  ctx.fillStyle = isPlayer ? '#ff1a1a' : '#b01010';
+  roundRect(-w/2 + 6, h/2 - 7, 15, 6, 2);
+  ctx.fill();
+  roundRect(w/2 - 21, h/2 - 7, 15, 6, 2);
+  ctx.fill();
+  // Окантовка
+  ctx.strokeStyle = 'rgba(0,0,0,0.6)';
+  ctx.lineWidth = 1;
+  roundRect(-w/2 + 6, h/2 - 7, 15, 6, 2);
+  ctx.stroke();
+  roundRect(w/2 - 21, h/2 - 7, 15, 6, 2);
+  ctx.stroke();
+
+  // ===== Боковые зеркала =====
+  ctx.fillStyle = shade(bodyColor, 10);
+  roundRect(-w/2 - 5, -h/2 + 32, 6, 8, 2);
+  ctx.fill();
+  roundRect(w/2 - 1, -h/2 + 32, 6, 8, 2);
+  ctx.fill();
+
+  // ===== Ручки дверей =====
+  ctx.fillStyle = shade(bodyColor, 25);
+  roundRect(-w/2 + 2, -h/2 + 62, 3, 8, 1);
+  ctx.fill();
+  roundRect(w/2 - 5, -h/2 + 62, 3, 8, 1);
+  ctx.fill();
+  roundRect(-w/2 + 2, -h/2 + 88, 3, 8, 1);
+  ctx.fill();
+  roundRect(w/2 - 5, -h/2 + 88, 3, 8, 1);
+  ctx.fill();
+
+  // ===== Колёса (чёрные штамповки, как на фото) =====
+  // Передние
+  ctx.fillStyle = '#050505';
+  roundRect(-w/2 - 6, -h/2 + 20, 8, 22, 3);
+  ctx.fill();
+  roundRect(w/2 - 2, -h/2 + 20, 8, 22, 3);
+  ctx.fill();
+  // Задние
+  roundRect(-w/2 - 6, h/2 - 44, 8, 22, 3);
+  ctx.fill();
+  roundRect(w/2 - 2, h/2 - 44, 8, 22, 3);
+  ctx.fill();
+  // Блик на резине
+  ctx.fillStyle = 'rgba(255,255,255,0.08)';
+  roundRect(-w/2 - 5, -h/2 + 24, 6, 14, 2);
+  ctx.fill();
+  roundRect(w/2 - 1, -h/2 + 24, 6, 14, 2);
+  ctx.fill();
+  roundRect(-w/2 - 5, h/2 - 40, 6, 14, 2);
+  ctx.fill();
+  roundRect(w/2 - 1, h/2 - 40, 6, 14, 2);
+  ctx.fill();
+
+  // ===== Номер (белый с чёрными буквами) =====
+  if (isPlayer) {
+    // Фон номера
+    ctx.fillStyle = '#fff';
+    roundRect(-16, h/2 - 18, 32, 11, 2);
+    ctx.fill();
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 1;
+    roundRect(-16, h/2 - 18, 32, 11, 2);
+    ctx.stroke();
+
+    // Флаг РФ (маленький прямоугольник справа)
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(10, h/2 - 17, 4, 9);
+    ctx.fillStyle = '#0039a6';
+    ctx.fillRect(10, h/2 - 17, 4, 3);
+    ctx.fillStyle = '#d52b1e';
+    ctx.fillRect(10, h/2 - 14, 4, 3);
+
+    // Текст номера
+    ctx.fillStyle = '#000';
+    ctx.font = 'bold 7px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('В511КР', -3, h/2 - 12);
   }
 
-  const lines = [
-    'BCD',
-    '002',
-    '1',
-    'SCT',
-    '',                 // BIC не обязателен
-    name.substring(0, 70),
-    iban,
-    amountStr,
-    (msg || '').substring(0, 140),
-    '',
-    ''
-  ];
-
-  return lines.join('\n');
+  ctx.restore();
 }
 
-/* ---------- Генерация банковского QR ---------- */
-function generatePayQR() {
-  const name = document.getElementById('payName').value.trim();
-  const iban = document.getElementById('payIban').value.trim();
-  const amount = document.getElementById('payAmount').value;
-  const msg = document.getElementById('payMsg').value.trim();
+function roundRect(x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
 
-  if (!name || !iban) {
-    alert('Заполните имя получателя и IBAN');
-    return;
-  }
+function shade(hex, percent) {
+  let r = parseInt(hex.substr(1,2),16);
+  let g = parseInt(hex.substr(3,2),16);
+  let b = parseInt(hex.substr(5,2),16);
+  r = Math.max(0, Math.min(255, r + percent));
+  g = Math.max(0, Math.min(255, g + percent));
+  b = Math.max(0, Math.min(255, b + percent));
+  return '#' + [r,g,b].map(v => v.toString(16).padStart(2,'0')).join('');
+}
 
-  const epc = buildEpcString(name, iban, amount, msg);
+function spawnEnemy() {
+  const w = 62, h = 112;
+  const lane = Math.random() < 0.5 ? 0 : 1;
+  const laneWidth = road.width / 2;
+  const x = road.x + lane * laneWidth + (laneWidth - w) / 2;
 
-  const container = document.getElementById('qrcode-pay');
-  container.innerHTML = '';
-  container.classList.remove('empty');
-
-  new QRCode(container, {
-    text: epc,
-    width: 260,
-    height: 260,
-    correctLevel: QRCode.CorrectLevel.M
+  enemies.push({
+    x, y: -h - 20, w, h,
+    speed: 3 + Math.random() * 3,
+    color: enemyColors[Math.floor(Math.random() * enemyColors.length)]
   });
 }
 
-/* ---------- Генерация обычного QR из URL ---------- */
-function generateUrlQR() {
-  const url = document.getElementById('urlInput').value.trim();
-  if (!url) {
-    alert('Введите ссылку');
-    return;
+function checkCollision(a, b) {
+  const pad = 6;
+  return a.x + pad < b.x + b.w - pad &&
+         a.x + a.w - pad > b.x + pad &&
+         a.y + pad < b.y + b.h - pad &&
+         a.y + a.h - pad > b.y + pad;
+}
+
+function resetGame() {
+  gameOver = false;
+  score = 0;
+  frameCount = 0;
+  enemies.length = 0;
+  car.x = W / 2 - car.w / 2;
+}
+
+function update() {
+  if (gameOver) return;
+  frameCount++;
+  road.lineOffset += car.speed;
+
+  if (keys['ArrowLeft'] || keys['a'] || keys['A'] || keys['ф'] || keys['Ф']) car.x -= car.speed;
+  if (keys['ArrowRight'] || keys['d'] || keys['D'] || keys['в'] || keys['В']) car.x += car.speed;
+
+  if (touchX !== null) {
+    const target = touchX - car.w / 2;
+    car.x += (target - car.x) * 0.25;
   }
 
-  const container = document.getElementById('qrcode-url');
-  container.innerHTML = '';
-  container.classList.remove('empty');
+  if (car.x < road.x + 5) car.x = road.x + 5;
+  if (car.x + car.w > road.x + road.width - 5) car.x = road.x + road.width - car.w - 5;
 
-  new QRCode(container, {
-    text: url,
-    width: 260,
-    height: 260,
-    correctLevel: QRCode.CorrectLevel.M
-  });
+  if (frameCount % 48 === 0) spawnEnemy();
+
+  for (let i = enemies.length - 1; i >= 0; i--) {
+    const e = enemies[i];
+    e.y += e.speed + car.speed * 0.3;
+    if (checkCollision(car, e)) gameOver = true;
+    if (e.y > H + 120) {
+      enemies.splice(i, 1);
+      score += 10;
+    }
+  }
 }
+
+function draw() {
+  ctx.fillStyle = '#1e3a1e';
+  ctx.fillRect(0, 0, W, H);
+
+  drawRoad();
+
+  enemies.forEach(e => drawPriora(e.x, e.y, e.w, e.h, e.color, false));
+  drawPriora(car.x, car.y, car.w, car.h, car.color, true);
+
+  // HUD
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 22px Arial';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'alphabetic';
+  ctx.fillText('Счёт: ' + score, 15, 35);
+
+  ctx.font = '14px Arial';
+  ctx.fillStyle = '#aaa';
+  ctx.fillText('Скорость: ' + Math.round(car.speed * 20) + ' км/ч', 15, 58);
+
+  if (gameOver) {
+    ctx.fillStyle = 'rgba(0,0,0,0.75)';
+    ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = '#ff3333';
+    ctx.font = 'bold 48px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('АВАРИЯ!', W/2, H/2 - 40);
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 28px Arial';
+    ctx.fillText('Счёт: ' + score, W/2, H/2 + 10);
+    ctx.font = '20px Arial';
+    ctx.fillStyle = '#ffdd00';
+    ctx.fillText('Нажми ПРОБЕЛ', W/2, H/2 + 60);
+    ctx.fillText('чтобы начать заново', W/2, H/2 + 90);
+  }
+}
+
+function loop() {
+  update();
+  draw();
+  requestAnimationFrame(loop);
+}
+
+loop();
 </script>
-
 </body>
 </html>
