@@ -1,1956 +1,479 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<meta name="theme-color" content="#F2F3F5" />
-<title>ASD BANK</title>
-<link rel="preconnect" href="https://rsms.me/">
-<link rel="stylesheet" href="https://rsms.me/inter/inter.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<title>MMA 3D — Mobile</title>
 <style>
-:root {
-  --bg: #F2F3F5;
-  --bg-card: #FFFFFF;
-  --bg-sunken: #EDEEF1;
-  --bg-tile: #F0F1F3;
-  --fg: #1A1A1A;
-  --fg-muted: #8A8F98;
-  --fg-subtle: #A8ADB5;
-  --green: #B4E33D;
-  --green-fg: #1A1A1A;
-  --red: #FF3B30;
-  --yellow: #FFCC00;
-  --blue: #2E7CFF;
-  --purple: #7C3BFF;
-  --card-radius: 24px;
-  --tile-radius: 20px;
-  --radius-pill: 999px;
-  --shadow: 0 2px 8px rgba(0,0,0,.04);
-  --shadow-md: 0 4px 16px rgba(0,0,0,.06);
-  --transition: 200ms cubic-bezier(0.2, 0.8, 0.2, 1);
-}
-[data-theme="dark"] {
-  --bg: #0E0E10;
-  --bg-card: #1C1C1E;
-  --bg-sunken: #2A2A2C;
-  --bg-tile: #252528;
-  --fg: #F2F2F5;
-  --fg-muted: #8E8E93;
-  --fg-subtle: #636366;
-}
-*, *::before, *::after { box-sizing: border-box; }
-html, body { margin: 0; padding: 0; height: 100%; }
-body {
-  font-family: Inter, -apple-system, "SF Pro Display", "Segoe UI", Roboto, sans-serif;
-  background: var(--bg);
-  color: var(--fg);
-  font-size: 15px;
-  line-height: 1.4;
-  -webkit-font-smoothing: antialiased;
-  letter-spacing: -0.01em;
-  display: flex;
-  justify-content: center;
-  min-height: 100vh;
-}
-button { font-family: inherit; cursor: pointer; border: none; background: none; color: inherit; padding: 0; }
-a { color: inherit; text-decoration: none; }
-input, select, textarea { font-family: inherit; font-size: inherit; }
-[hidden] { display: none !important; }
-::selection { background: var(--green); color: var(--green-fg); }
-#app { width: 100%; max-width: 480px; min-height: 100vh; padding-bottom: 100px; position: relative; }
-@media (min-width: 768px) {
-  body { background: #E5E6E9; padding: 20px 0; }
-  #app { background: var(--bg); min-height: calc(100vh - 40px); border-radius: 32px; box-shadow: 0 20px 60px rgba(0,0,0,.1); overflow: hidden; }
-}
+  * { -webkit-tap-highlight-color: transparent; user-select: none; }
+  html, body { margin:0; padding:0; overflow:hidden; background:#111; font-family:Arial; color:#fff;
+               touch-action:none; height:100%; width:100%; position:fixed; }
+  canvas { display:block; }
 
-/* TOPBAR */
-.topbar { display: flex; align-items: center; gap: 12px; padding: 16px 20px 12px; }
-.avatar-circle { width: 40px; height: 40px; border-radius: 50%; background: var(--bg-sunken); display: grid; place-items: center; color: var(--fg-muted); flex-shrink: 0; }
-.avatar-circle svg { width: 20px; height: 20px; }
-.topbar .name { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; display: flex; align-items: center; gap: 4px; }
-.topbar .name svg { width: 16px; height: 16px; color: var(--fg-subtle); }
-.topbar .balance-pill { margin-left: auto; background: var(--green); color: var(--green-fg); font-weight: 700; font-size: 14px; padding: 8px 14px; border-radius: var(--radius-pill); white-space: nowrap; }
+  #hud { position:fixed; top:8px; left:0; width:100%; pointer-events:none; z-index:10; }
+  .bar { position:absolute; width:38%; height:16px; background:#222; border:2px solid #555; border-radius:4px; }
+  .fill { height:100%; transition:width 0.15s; border-radius:2px; }
+  #p1bar { left:2%; top:0; }
+  #p1fill { background:linear-gradient(90deg,#0f0,#8f8); width:100%; }
+  #p2bar { right:2%; top:0; }
+  #p2fill { background:linear-gradient(90deg,#f88,#f00); width:100%; float:right; }
+  .stam { position:absolute; width:38%; height:6px; background:#222; border:1px solid #444; top:22px; border-radius:3px; }
+  #p1stam { left:2%; }
+  #p2stam { right:2%; }
+  .sfill { height:100%; background:#fc0; width:100%; transition:width 0.1s; border-radius:3px; }
 
-/* SECTIONS */
-.section { padding: 0 16px; margin-bottom: 12px; }
-.balance-card { background: var(--bg-card); border-radius: var(--card-radius); padding: 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: var(--shadow); }
-.balance-card .label { font-size: 15px; color: var(--fg-muted); margin-bottom: 6px; }
-.balance-card .amount { font-size: 26px; font-weight: 700; letter-spacing: -0.03em; }
-.balance-card .amount small { font-size: 20px; font-weight: 700; }
-.balance-card .card-mini { width: 68px; height: 46px; border-radius: 8px; padding: 6px 8px; display: flex; flex-direction: column; justify-content: space-between; position: relative; color: white; }
-.balance-card .card-mini .brand { font-size: 10px; font-weight: 800; }
-.balance-card .card-mini .last4 { font-size: 11px; font-weight: 600; letter-spacing: 0.04em; }
-.balance-card .card-mini .mir { position: absolute; bottom: 5px; right: 6px; font-size: 8px; font-weight: 700; }
+  #msg { position:fixed; top:42%; width:100%; text-align:center; font-size:14vw; font-weight:bold;
+         text-shadow:0 0 20px #000; pointer-events:none; opacity:0; transition:opacity 0.3s; z-index:20; }
 
-/* PROMO */
-.promo { background: var(--bg-card); border-radius: var(--card-radius); overflow: hidden; box-shadow: var(--shadow); margin-top: 12px; }
-.promo-top { padding: 18px 20px 14px; display: flex; justify-content: space-between; align-items: flex-start; }
-.promo-top .txt { font-size: 15px; color: var(--fg-muted); }
-.promo-top .title { font-size: 18px; font-weight: 700; color: var(--fg); margin-top: 4px; letter-spacing: -0.02em; }
-.promo-top .close { width: 28px; height: 28px; display: grid; place-items: center; color: var(--fg-subtle); }
-.promo-bottom { background: #D9E9FF; color: #1A3A6B; padding: 14px 20px; font-size: 14px; font-weight: 500; }
-[data-theme="dark"] .promo-bottom { background: #0F2547; color: #B7D2FF; }
+  /* --- Сенсорные кнопки --- */
+  #touchUI { position:fixed; bottom:0; left:0; width:100%; height:45%; display:none; z-index:30; pointer-events:none; }
+  #touchUI.active { display:block; }
+  .tbtn {
+    position:absolute; bottom:12px;
+    width:70px; height:70px; border-radius:50%;
+    background:rgba(255,255,255,0.12);
+    border:2px solid rgba(255,255,255,0.35);
+    color:#fff; font-size:22px; font-weight:bold;
+    display:flex; align-items:center; justify-content:center;
+    pointer-events:auto; touch-action:none;
+    backdrop-filter:blur(4px);
+    transition:transform 0.08s, background 0.08s;
+    text-align:center; line-height:1;
+  }
+  .tbtn.pressed { background:rgba(255,255,255,0.35); transform:scale(0.92); }
 
-/* SEARCH */
-.search-row { display: flex; gap: 8px; padding: 16px 16px 8px; align-items: center; }
-.search-box { flex: 1; height: 48px; background: var(--bg-card); border-radius: var(--radius-pill); padding: 0 16px 0 44px; display: flex; align-items: center; position: relative; color: var(--fg-subtle); font-size: 15px; }
-.search-box .icon { position: absolute; left: 14px; width: 22px; height: 22px; color: var(--fg); }
-.search-box input { width: 100%; border: none; background: none; outline: none; color: var(--fg); font-size: 15px; }
-.search-box input::placeholder { color: var(--fg-subtle); }
-.circle-btn { width: 48px; height: 48px; border-radius: 50%; background: var(--bg-card); display: grid; place-items: center; color: var(--fg); transition: transform var(--transition); flex-shrink: 0; }
-.circle-btn:active { transform: scale(0.94); }
-.circle-btn svg { width: 22px; height: 22px; }
+  #btnLeft  { left:12px; bottom:90px; }
+  #btnRight { left:100px; bottom:90px; }
+  #btnJump  { left:56px;  bottom:12px; font-size:20px; }
 
-/* SECTION HEAD */
-.sec-head { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px 12px; }
-.sec-head h3 { margin: 0; font-size: 18px; font-weight: 700; letter-spacing: -0.02em; display: flex; align-items: center; gap: 6px; }
-.sec-head h3 svg { width: 16px; height: 16px; color: var(--fg-subtle); }
+  #btnPunch { right:12px; bottom:90px; background:rgba(255,80,80,0.2); border-color:rgba(255,80,80,0.6); }
+  #btnKick  { right:100px; bottom:90px; background:rgba(255,140,60,0.2); border-color:rgba(255,140,60,0.6); font-size:26px; }
+  #btnBlock { right:12px; bottom:12px; background:rgba(80,140,255,0.2); border-color:rgba(80,140,255,0.6); font-size:20px; }
+  #btnDodge { right:100px; bottom:12px; background:rgba(80,200,120,0.2); border-color:rgba(80,200,120,0.6); font-size:20px; }
 
-/* QUICK ACTIONS */
-.quick-scroll { display: flex; gap: 14px; padding: 4px 16px 8px; overflow-x: auto; scrollbar-width: none; }
-.quick-scroll::-webkit-scrollbar { display: none; }
-.quick-item { flex-shrink: 0; width: 76px; display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; }
-.quick-item .icon-circle { width: 68px; height: 68px; border-radius: 50%; background: var(--bg-card); display: grid; place-items: center; transition: transform var(--transition); box-shadow: var(--shadow); }
-.quick-item:active .icon-circle { transform: scale(0.92); }
-.quick-item .icon-circle svg { width: 26px; height: 26px; }
-.quick-item .icon-circle.green { background: var(--green); color: var(--green-fg); }
-.quick-item .icon-circle.blue { background: #D9E9FF; color: #2E7CFF; }
-.quick-item .icon-circle.red { background: #FFE0DF; color: #FF3B30; }
-.quick-item .icon-circle.yellow { background: #FFF2CC; color: #B58B00; }
-.quick-item .icon-circle.purple { background: #EDE0FF; color: #7C3BFF; }
-.quick-item .icon-circle.dark { background: #2A2A2A; color: #FFFFFF; }
-.quick-item .label { font-size: 12px; font-weight: 500; color: var(--fg); line-height: 1.25; }
+  /* Подсказка для десктопа */
+  #hint { position:fixed; bottom:8px; width:100%; text-align:center; font-size:12px; opacity:0.5; z-index:5; pointer-events:none; }
+  #hint.mobile { display:none; }
 
-/* PRIVILEGES */
-.priv-scroll { display: flex; gap: 12px; padding: 4px 16px 8px; overflow-x: auto; scrollbar-width: none; }
-.priv-scroll::-webkit-scrollbar { display: none; }
-.priv-card { flex-shrink: 0; width: 260px; height: 130px; border-radius: var(--tile-radius); padding: 16px; display: flex; flex-direction: column; justify-content: space-between; position: relative; overflow: hidden; color: #1A1A1A; }
-.priv-card .title { font-size: 15px; font-weight: 700; }
-.priv-card .desc { font-size: 12px; opacity: 0.85; margin-top: 4px; }
-.priv-card .emoji { font-size: 32px; position: absolute; right: 16px; bottom: 12px; }
-.priv-card.teal { background: linear-gradient(135deg, #A8E6E6, #7DD3D3); }
-.priv-card.blue { background: linear-gradient(135deg, #D9E9FF, #B8D4FF); }
-.priv-card.pink { background: linear-gradient(135deg, #FFD9E5, #FFB8CF); }
-.priv-card.green { background: linear-gradient(135deg, #E0F5B8, #C8E98D); }
-
-/* LIST */
-.list-card { background: var(--bg-card); border-radius: var(--card-radius); padding: 4px 16px; margin: 0 16px; box-shadow: var(--shadow); }
-.list-row { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--bg-sunken); }
-.list-row:last-child { border-bottom: none; }
-.tx-icon { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; flex-shrink: 0; background: var(--bg-tile); color: var(--fg); font-weight: 700; font-size: 14px; }
-.tx-icon.in { background: #E0F5B8; color: #4B7A00; }
-.tx-icon.out { background: #FFE0DF; color: #C8102E; }
-.tx-icon svg { width: 20px; height: 20px; }
-.tx-meta { flex: 1; min-width: 0; }
-.tx-title { font-size: 15px; font-weight: 600; margin: 0; letter-spacing: -0.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.tx-sub { font-size: 12px; color: var(--fg-muted); margin: 2px 0 0; }
-.tx-amount { font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
-.tx-amount.in { color: #4B7A00; }
-
-/* BOTTOM NAV */
-.bottom-nav { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 480px; background: var(--bg-card); display: grid; grid-template-columns: repeat(5, 1fr); padding: 8px 0 calc(8px + env(safe-area-inset-bottom)); border-top: 1px solid var(--bg-sunken); z-index: 50; }
-@media (min-width: 768px) { .bottom-nav { border-radius: 0 0 32px 32px; } }
-.bottom-nav a { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 4px 0; font-size: 11px; font-weight: 500; color: var(--fg-muted); position: relative; }
-.bottom-nav a.active { color: var(--fg); }
-.bottom-nav svg { width: 24px; height: 24px; }
-.bottom-nav .badge { position: absolute; top: 0; right: 24%; background: var(--red); color: white; font-size: 10px; font-weight: 700; min-width: 16px; height: 16px; border-radius: 8px; display: grid; place-items: center; padding: 0 4px; }
-
-/* PAGE HEADER */
-.page-header { display: flex; align-items: center; gap: 12px; padding: 16px 20px; }
-.page-header .back { width: 40px; height: 40px; border-radius: 50%; background: var(--bg-card); display: grid; place-items: center; box-shadow: var(--shadow); }
-.page-header .back svg { width: 20px; height: 20px; }
-.page-header h1 { margin: 0; font-size: 22px; font-weight: 700; letter-spacing: -0.02em; }
-
-/* BUTTONS */
-.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 14px 20px; border-radius: var(--radius-pill); font-size: 15px; font-weight: 600; transition: all var(--transition); white-space: nowrap; }
-.btn svg { width: 18px; height: 18px; }
-.btn:active { transform: scale(0.97); }
-.btn-primary { background: var(--fg); color: var(--bg-card); }
-.btn-primary:hover { opacity: 0.9; }
-.btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
-.btn-green { background: var(--green); color: var(--green-fg); }
-.btn-secondary { background: var(--bg-sunken); color: var(--fg); }
-.btn-block { width: 100%; }
-.btn-sm { padding: 8px 14px; font-size: 13px; }
-
-/* INPUTS */
-.input, .select, .textarea { width: 100%; padding: 16px 18px; border-radius: 16px; border: none; background: var(--bg-card); color: var(--fg); font-size: 16px; transition: box-shadow var(--transition); }
-.input:focus, .select:focus, .textarea:focus { outline: none; box-shadow: 0 0 0 2px var(--green); }
-.input.error { box-shadow: 0 0 0 2px var(--red); }
-.field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
-.field label { font-size: 13px; font-weight: 500; color: var(--fg-muted); padding-left: 4px; }
-.field .err { font-size: 12px; color: var(--red); padding-left: 4px; }
-
-/* BANK CARD */
-.bank-card { aspect-ratio: 1.586; border-radius: 20px; padding: 20px; color: white; display: flex; flex-direction: column; justify-content: space-between; position: relative; overflow: hidden; background: linear-gradient(135deg, #E63946, #C8102E); box-shadow: 0 10px 30px rgba(200,16,46,.3); }
-.bank-card.black { background: linear-gradient(135deg, #2A2A2A, #0E0E10); }
-.bank-card.green { background: linear-gradient(135deg, #B4E33D, #8CB81F); color: #1A1A1A; }
-.bank-card.blue  { background: linear-gradient(135deg, #2E7CFF, #1E4FBF); }
-.bank-card .bc-brand { font-size: 14px; font-weight: 800; letter-spacing: 0.06em; }
-.bank-card .bc-num { font-family: 'SF Mono', ui-monospace, monospace; font-size: 19px; letter-spacing: 0.14em; margin-top: auto; }
-.bank-card .bc-bottom { display: flex; justify-content: space-between; align-items: end; font-size: 11px; opacity: 0.85; margin-top: 10px; }
-.bank-card .bc-bottom b { display: block; font-size: 13px; font-weight: 600; letter-spacing: 0.04em; }
-
-/* CHIPS / TABS */
-.tabs-scroll { display: flex; gap: 8px; padding: 8px 16px 16px; overflow-x: auto; scrollbar-width: none; }
-.tabs-scroll::-webkit-scrollbar { display: none; }
-.chip { padding: 8px 16px; border-radius: var(--radius-pill); font-size: 14px; font-weight: 500; background: var(--bg-card); color: var(--fg-muted); white-space: nowrap; transition: all var(--transition); flex-shrink: 0; }
-.chip.active { background: var(--fg); color: var(--bg-card); font-weight: 600; }
-
-/* AUTH */
-.auth-wrap { min-height: 100vh; padding: 32px 24px; display: flex; flex-direction: column; }
-.auth-logo { display: flex; align-items: center; gap: 10px; margin-bottom: 40px; }
-.auth-logo .mark { width: 40px; height: 40px; border-radius: 12px; background: var(--fg); color: var(--bg-card); display: grid; place-items: center; font-weight: 800; font-size: 15px; }
-.auth-logo .name { font-size: 18px; font-weight: 800; letter-spacing: -0.02em; }
-.auth-wrap h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.03em; margin: 0 0 8px; }
-.auth-wrap .sub { color: var(--fg-muted); font-size: 15px; margin: 0 0 28px; }
-
-/* BADGE */
-.badge { display: inline-flex; align-items: center; padding: 4px 10px; border-radius: var(--radius-pill); font-size: 12px; font-weight: 600; background: var(--bg-sunken); color: var(--fg-muted); }
-.badge.success { background: #E0F5B8; color: #4B7A00; }
-.badge.danger { background: #FFE0DF; color: #C8102E; }
-
-/* TOAST */
-.toast-wrap { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; gap: 8px; z-index: 200; width: calc(100% - 32px); max-width: 448px; pointer-events: none; }
-.toast { background: var(--fg); color: var(--bg-card); padding: 14px 18px; border-radius: 16px; font-size: 14px; font-weight: 500; box-shadow: var(--shadow-md); animation: toastIn 240ms cubic-bezier(0.2, 0.8, 0.2, 1); pointer-events: auto; }
-@keyframes toastIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
-
-/* UTILS */
-.empty { padding: 40px 20px; text-align: center; color: var(--fg-muted); }
-.empty h3 { margin: 0 0 6px; color: var(--fg); font-size: 16px; font-weight: 600; }
-.empty p { margin: 0 0 16px; font-size: 14px; }
-.row { display: flex; align-items: center; gap: 10px; }
-.row.between { justify-content: space-between; }
-.mt-8 { margin-top: 8px; } .mt-12 { margin-top: 12px; } .mt-16 { margin-top: 16px; } .mt-20 { margin-top: 20px; }
-.muted { color: var(--fg-muted); }
-.mono { font-family: 'SF Mono', ui-monospace, monospace; }
-.text-c { text-align: center; }
-.page-anim { animation: pageIn 240ms cubic-bezier(0.2, 0.8, 0.2, 1); }
-@keyframes pageIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  /* Кнопка поворота экрана */
+  #rotateHint { position:fixed; top:0; left:0; width:100%; height:100%;
+    background:rgba(0,0,0,0.9); color:#fff; display:none; align-items:center; justify-content:center;
+    font-size:20px; text-align:center; z-index:100; flex-direction:column; gap:20px; }
+  #rotateHint.show { display:flex; }
 </style>
 </head>
 <body>
 
-<div id="app"></div>
-<div class="toast-wrap" id="toasts"></div>
+<div id="hud">
+  <div id="p1bar" class="bar"><div id="p1fill" class="fill"></div></div>
+  <div id="p2bar" class="bar"><div id="p2fill" class="fill"></div></div>
+  <div id="p1stam" class="stam"><div id="p1sfill" class="sfill"></div></div>
+  <div id="p2stam" class="stam"><div id="p2sfill" class="sfill"></div></div>
+</div>
+<div id="msg"></div>
 
-<script>
-/* ==================================================================
- * ASD BANK — Mobile SPA
- * ================================================================== */
+<div id="touchUI">
+  <div class="tbtn" id="btnLeft">◀</div>
+  <div class="tbtn" id="btnRight">▶</div>
+  <div class="tbtn" id="btnJump">⤒</div>
+  <div class="tbtn" id="btnPunch">👊</div>
+  <div class="tbtn" id="btnKick">🦵</div>
+  <div class="tbtn" id="btnBlock">🛡</div>
+  <div class="tbtn" id="btnDodge">↩</div>
+</div>
 
-const CONFIG = {
-  APP_NAME: 'ASD BANK',
-  CURRENCY: 'RUB',
-};
+<div id="hint">A/D — двигаться · W — прыжок · J — рука · K — нога · L — блок · Space — уклонение</div>
 
-const State = {
-  user: null,
-  settings: { theme: 'light', language: 'ru' },
-  listeners: [],
-  subscribe(fn) { this.listeners.push(fn); return () => this.listeners = this.listeners.filter(f => f !== fn); },
-  emit() { this.listeners.forEach(fn => fn(this)); },
-};
+<div id="rotateHint">
+  <div style="font-size:60px;">📱↻</div>
+  <div>Поверни телефон горизонтально<br>для лучшего обзора</div>
+</div>
 
-/* ===================== DB ===================== */
-const DB = (() => {
-  const data = { users: [], accounts: [], cards: [], transactions: [], notifications: [], sessions: [], audit_logs: [] };
-  let nextId = { users: 10000, accounts: 20000, cards: 30000, transactions: 40000, notifications: 50000 };
-  const id = t => ++nextId[t];
-  const insert = (t, row) => { row.id = id(t); data[t].push(row); return row; };
-  const update = (t, id, patch) => { const i = data[t].findIndex(x => x.id === id); if (i >= 0) Object.assign(data[t][i], patch); return data[t][i]; };
-  const byUser = (t, uid) => data[t].filter(x => x.user_id === uid);
-  const byId = (t, id) => data[t].find(x => x.id === id);
-  return { data, insert, update, byUser, byId };
-})();
+<script type="importmap">
+{ "imports": {
+  "three": "https://unpkg.com/three@0.160.0/build/three.module.js"
+} }
+</script>
 
-/* ===================== SEED ===================== */
-async function seed() {
-  if (DB.data.users.length > 0) return;
-  const pwd = async (p) => await Hash.sha256(p + ':asd-salt');
-  const users = [
-    { asd_id: 'ASD-10000001', first_name: 'Александр', last_name: 'Морозов', email: 'alex@asd.ru', phone: '+79001112233', password_hash: await pwd('Demo123!'), role: 'USER', status: 'active' },
-    { asd_id: 'ASD-10000002', first_name: 'Борис', last_name: 'Иванов', email: 'boris@asd.ru', phone: '+79001112244', password_hash: await pwd('Demo123!'), role: 'USER', status: 'active' },
-    { asd_id: 'ASD-10000003', first_name: 'Чарли', last_name: 'Смит', email: 'charlie@asd.ru', phone: '+79001112255', password_hash: await pwd('Demo123!'), role: 'USER', status: 'active' },
-    { asd_id: 'ASD-10000004', first_name: 'Морф', last_name: 'Пользователь', email: 'demo@asd.ru', phone: '+79001112266', password_hash: await pwd('Demo123!'), role: 'USER', status: 'active' },
-    { asd_id: 'ASD-10000099', first_name: 'Admin', last_name: 'Root', email: 'admin@asd.ru', phone: '+79001112299', password_hash: await pwd('Admin123!'), role: 'SUPER_ADMIN', status: 'active' },
-  ];
-  for (const u of users) {
-    u.created_at = Date.now() - 30 * 86400000;
-    u.last_login = null;
-    const user = DB.insert('users', u);
-    DB.insert('accounts', {
-      user_id: user.id,
-      account_number: '40817810099' + String(1000000000 + user.id),
-      currency: 'RUB', kind: 'main', balance: 0, available_balance: 0, status: 'active',
-      created_at: Date.now(), updated_at: Date.now(),
-    });
+<script type="module">
+import * as THREE from 'three';
+
+// --- Детект мобильного ---
+const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) ||
+                 ('ontouchstart' in window && window.innerWidth < 1024);
+
+// --- Сцена ---
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x1a1a2a);
+scene.fog = new THREE.Fog(0x1a1a2a, 15, 40);
+
+const camera = new THREE.PerspectiveCamera(60, innerWidth/innerHeight, 0.1, 100);
+camera.position.set(0, 6, 12);
+camera.lookAt(0, 1.2, 0);
+
+const renderer = new THREE.WebGLRenderer({ antialias: !isMobile, powerPreference:'high-performance' });
+renderer.setSize(innerWidth, innerHeight);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, isMobile ? 1.5 : 2));
+renderer.shadowMap.enabled = !isMobile; // на мобилке тени выкл для FPS
+document.body.appendChild(renderer.domElement);
+
+// --- Свет ---
+scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+const key = new THREE.DirectionalLight(0xffffff, 1.0);
+key.position.set(5, 10, 5);
+if (!isMobile) { key.castShadow = true; key.shadow.mapSize.set(1024,1024);
+  key.shadow.camera.left=-10; key.shadow.camera.right=10;
+  key.shadow.camera.top=10; key.shadow.camera.bottom=-10; }
+scene.add(key);
+const rim = new THREE.DirectionalLight(0x88aaff, 0.5);
+rim.position.set(-5, 5, -5);
+scene.add(rim);
+
+// --- Октагон ---
+const floor = new THREE.Mesh(
+  new THREE.CircleGeometry(7, 8),
+  new THREE.MeshStandardMaterial({ color:0x334466, roughness:0.7 })
+);
+floor.rotation.x = -Math.PI/2;
+floor.receiveShadow = !isMobile;
+scene.add(floor);
+
+const wall = new THREE.Mesh(
+  new THREE.CylinderGeometry(7, 7, 2.2, 8, 1, true),
+  new THREE.MeshStandardMaterial({ color:0x6688aa, transparent:true, opacity:0.15, side:THREE.DoubleSide })
+);
+wall.position.y = 1.1;
+scene.add(wall);
+
+const grid = new THREE.GridHelper(14, 14, 0x4466aa, 0x223355);
+grid.position.y = 0.01;
+scene.add(grid);
+
+// --- Боец ---
+class Fighter {
+  constructor(color, x, facing) {
+    this.hp = 100;
+    this.stamina = 100;
+    this.maxStamina = 100;
+    this.speed = 0.09;
+    this.velY = 0; this.y = 0; this.onGround = true;
+    this.facing = facing;
+    this.blocking = false;
+    this.attackCooldown = 0;
+    this.hitCooldown = 0;
+    this.dodgeCooldown = 0;
+    this.dodgeTimer = 0;
+    this.dodgeDir = 0;
+    this.alive = true;
+    this.punchAnim = 0;
+    this.kickAnim = 0;
+
+    this.group = new THREE.Group();
+    this.group.position.set(x, 0, 0);
+
+    const bodyMat = new THREE.MeshStandardMaterial({ color, roughness:0.6 });
+    const skinMat = new THREE.MeshStandardMaterial({ color:0xddaa88, roughness:0.8 });
+
+    const torso = new THREE.Mesh(new THREE.CapsuleGeometry(0.35, 0.8, 6, 12), bodyMat);
+    torso.position.y = 1.4; torso.castShadow = !isMobile;
+    this.group.add(torso);
+
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.28, 16, 16), skinMat);
+    head.position.y = 2.15; head.castShadow = !isMobile;
+    this.group.add(head);
+
+    const armGeo = new THREE.CapsuleGeometry(0.11, 0.65, 5, 8);
+    this.lArm = new THREE.Mesh(armGeo, skinMat);
+    this.lArm.position.set(-0.5, 1.55, 0.15); this.lArm.rotation.z = 0.15;
+    this.group.add(this.lArm);
+    this.rArm = new THREE.Mesh(armGeo, skinMat);
+    this.rArm.position.set(0.5, 1.55, 0.15); this.rArm.rotation.z = -0.15;
+    this.group.add(this.rArm);
+
+    const legGeo = new THREE.CapsuleGeometry(0.13, 0.7, 5, 8);
+    this.lLeg = new THREE.Mesh(legGeo, bodyMat);
+    this.lLeg.position.set(-0.18, 0.55, 0); this.group.add(this.lLeg);
+    this.rLeg = new THREE.Mesh(legGeo, bodyMat);
+    this.rLeg.position.set(0.18, 0.55, 0); this.group.add(this.rLeg);
+
+    this.group.rotation.y = facing === 1 ? Math.PI/2 : -Math.PI/2;
+    scene.add(this.group);
   }
-  const init = [['ASD-10000001', 125400.50], ['ASD-10000002', 42300], ['ASD-10000003', 18700.25], ['ASD-10000004', 84520.10]];
-  for (const [asdId, amount] of init) {
-    const u = DB.data.users.find(x => x.asd_id === asdId);
-    const acc = DB.data.accounts.find(a => a.user_id === u.id);
-    acc.balance = amount; acc.available_balance = amount;
-  }
-  const demo = DB.data.users.find(u => u.email === 'demo@asd.ru');
-  const demoAcc = DB.data.accounts.find(a => a.user_id === demo.id);
-  DB.insert('cards', {
-    user_id: demo.id, account_id: demoAcc.id, pan_last4: '4383',
-    exp_month: 12, exp_year: 29, brand: 'ASD', kind: 'debit', status: 'active',
-    daily_limit: 150000, color: 'red', holder: 'MORF USER', created_at: Date.now(),
-  });
-  const sampleTx = [
-    { type: 'payment', direction: 'out', amount: 2890.90, description: 'Супермаркет «Пятёрочка»', category: 'food', days: 1 },
-    { type: 'transfer', direction: 'out', amount: 15000, description: 'Перевод Александру', counterparty: DB.data.users[0].id, days: 2 },
-    { type: 'deposit', direction: 'in', amount: 85000, description: 'Зарплата', days: 3 },
-    { type: 'payment', direction: 'out', amount: 650, description: 'Яндекс.Такси', category: 'transport', days: 4 },
-    { type: 'payment', direction: 'out', amount: 2990, description: 'Иви', category: 'subs', days: 6 },
-    { type: 'transfer', direction: 'in', amount: 30000, description: 'Перевод от Бориса', counterparty: DB.data.users[1].id, days: 8 },
-    { type: 'payment', direction: 'out', amount: 8900, description: 'Спортмастер', category: 'shopping', days: 10 },
-    { type: 'payment', direction: 'out', amount: 4520, description: 'Ресторан «Пушкин»', category: 'fun', days: 12 },
-  ];
-  for (const tx of sampleTx) {
-    const d = Date.now() - tx.days * 86400000;
-    DB.insert('transactions', {
-      ref: genRef(), user_id: demo.id, account_id: demoAcc.id,
-      type: tx.type, direction: tx.direction, amount: tx.amount, currency: 'RUB',
-      status: 'completed', description: tx.description,
-      counterparty: tx.counterparty || null, category: tx.category || null,
-      created_at: d, completed_at: d,
-    });
-  }
-  DB.insert('notifications', { user_id: demo.id, category: 'transfer', title: 'Вам поступили деньги', body: '+30 000 ₽ от Бориса', is_read: false, created_at: Date.now() - 3600000 });
-  DB.insert('notifications', { user_id: demo.id, category: 'card', title: 'Карта выпущена', body: 'Дебетовая карта •••• 4383', is_read: false, created_at: Date.now() - 7200000 });
-  DB.insert('notifications', { user_id: demo.id, category: 'security', title: 'Новый вход', body: 'iOS · Safari', is_read: true, created_at: Date.now() - 86400000 });
-}
 
-/* ===================== CRYPTO ===================== */
-const Hash = {
-  async sha256(str) {
-    const buf = new TextEncoder().encode(str);
-    const hash = await crypto.subtle.digest('SHA-256', buf);
-    return [...new Uint8Array(hash)].map(b => b.toString(16).padStart(2,'0')).join('');
-  }
-};
-function genRef() {
-  const d = new Date();
-  const date = `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
-  const rnd = [...crypto.getRandomValues(new Uint8Array(4))].map(b => b.toString(16).padStart(2,'0')).join('').toUpperCase();
-  return `ASD-TRX-${date}-${rnd}`;
-}
-function genIdem() {
-  return [...crypto.getRandomValues(new Uint8Array(16))].map(b => b.toString(16).padStart(2,'0')).join('');
-}
+  get x() { return this.group.position.x; }
+  set x(v) { this.group.position.x = v; }
 
-/* ===================== AUDIT ===================== */
-function audit(action, meta = {}) {
-  DB.insert('audit_logs', { user_id: State.user?.id || null, action, meta, created_at: Date.now() });
-}
+  update(dt, opponent) {
+    if (this.attackCooldown > 0) this.attackCooldown -= dt;
+    if (this.hitCooldown > 0) this.hitCooldown -= dt;
+    if (this.dodgeCooldown > 0) this.dodgeCooldown -= dt;
+    if (this.punchAnim > 0) this.punchAnim = Math.max(0, this.punchAnim - dt*6);
+    if (this.kickAnim > 0) this.kickAnim = Math.max(0, this.kickAnim - dt*5);
 
-/* ===================== NOTIFICATIONS ===================== */
-function notify(userId, category, title, body) {
-  DB.insert('notifications', { user_id: userId, category, title, body, is_read: false, created_at: Date.now() });
-  if (State.user && State.user.id === userId) {
-    State.emit();
-    toast(title);
-  }
-}
-
-/* ===================== TOAST ===================== */
-function toast(msg) {
-  const el = document.createElement('div');
-  el.className = 'toast';
-  el.textContent = msg;
-  document.getElementById('toasts').appendChild(el);
-  setTimeout(() => {
-    el.style.transition = 'opacity 200ms, transform 200ms';
-    el.style.opacity = '0';
-    el.style.transform = 'translateY(12px)';
-    setTimeout(() => el.remove(), 200);
-  }, 2800);
-}
-
-/* ===================== API ===================== */
-const API = {
-  async login(login, password) {
-    await sleep(300);
-    const u = DB.data.users.find(x => x.email.toLowerCase() === login.toLowerCase() || x.phone === login);
-    if (!u) throw new Error('Пользователь не найден');
-    const h = await Hash.sha256(password + ':asd-salt');
-    if (h !== u.password_hash) throw new Error('Неверный пароль');
-    DB.update('users', u.id, { last_login: Date.now() });
-    audit('login');
-    return { user: u };
-  },
-  async register(p) {
-    await sleep(300);
-    if (DB.data.users.find(u => u.email.toLowerCase() === p.email.toLowerCase())) throw new Error('Email занят');
-    const h = await Hash.sha256(p.password + ':asd-salt');
-    const asdId = 'ASD-' + String(10000000 + DB.data.users.length + 1);
-    const u = DB.insert('users', {
-      asd_id: asdId, first_name: p.first_name, last_name: p.last_name,
-      email: p.email, phone: p.phone, password_hash: h,
-      role: 'USER', status: 'active', created_at: Date.now(), last_login: Date.now(),
-    });
-    DB.insert('accounts', {
-      user_id: u.id,
-      account_number: '40817810099' + String(2000000000 + u.id),
-      currency: 'RUB', kind: 'main', balance: 0, available_balance: 0, status: 'active',
-      created_at: Date.now(), updated_at: Date.now(),
-    });
-    notify(u.id, 'system', 'Добро пожаловать в ASD BANK', 'Ваш ASD ID: ' + asdId);
-    return { user: u };
-  },
-  async transfer({ fromAccountId, toUserId, amount, description, idempotencyKey }) {
-    await sleep(400);
-    const from = DB.byId('accounts', fromAccountId);
-    const to = DB.data.accounts.find(a => a.user_id === toUserId);
-    const toUser = DB.byId('users', toUserId);
-    if (!from) throw new Error('Счёт не найден');
-    if (!to || !toUser) throw new Error('Получатель не найден');
-    if (amount > from.available_balance) throw new Error('Недостаточно средств');
-    if (idempotencyKey) {
-      const ex = DB.data.transactions.find(t => t.idempotency === idempotencyKey);
-      if (ex) return { transaction: ex, duplicate: true };
+    if (this.stamina < this.maxStamina) {
+      this.stamina = Math.min(this.maxStamina, this.stamina + dt * (this.blocking ? 8 : 15));
     }
-    from.balance -= amount; from.available_balance -= amount;
-    to.balance += amount; to.available_balance += amount;
-    const ref = genRef();
-    const txOut = DB.insert('transactions', {
-      ref, user_id: from.user_id, account_id: from.id, type: 'transfer', direction: 'out',
-      amount, currency: from.currency, status: 'completed',
-      description: description || `Перевод ${toUser.first_name}`,
-      counterparty: toUser.id, idempotency: idempotencyKey,
-      created_at: Date.now(), completed_at: Date.now(),
-    });
-    DB.insert('transactions', {
-      ref, user_id: to.user_id, account_id: to.id, type: 'transfer', direction: 'in',
-      amount, currency: to.currency, status: 'completed',
-      description: description || `Перевод от ${DB.byId('users', from.user_id).first_name}`,
-      counterparty: from.user_id, created_at: Date.now(), completed_at: Date.now(),
-    });
-    notify(from.user_id, 'transfer', 'Перевод выполнен', `−${fmt(amount)} → ${toUser.first_name}`);
-    notify(to.user_id, 'transfer', 'Вам поступили деньги', `+${fmt(amount)} от ${DB.byId('users', from.user_id).first_name}`);
-    audit('transfer', { ref, amount });
-    State.emit();
-    return { transaction: txOut };
-  },
-  async accounts(uid) { return DB.byUser('accounts', uid); },
-  async cards(uid) { return DB.byUser('cards', uid); },
-  async transactions(uid) { return DB.byUser('transactions', uid).sort((a,b) => b.created_at - a.created_at); },
-  async notifications(uid) { return DB.byUser('notifications', uid).sort((a,b) => b.created_at - a.created_at); },
-  async searchUsers(q) {
-    q = q.trim().toLowerCase();
-    if (!q) return [];
-    return DB.data.users.filter(u =>
-      u.asd_id.toLowerCase().includes(q) ||
-      u.email.toLowerCase().includes(q) ||
-      u.phone.includes(q) ||
-      (u.first_name + ' ' + u.last_name).toLowerCase().includes(q)
-    ).slice(0, 10);
-  },
-};
-function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
-/* ===================== FORMAT ===================== */
-function fmt(a, c = 'RUB') {
-  return new Intl.NumberFormat('ru-RU', { style: 'currency', currency: c, minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(a).replace('RUB','₽').replace(/\s/g,' ');
-}
-function fmtNum(a) {
-  return new Intl.NumberFormat('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(a);
-}
-function fmtDate(ts, withTime = false) {
-  const d = new Date(ts);
-  return d.toLocaleString('ru-RU', withTime
-    ? { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }
-    : { day: '2-digit', month: 'long' });
-}
-function escapeHtml(s) {
-  return String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
-}
-function initials(u) { return (u.first_name[0] + (u.last_name[0] || '')).toUpperCase(); }
-
-/* ===================== ROUTER ===================== */
-const Router = (() => {
-  const routes = [];
-  let cleanup = null;
-  let notFound = null;
-  function on(pattern, handler, opts = {}) {
-    const keys = [];
-    const rx = new RegExp('^' + pattern.replace(/:([a-z_]+)/g, (_, k) => { keys.push(k); return '([^/]+)'; }) + '/?$');
-    routes.push({ rx, keys, handler, opts });
-  }
-  function match(path) {
-    for (const r of routes) {
-      const m = path.match(r.rx);
-      if (m) { const params = {}; r.keys.forEach((k,i) => params[k] = decodeURIComponent(m[i+1])); return { ...r, params }; }
+    if (this.dodgeTimer > 0) {
+      this.dodgeTimer -= dt;
+      this.x += this.dodgeDir * this.speed * 3.2;
     }
-    return null;
-  }
-  async function resolve(path) {
-    if (cleanup) { try { cleanup(); } catch {} cleanup = null; }
-    const m = match(path);
-    if (!m) { if (notFound) await notFound(); return; }
-    if (m.opts.auth && !State.user) { navigate('/login'); return; }
-    if (m.opts.guest && State.user) { navigate('/'); return; }
-    if (m.opts.role && !m.opts.role.includes(State.user?.role)) { render403(); return; }
-    cleanup = await m.handler(m.params);
-  }
-  function navigate(path, replace = false) {
-    if (path === location.pathname && !replace) return;
-    if (replace) history.replaceState(null, '', path); else history.pushState(null, '', path);
-    resolve(path);
-  }
-  window.addEventListener('popstate', () => resolve(location.pathname));
-  window.addEventListener('click', (e) => {
-    const a = e.target.closest('[data-link]');
-    if (!a) return;
-    e.preventDefault();
-    navigate(a.getAttribute('href'));
-  });
-  function setNotFound(fn) { notFound = fn; }
-  return { on, navigate, resolve, setNotFound };
-})();
 
-/* ===================== ICONS ===================== */
-const Icons = {
-  user: `<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>`,
-  chevronRight: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>`,
-  chevronLeft: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m15 6-6 6 6 6"/></svg>`,
-  close: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>`,
-  search: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>`,
-  qr: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM20 14v3M14 20h6"/></svg>`,
-  voice: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3v10"/><path d="M8 8v5M4 10v2M16 8v5M20 10v2"/></svg>`,
-  phone: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h3l2 5-3 2a12 12 0 0 0 6 6l2-3 5 2v3a2 2 0 0 1-2 2A16 16 0 0 1 4 5a2 2 0 0 1 2-2Z"/></svg>`,
-  arrowLeftRight: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h15l-3-3"/><path d="M21 16H6l3 3"/></svg>`,
-  globe: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>`,
-  card: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="5.5" width="19" height="13" rx="2.5"/><path d="M2.5 10h19"/></svg>`,
-  home: `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 11 12 3l9 8v9a2 2 0 0 1-2 2h-4v-6h-6v6H5a2 2 0 0 1-2-2z"/></svg>`,
-  homeOutline: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11 12 3l9 8v9a2 2 0 0 1-2 2h-4v-6h-6v6H5a2 2 0 0 1-2-2z"/></svg>`,
-  history: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l3 2"/></svg>`,
-  chart: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10"/><path d="M10 20V4"/><path d="M16 20v-7"/><path d="M22 20H2"/></svg>`,
-  chat: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-8 8H7l-4 4V12a8 8 0 0 1 8-8h2a8 8 0 0 1 8 8Z"/></svg>`,
-  plus: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>`,
-  send: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4Z"/></svg>`,
-  bell: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>`,
-  settings: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></svg>`,
-  shield: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/></svg>`,
-  logout: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/></svg>`,
-  eye: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>`,
-  copy: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>`,
-  check: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5L20 7"/></svg>`,
-  arrowDown: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M6 13l6 6 6-6"/></svg>`,
-  arrowUp: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M6 11l6-6 6 6"/></svg>`,
-  lock: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>`,
-  device: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2" width="12" height="20" rx="3"/><path d="M11 18h2"/></svg>`,
-};
-
-/* ===================== UI HELPERS ===================== */
-const UI = {
-  txRow(tx) {
-    const isIn = tx.direction === 'in';
-    const cp = tx.counterparty ? DB.byId('users', tx.counterparty) : null;
-    const title = tx.description || (cp ? `${cp.first_name} ${cp.last_name}` : 'Операция');
-    const sub = `${fmtDate(tx.created_at, true)}${cp ? ' · ' + cp.first_name : ''}`;
-    return `
-      <a class="list-row" href="/transactions/${tx.id}" data-link>
-        <div class="tx-icon ${isIn ? 'in' : 'out'}">${isIn ? Icons.arrowDown : Icons.arrowUp}</div>
-        <div class="tx-meta">
-          <p class="tx-title">${escapeHtml(title)}</p>
-          <p class="tx-sub">${escapeHtml(sub)}</p>
-        </div>
-        <div class="tx-amount ${isIn ? 'in' : ''}">${isIn ? '+' : '−'}${fmt(tx.amount, tx.currency)}</div>
-      </a>`;
-  },
-};
-
-/* ===================== BOTTOM NAV ===================== */
-function BottomNav() {
-  const path = location.pathname;
-  const isActive = (p) => p === '/' ? path === '/' : path.startsWith(p);
-  const unread = State.user ? DB.byUser('notifications', State.user.id).filter(n => !n.is_read).length : 0;
-  return `
-    <nav class="bottom-nav">
-      <a href="/" data-link class="${isActive('/') ? 'active' : ''}">
-        ${isActive('/') ? Icons.home : Icons.homeOutline}<span>Главный</span>
-      </a>
-      <a href="/payments" data-link class="${isActive('/payments') ? 'active' : ''}">
-        ${Icons.arrowLeftRight}<span>Платежи</span>
-      </a>
-      <a href="/analytics" data-link class="${isActive('/analytics') ? 'active' : ''}">
-        ${Icons.chart}<span>Выгода</span>
-        ${unread ? `<span class="badge">${unread}</span>` : ''}
-      </a>
-      <a href="/transactions" data-link class="${isActive('/transactions') ? 'active' : ''}">
-        ${Icons.history}<span>История</span>
-      </a>
-      <a href="/support" data-link class="${isActive('/support') ? 'active' : ''}">
-        ${Icons.chat}<span>Чаты</span>
-      </a>
-    </nav>`;
-}
-
-/* ===================== TOPBAR ===================== */
-function TopBar() {
-  const u = State.user;
-  const total = DB.byUser('accounts', u.id).reduce((s,a) => s + a.balance, 0);
-  return `
-    <div class="topbar">
-      <div class="avatar-circle">${Icons.user}</div>
-      <a href="/profile" data-link class="name">${escapeHtml(u.first_name)} ${Icons.chevronRight}</a>
-      <div class="balance-pill">${fmt(total)}</div>
-    </div>`;
-}
-
-/* ===================== RENDER ===================== */
-function render(html, opts = {}) {
-  document.getElementById('app').innerHTML = html;
-  if (!opts.noScroll) window.scrollTo({ top: 0, behavior: 'instant' });
-}
-
-/* ===================== PAGES ===================== */
-
-async function PageHome() {
-  const u = State.user;
-  const accounts = await API.accounts(u.id);
-  const acc = accounts[0];
-  const cards = await API.cards(u.id);
-  const card = cards[0];
-  const txs = (await API.transactions(u.id)).slice(0, 4);
-
-  const html = `
-    ${TopBar()}
-
-    <div class="section">
-      <div class="balance-card">
-        <div>
-          <div class="label">Текущий счёт</div>
-          <div class="amount">${fmtNum(acc.balance)}<small> ₽</small></div>
-        </div>
-        ${card ? `
-          <a href="/cards/${card.id}" data-link>
-            <div class="card-mini" style="background:linear-gradient(135deg,#E63946,#C8102E)">
-              <div class="brand">ASD</div>
-              <div class="last4">${card.pan_last4}</div>
-              <div class="mir">МИР</div>
-            </div>
-          </a>` : ''}
-      </div>
-    </div>
-
-    <div class="section">
-      <div class="promo">
-        <div class="promo-top">
-          <div>
-            <div class="txt">+1 категория кэшбэка</div>
-            <div class="title">С ASD-Smart</div>
-          </div>
-          <button class="close" onclick="this.closest('.promo').remove()">${Icons.close}</button>
-        </div>
-        <div class="promo-bottom">И выше ставка по накоплениям</div>
-      </div>
-    </div>
-
-    <div class="search-row">
-      <div class="search-box">
-        <span class="icon">${Icons.search}</span>
-        <input placeholder="Поиск" readonly onclick="location.href='/search'" />
-      </div>
-      <button class="circle-btn" onclick="location.href='/qr'">${Icons.qr}</button>
-      <button class="circle-btn" onclick="toast('Голосовой поиск')">${Icons.voice}</button>
-    </div>
-
-    <div class="sec-head">
-      <h3>Быстрые переводы ${Icons.chevronRight}</h3>
-    </div>
-
-    <div class="quick-scroll">
-      <a class="quick-item" href="/transfers?type=phone" data-link>
-        <div class="icon-circle green">${Icons.phone}</div>
-        <div class="label">По номеру<br>телефона</div>
-      </a>
-      <a class="quick-item" href="/transfers?type=account" data-link>
-        <div class="icon-circle">${Icons.arrowLeftRight}</div>
-        <div class="label">Между<br>счетами</div>
-      </a>
-      <a class="quick-item" href="/transfers?type=abroad" data-link>
-        <div class="icon-circle yellow">${Icons.globe}</div>
-        <div class="label">За рубеж</div>
-      </a>
-      <a class="quick-item" href="/transfers?type=self" data-link>
-        <div class="icon-circle">${Icons.user}</div>
-        <div class="label">Себе</div>
-      </a>
-      <a class="quick-item" href="/receive" data-link>
-        <div class="icon-circle purple">${Icons.qr}</div>
-        <div class="label">Получить</div>
-      </a>
-    </div>
-
-    <div class="sec-head">
-      <h3>Ваши привилегии ${Icons.chevronRight}</h3>
-    </div>
-
-    <div class="priv-scroll">
-      <div class="priv-card teal">
-        <div><div class="title">Кэшбэк 5%</div><div class="desc">В любимых категориях</div></div>
-        <div class="emoji">🎁</div>
-      </div>
-      <div class="priv-card blue">
-        <div><div class="title">+2% на остаток</div><div class="desc">По накопительному счёту</div></div>
-        <div class="emoji">📈</div>
-      </div>
-      <div class="priv-card pink">
-        <div><div class="title">Бесплатные переводы</div><div class="desc">До 100 000 ₽ в месяц</div></div>
-        <div class="emoji">💸</div>
-      </div>
-    </div>
-
-    <div class="sec-head">
-      <h3>Последние операции</h3>
-      <a href="/transactions" data-link class="muted" style="font-size:13px">Все</a>
-    </div>
-
-    <div class="list-card">
-      ${txs.length === 0 ? `<div class="empty"><h3>Пока нет операций</h3></div>` : txs.map(UI.txRow).join('')}
-    </div>
-
-    <div class="mt-20"></div>
-    ${BottomNav()}
-  `;
-  render(html);
-}
-
-async function PageAccounts() {
-  const accs = await API.accounts(State.user.id);
-  const html = `
-    <div class="page-header">
-      <button class="back" onclick="history.back()">${Icons.chevronLeft}</button>
-      <h1>Счета</h1>
-    </div>
-    <div class="section">
-      ${accs.map(a => `
-        <a href="/accounts/${a.id}" data-link class="balance-card" style="margin-bottom:12px;display:flex">
-          <div>
-            <div class="label">${a.kind === 'main' ? 'Основной' : a.kind}</div>
-            <div class="amount">${fmt(a.balance)}</div>
-            <div class="muted mono" style="font-size:12px;margin-top:6px">${a.account_number}</div>
-          </div>
-          <span style="color:var(--fg-subtle)">${Icons.chevronRight}</span>
-        </a>
-      `).join('')}
-    </div>
-    <div class="section mt-16">
-      <button class="btn btn-secondary btn-block" data-action="open-account">${Icons.plus} Открыть новый счёт</button>
-    </div>
-    ${BottomNav()}
-  `;
-  render(html);
-}
-
-async function PageAccountDetail({ id }) {
-  const a = DB.byId('accounts', +id);
-  if (!a || a.user_id !== State.user.id) return render404();
-  const txs = (await API.transactions(State.user.id)).filter(t => t.account_id === a.id).slice(0, 20);
-  const html = `
-    <div class="page-header">
-      <button class="back" onclick="history.back()">${Icons.chevronLeft}</button>
-      <h1>Счёт</h1>
-    </div>
-    <div class="section">
-      <div class="balance-card" style="flex-direction:column;align-items:flex-start;gap:12px">
-        <div>
-          <div class="label">Баланс</div>
-          <div class="amount">${fmt(a.balance)}</div>
-        </div>
-        <div class="mono muted" style="font-size:13px">${a.account_number}</div>
-        <div class="row" style="gap:8px;width:100%">
-          <button class="btn btn-secondary btn-sm" data-action="copy" data-value="${a.account_number}">${Icons.copy} Копировать</button>
-          <a class="btn btn-primary btn-sm" href="/transfers?from=${a.id}" data-link>${Icons.send} Перевести</a>
-        </div>
-      </div>
-    </div>
-    <div class="sec-head"><h3>Операции</h3></div>
-    <div class="list-card">
-      ${txs.length === 0 ? `<div class="empty"><h3>Операций нет</h3></div>` : txs.map(UI.txRow).join('')}
-    </div>
-    ${BottomNav()}
-  `;
-  render(html);
-}
-
-async function PageCards() {
-  const cards = await API.cards(State.user.id);
-  const html = `
-    <div class="page-header">
-      <button class="back" onclick="history.back()">${Icons.chevronLeft}</button>
-      <h1>Карты</h1>
-    </div>
-    <div class="section">
-      ${cards.length === 0 ? `
-        <div class="empty">
-          <h3>У вас пока нет карт</h3>
-          <p>Откройте карту за 10 секунд</p>
-          <button class="btn btn-primary" data-action="create-card">${Icons.plus} Создать карту</button>
-        </div>
-      ` : cards.map(c => `
-        <a href="/cards/${c.id}" data-link style="display:block;margin-bottom:16px">
-          <div class="bank-card ${c.color}">
-            <div class="row between"><div class="bc-brand">ASD BANK</div><div style="font-size:11px;opacity:.8">${c.kind.toUpperCase()}</div></div>
-            <div class="bc-num">•••• •••• •••• ${c.pan_last4}</div>
-            <div class="bc-bottom"><div><b>${c.holder}</b><span>Card Holder</span></div><div><b>${String(c.exp_month).padStart(2,'0')}/${String(c.exp_year).slice(-2)}</b><span>Expires</span></div></div>
-          </div>
-        </a>
-      `).join('')}
-      ${cards.length > 0 ? `<button class="btn btn-secondary btn-block mt-16" data-action="create-card">${Icons.plus} Добавить карту</button>` : ''}
-    </div>
-    ${BottomNav()}
-  `;
-  render(html);
-}
-
-async function PageCardDetail({ id }) {
-  const c = DB.byId('cards', +id);
-  if (!c || c.user_id !== State.user.id) return render404();
-  const acc = DB.byId('accounts', c.account_id);
-  const html = `
-    <div class="page-header">
-      <button class="back" onclick="history.back()">${Icons.chevronLeft}</button>
-      <h1>Карта</h1>
-    </div>
-    <div class="section">
-      <div class="bank-card ${c.color}">
-        <div class="row between"><div class="bc-brand">ASD BANK</div><div style="font-size:11px;opacity:.8">${c.kind.toUpperCase()}</div></div>
-        <div class="bc-num" id="card-pan">•••• •••• •••• ${c.pan_last4}</div>
-        <div class="bc-bottom"><div><b>${c.holder}</b><span>Card Holder</span></div><div><b>${String(c.exp_month).padStart(2,'0')}/${String(c.exp_year).slice(-2)}</b><span>Expires</span></div></div>
-      </div>
-    </div>
-    <div class="section mt-16">
-      <div class="balance-card" style="flex-direction:column;align-items:stretch;gap:12px">
-        <div class="row between"><span class="muted">Баланс</span><b>${fmt(acc.balance)}</b></div>
-        <div class="row between"><span class="muted">Лимит в день</span><b>${fmt(c.daily_limit)}</b></div>
-        <div class="row between"><span class="muted">Статус</span>${c.status === 'active' ? '<span class="badge success">Активна</span>' : '<span class="badge danger">Заблокирована</span>'}</div>
-      </div>
-    </div>
-    <div class="section mt-16" style="display:flex;flex-direction:column;gap:8px">
-      <button class="btn btn-secondary btn-block" data-action="reveal-card" data-id="${c.id}">${Icons.eye} Показать реквизиты</button>
-      <button class="btn ${c.status === 'active' ? 'btn-secondary' : 'btn-green'} btn-block" data-action="toggle-card" data-id="${c.id}">${c.status === 'active' ? Icons.lock + ' Заблокировать' : Icons.check + ' Разблокировать'}</button>
-      <button class="btn btn-secondary btn-block" data-action="reissue-card" data-id="${c.id}">Перевыпустить</button>
-    </div>
-    ${BottomNav()}
-  `;
-  render(html);
-}
-
-async function PageTransfers(query) {
-  const accounts = await API.accounts(State.user.id);
-  const fromId = query.from ? +query.from : accounts[0].id;
-  const html = `
-    <div class="page-header">
-      <button class="back" onclick="history.back()">${Icons.chevronLeft}</button>
-      <h1>Перевод</h1>
-    </div>
-    <div class="section">
-      <form id="transfer-form" style="display:flex;flex-direction:column;gap:12px">
-        <div class="field">
-          <label>Кому</label>
-          <input class="input" id="recipient-search" placeholder="Имя, ASD ID, телефон, email" autocomplete="off" />
-          <div id="recipient-result"></div>
-        </div>
-        <div class="field">
-          <label>Сумма</label>
-          <input class="input" id="amount" type="number" step="0.01" min="0.01" placeholder="0,00" />
-          <div class="err" id="amount-err"></div>
-        </div>
-        <div class="field">
-          <label>Комментарий</label>
-          <input class="input" id="description" placeholder="Необязательно" maxlength="120" />
-        </div>
-        <div class="field">
-          <label>Со счёта</label>
-          <select class="select" id="from-account">
-            ${accounts.map(a => `<option value="${a.id}" ${a.id === fromId ? 'selected' : ''}>${a.kind === 'main' ? 'Основной' : a.kind} · ${fmt(a.available_balance)}</option>`).join('')}
-          </select>
-        </div>
-        <button class="btn btn-green btn-block" type="submit">Продолжить</button>
-      </form>
-    </div>
-    <div class="sec-head"><h3>Получатели</h3></div>
-    <div class="list-card">
-      ${DB.data.users.filter(x => x.id !== State.user.id).map(u => `
-        <div class="list-row">
-          <div class="tx-icon">${initials(u)}</div>
-          <div class="tx-meta">
-            <p class="tx-title">${escapeHtml(u.first_name)} ${escapeHtml(u.last_name)}</p>
-            <p class="tx-sub mono">${u.asd_id}</p>
-          </div>
-          <button class="btn btn-secondary btn-sm" type="button" data-pick="${u.id}">Выбрать</button>
-        </div>
-      `).join('')}
-    </div>
-    ${BottomNav()}
-  `;
-  render(html);
-  attachTransferForm();
-}
-
-function attachTransferForm() {
-  const form = document.getElementById('transfer-form');
-  const search = document.getElementById('recipient-search');
-  const result = document.getElementById('recipient-result');
-  let selected = null;
-
-  search.addEventListener('input', async () => {
-    const q = search.value;
-    if (q.length < 2) { result.innerHTML = ''; return; }
-    const users = (await API.searchUsers(q)).filter(u => u.id !== State.user.id);
-    if (!users.length) { result.innerHTML = `<div class="muted mt-8" style="font-size:13px">Не найдено</div>`; return; }
-    result.innerHTML = users.map(u => `
-      <div class="list-row" style="padding:8px 0">
-        <div class="tx-icon">${initials(u)}</div>
-        <div class="tx-meta"><p class="tx-title">${escapeHtml(u.first_name)} ${escapeHtml(u.last_name)}</p><p class="tx-sub mono">${u.asd_id}</p></div>
-        <button class="btn btn-secondary btn-sm" type="button" data-pick="${u.id}">Выбрать</button>
-      </div>
-    `).join('');
-  });
-
-  document.addEventListener('click', e => {
-    const b = e.target.closest('[data-pick]');
-    if (!b) return;
-    selected = DB.byId('users', +b.dataset.pick);
-    search.value = `${selected.first_name} ${selected.last_name}`;
-    result.innerHTML = `<div class="mt-8" style="font-size:13px;background:#E0F5B8;padding:8px 12px;border-radius:12px"><b>${escapeHtml(selected.first_name)}</b> · ${selected.asd_id}</div>`;
-  });
-
-  form.addEventListener('submit', e => {
-    e.preventDefault();
-    if (!selected) { toast('Выберите получателя'); return; }
-    const amount = parseFloat(document.getElementById('amount').value);
-    if (!(amount > 0)) { document.getElementById('amount-err').textContent = 'Введите сумму'; return; }
-    const fromId = +document.getElementById('from-account').value;
-    const from = DB.byId('accounts', fromId);
-    if (amount > from.available_balance) { document.getElementById('amount-err').textContent = 'Недостаточно средств'; return; }
-    sessionStorage.setItem('asd_pending', JSON.stringify({
-      fromAccountId: fromId, toUserId: selected.id, amount,
-      description: document.getElementById('description').value.trim(),
-      idempotencyKey: genIdem(),
-      recipient: { name: `${selected.first_name} ${selected.last_name}`, asd_id: selected.asd_id, email: selected.email },
-      account: { id: from.id, number: from.account_number },
-    }));
-    Router.navigate('/transfer-confirmation');
-  });
-}
-
-async function PageTransferConfirmation() {
-  const raw = sessionStorage.getItem('asd_pending');
-  if (!raw) { Router.navigate('/transfers'); return; }
-  const t = JSON.parse(raw);
-  const html = `
-    <div class="page-header">
-      <button class="back" onclick="history.back()">${Icons.chevronLeft}</button>
-      <h1>Подтверждение</h1>
-    </div>
-    <div class="section">
-      <div class="balance-card" style="flex-direction:column;align-items:stretch;gap:14px">
-        <div class="text-c">
-          <div class="muted">Сумма</div>
-          <div style="font-size:30px;font-weight:800;margin-top:4px">${fmt(t.amount)}</div>
-        </div>
-        <div class="row between"><span class="muted">Получатель</span><b>${escapeHtml(t.recipient.name)}</b></div>
-        <div class="row between"><span class="muted">ASD ID</span><span class="mono">${t.recipient.asd_id}</span></div>
-        <div class="row between"><span class="muted">Счёт списания</span><span class="mono">${t.account.number}</span></div>
-        <div class="row between"><span class="muted">Комиссия</span><b>0 ₽</b></div>
-        ${t.description ? `<div class="row between"><span class="muted">Комментарий</span><span>${escapeHtml(t.description)}</span></div>` : ''}
-      </div>
-    </div>
-    <div class="section mt-16" style="display:flex;gap:8px">
-      <button class="btn btn-secondary" style="flex:1" onclick="history.back()">Отмена</button>
-      <button class="btn btn-green" style="flex:2" id="confirm-transfer">Подтвердить</button>
-    </div>
-    ${BottomNav()}
-  `;
-  render(html);
-  document.getElementById('confirm-transfer').addEventListener('click', async (e) => {
-    const btn = e.currentTarget;
-    if (btn.disabled) return;
-    btn.disabled = true; btn.textContent = 'Отправка...';
-    try {
-      const res = await API.transfer(t);
-      sessionStorage.removeItem('asd_pending');
-      sessionStorage.setItem('asd_last_tx', res.transaction.id);
-      Router.navigate('/transfer-success');
-    } catch (err) {
-      toast(err.message);
-      btn.disabled = false; btn.textContent = 'Подтвердить';
+    if (!this.onGround) {
+      this.velY -= 0.02;
+      this.y += this.velY;
+      if (this.y <= 0) { this.y = 0; this.velY = 0; this.onGround = true; }
+      this.group.position.y = this.y;
     }
-  });
-}
 
-async function PageTransferSuccess() {
-  const id = sessionStorage.getItem('asd_last_tx');
-  const tx = id ? DB.byId('transactions', +id) : null;
-  if (!tx) { Router.navigate('/transfers'); return; }
-  const cp = tx.counterparty ? DB.byId('users', tx.counterparty) : null;
-  const html = `
-    <div class="section" style="padding-top:60px;text-align:center">
-      <div style="width:80px;height:80px;margin:0 auto 20px;border-radius:50%;background:#E0F5B8;color:#4B7A00;display:grid;place-items:center">
-        <span style="width:36px;height:36px;display:block">${Icons.check}</span>
-      </div>
-      <h1 style="font-size:24px;margin:0 0 8px">Перевод выполнен</h1>
-      <p class="muted" style="margin:0 0 24px">${fmt(tx.amount)} ${cp ? '→ ' + escapeHtml(cp.first_name) : ''}</p>
-    </div>
-    <div class="section">
-      <div class="balance-card" style="flex-direction:column;align-items:stretch;gap:10px">
-        <div class="row between"><span class="muted">ID</span><span class="mono" style="font-size:12px">${tx.ref}</span></div>
-        <div class="row between"><span class="muted">Статус</span><span class="badge success">Выполнено</span></div>
-        <div class="row between"><span class="muted">Дата</span><span>${fmtDate(tx.created_at, true)}</span></div>
-      </div>
-    </div>
-    <div class="section mt-16" style="display:flex;gap:8px">
-      <a class="btn btn-secondary" style="flex:1" href="/transactions/${tx.id}" data-link>Детали</a>
-      <a class="btn btn-green" style="flex:1" href="/" data-link>Готово</a>
-    </div>
-    ${BottomNav()}
-  `;
-  render(html);
-}
+    const dx = opponent.x - this.x;
+    this.facing = dx > 0 ? 1 : -1;
+    this.group.rotation.y = THREE.MathUtils.lerp(
+      this.group.rotation.y,
+      this.facing === 1 ? Math.PI/2 : -Math.PI/2,
+      dt * 10
+    );
 
-async function PageTransactions(query) {
-  const all = await API.transactions(State.user.id);
-  const filter = query.filter || 'all';
-  let list = all;
-  if (filter === 'in') list = list.filter(t => t.direction === 'in');
-  else if (filter === 'out') list = list.filter(t => t.direction === 'out');
+    const punchOffset = Math.sin(this.punchAnim * Math.PI) * 0.6;
+    this.lArm.rotation.z = 0.15 + punchOffset * 0.5;
+    this.rArm.rotation.z = -0.15 - punchOffset * 0.5;
+    this.lArm.position.z = 0.15 + punchOffset;
+    this.rArm.position.z = 0.15 + punchOffset;
 
-  const html = `
-    <div class="page-header">
-      <button class="back" onclick="history.back()">${Icons.chevronLeft}</button>
-      <h1>История</h1>
-    </div>
-    <div class="tabs-scroll">
-      <a class="chip ${filter === 'all' ? 'active' : ''}" href="/transactions" data-link>Все</a>
-      <a class="chip ${filter === 'in' ? 'active' : ''}" href="/transactions?filter=in" data-link>Поступления</a>
-      <a class="chip ${filter === 'out' ? 'active' : ''}" href="/transactions?filter=out" data-link>Списания</a>
-      <a class="chip" href="/transactions?filter=transfer" data-link>Переводы</a>
-      <a class="chip" href="/transactions?filter=payment" data-link>Платежи</a>
-    </div>
-    <div class="list-card">
-      ${list.length === 0 ? `<div class="empty"><h3>Операций нет</h3></div>` : list.map(UI.txRow).join('')}
-    </div>
-    ${BottomNav()}
-  `;
-  render(html);
-}
+    const kickOffset = Math.sin(this.kickAnim * Math.PI) * 0.8;
+    this.rLeg.rotation.x = -kickOffset;
+    this.rLeg.position.z = kickOffset * 0.5;
 
-async function PageTransactionDetail({ id }) {
-  const tx = DB.byId('transactions', +id);
-  if (!tx || tx.user_id !== State.user.id) return render404();
-  const cp = tx.counterparty ? DB.byId('users', tx.counterparty) : null;
-  const acc = DB.byId('accounts', tx.account_id);
-  const isIn = tx.direction === 'in';
-  const html = `
-    <div class="page-header">
-      <button class="back" onclick="history.back()">${Icons.chevronLeft}</button>
-      <h1>Операция</h1>
-    </div>
-    <div class="section text-c" style="padding-top:30px">
-      <div class="tx-icon ${isIn ? 'in' : 'out'}" style="width:64px;height:64px;margin:0 auto 16px">${isIn ? Icons.arrowDown : Icons.arrowUp}</div>
-      <div style="font-size:30px;font-weight:800">${isIn ? '+' : '−'}${fmt(tx.amount, tx.currency)}</div>
-      <div class="muted mt-8">${escapeHtml(tx.description || '')}</div>
-    </div>
-    <div class="section mt-20">
-      <div class="balance-card" style="flex-direction:column;align-items:stretch;gap:10px">
-        <div class="row between"><span class="muted">ID</span><span class="mono" style="font-size:11px">${tx.ref}</span></div>
-        <div class="row between"><span class="muted">Дата</span><span>${fmtDate(tx.created_at, true)}</span></div>
-        ${cp ? `<div class="row between"><span class="muted">${isIn ? 'От' : 'Кому'}</span><span>${escapeHtml(cp.first_name + ' ' + cp.last_name)}</span></div>` : ''}
-        <div class="row between"><span class="muted">Счёт</span><span class="mono">${acc.account_number}</span></div>
-      </div>
-    </div>
-    <div class="section mt-16" style="display:flex;gap:8px">
-      <a class="btn btn-secondary" style="flex:1" href="/transactions/${tx.id}/receipt" data-link>Чек</a>
-      <button class="btn btn-secondary" style="flex:1" data-action="repeat-tx" data-id="${tx.id}">Повторить</button>
-    </div>
-    ${BottomNav()}
-  `;
-  render(html);
-}
-
-async function PageReceipt({ id }) {
-  const tx = DB.byId('transactions', +id);
-  if (!tx || tx.user_id !== State.user.id) return render404();
-  const cp = tx.counterparty ? DB.byId('users', tx.counterparty) : null;
-  const html = `
-    <div class="page-header">
-      <button class="back" onclick="history.back()">${Icons.chevronLeft}</button>
-      <h1>Чек</h1>
-    </div>
-    <div class="section">
-      <div class="balance-card" style="flex-direction:column;align-items:stretch;gap:10px">
-        <div class="text-c" style="padding:20px 0">
-          <div class="muted">ASD BANK</div>
-          <div style="font-size:30px;font-weight:800;margin-top:8px">${fmt(tx.amount, tx.currency)}</div>
-        </div>
-        <div class="row between"><span class="muted">Ref</span><span class="mono" style="font-size:11px">${tx.ref}</span></div>
-        <div class="row between"><span class="muted">Дата</span><span>${fmtDate(tx.created_at, true)}</span></div>
-        ${cp ? `<div class="row between"><span class="muted">Контрагент</span><span>${escapeHtml(cp.first_name + ' ' + cp.last_name)}</span></div>` : ''}
-      </div>
-    </div>
-    <div class="section mt-16">
-      <button class="btn btn-secondary btn-block" onclick="window.print()">Печать / PDF</button>
-    </div>
-    ${BottomNav()}
-  `;
-  render(html);
-}
-
-async function PagePayments() {
-  const items = [
-    { id: 'phone', name: 'Мобильная связь', icon: Icons.phone, color: 'green' },
-    { id: 'internet', name: 'Интернет и ТВ', icon: Icons.globe, color: 'blue' },
-    { id: 'utility', name: 'Коммунальные', icon: Icons.home, color: 'yellow' },
-    { id: 'transport', name: 'Транспорт', icon: Icons.arrowLeftRight, color: 'purple' },
-    { id: 'subs', name: 'Подписки', icon: Icons.card, color: 'red' },
-    { id: 'other', name: 'Другие услуги', icon: Icons.plus, color: 'dark' },
-  ];
-  const html = `
-    <div class="page-header">
-      <h1>Платежи</h1>
-    </div>
-    <div class="section">
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px">
-        ${items.map(i => `
-          <a href="/payments/${i.id}" data-link class="quick-item" style="width:auto">
-            <div class="icon-circle ${i.color}">${i.icon}</div>
-            <div class="label">${i.name}</div>
-          </a>
-        `).join('')}
-      </div>
-    </div>
-    ${BottomNav()}
-  `;
-  render(html);
-}
-
-async function PagePaymentCategory({ id }) {
-  const names = { phone: 'Мобильная связь', internet: 'Интернет и ТВ', utility: 'Коммунальные', transport: 'Транспорт', subs: 'Подписки', other: 'Другие услуги' };
-  const accounts = await API.accounts(State.user.id);
-  const html = `
-    <div class="page-header">
-      <button class="back" onclick="history.back()">${Icons.chevronLeft}</button>
-      <h1>${names[id] || 'Платёж'}</h1>
-    </div>
-    <div class="section">
-      <form id="payment-form" style="display:flex;flex-direction:column;gap:12px">
-        <div class="field"><label>Провайдер</label><input class="input" name="provider" required placeholder="Название" /></div>
-        <div class="field"><label>Номер договора / телефон</label><input class="input" name="ref" required /></div>
-        <div class="field"><label>Сумма</label><input class="input" name="amount" type="number" step="0.01" min="0.01" required /></div>
-        <div class="field"><label>Со счёта</label>
-          <select class="select" name="acc">${accounts.map(a => `<option value="${a.id}">${a.kind} · ${fmt(a.available_balance)}</option>`).join('')}</select>
-        </div>
-        <button class="btn btn-green btn-block" type="submit">Оплатить</button>
-      </form>
-    </div>
-    ${BottomNav()}
-  `;
-  render(html);
-  document.getElementById('payment-form').addEventListener('submit', e => {
-    e.preventDefault();
-    const fd = new FormData(e.target);
-    const amount = parseFloat(fd.get('amount'));
-    const acc = DB.byId('accounts', +fd.get('acc'));
-    if (amount > acc.available_balance) { toast('Недостаточно средств'); return; }
-    acc.balance -= amount; acc.available_balance -= amount;
-    DB.insert('transactions', {
-      ref: genRef(), user_id: State.user.id, account_id: acc.id,
-      type: 'payment', direction: 'out', amount, currency: acc.currency,
-      status: 'completed', description: `${names[id]}: ${fd.get('provider')}`,
-      created_at: Date.now(), completed_at: Date.now(),
-    });
-    notify(State.user.id, 'payment', 'Платёж выполнен', fmt(amount));
-    toast('Платёж выполнен');
-    Router.navigate('/transactions');
-  });
-}
-
-async function PageDeposit() {
-  const accounts = await API.accounts(State.user.id);
-  const html = `
-    <div class="page-header">
-      <button class="back" onclick="history.back()">${Icons.chevronLeft}</button>
-      <h1>Пополнение</h1>
-    </div>
-    <div class="section">
-      <form id="deposit-form" style="display:flex;flex-direction:column;gap:12px">
-        <div class="field"><label>Сумма</label><input class="input" name="amount" type="number" step="0.01" min="1" required /></div>
-        <div class="field"><label>Источник</label>
-          <select class="select" name="source"><option>Банковская карта</option><option>Банковский перевод</option><option>Другой пользователь</option></select>
-        </div>
-        <div class="field"><label>На счёт</label>
-          <select class="select" name="acc">${accounts.map(a => `<option value="${a.id}">${a.kind} · ${a.account_number}</option>`).join('')}</select>
-        </div>
-        <button class="btn btn-green btn-block" type="submit">Пополнить</button>
-      </form>
-    </div>
-    ${BottomNav()}
-  `;
-  render(html);
-  document.getElementById('deposit-form').addEventListener('submit', e => {
-    e.preventDefault();
-    const fd = new FormData(e.target);
-    const amount = parseFloat(fd.get('amount'));
-    const acc = DB.byId('accounts', +fd.get('acc'));
-    acc.balance += amount; acc.available_balance += amount;
-    DB.insert('transactions', {
-      ref: genRef(), user_id: State.user.id, account_id: acc.id,
-      type: 'deposit', direction: 'in', amount, currency: acc.currency,
-      status: 'completed', description: 'Пополнение', created_at: Date.now(), completed_at: Date.now(),
-    });
-    notify(State.user.id, 'transfer', 'Счёт пополнен', `+${fmt(amount)}`);
-    toast('Счёт пополнен');
-    Router.navigate('/');
-  });
-}
-
-async function PageReceive() {
-  const u = State.user;
-  const html = `
-    <div class="page-header">
-      <button class="back" onclick="history.back()">${Icons.chevronLeft}</button>
-      <h1>Получить</h1>
-    </div>
-    <div class="section text-c">
-      <div class="balance-card" style="flex-direction:column;gap:16px;padding:24px">
-        <div style="background:white;padding:16px;border-radius:20px;display:inline-block">
-          ${qrSvg(u.asd_id)}
-        </div>
-        <div>
-          <div class="muted" style="font-size:13px">Ваш ASD ID</div>
-          <div class="mono" style="font-size:20px;font-weight:700;margin-top:4px">${u.asd_id}</div>
-        </div>
-        <button class="btn btn-secondary btn-block" data-action="copy" data-value="${u.asd_id}">${Icons.copy} Скопировать</button>
-      </div>
-    </div>
-    <div class="section mt-16">
-      <div class="balance-card" style="flex-direction:column;align-items:stretch;gap:10px">
-        <div class="row between"><span class="muted">Телефон</span><span class="mono">${u.phone}</span></div>
-        <div class="row between"><span class="muted">Email</span><span class="mono" style="font-size:13px">${u.email}</span></div>
-      </div>
-    </div>
-    ${BottomNav()}
-  `;
-  render(html);
-}
-async function PageQR() {
-  const u = State.user;
-  const html = `
-    <div class="page-header">
-      <button class="back" onclick="history.back()">${Icons.chevronLeft}</button>
-      <h1>QR-перевод</h1>
-    </div>
-    <div class="section text-c">
-      <div class="balance-card" style="flex-direction:column;gap:16px;padding:24px">
-        <div style="background:white;padding:16px;border-radius:20px;display:inline-block">${qrSvg('asd:' + u.asd_id)}</div>
-        <div class="muted">Отсканируйте, чтобы перевести</div>
-        <a class="btn btn-green btn-block" href="/transfers" data-link>Перевести по QR вручную</a>
-      </div>
-    </div>
-    ${BottomNav()}
-  `;
-  render(html);
-}
-function qrSvg(seed) {
-  const size = 21, cell = 6;
-  let h = parseInt(seed.split('').reduce((a,c) => a + c.charCodeAt(0), 0)) || 12345;
-  const rand = () => { h = (h * 9301 + 49297) % 233280; return h / 233280; };
-  let cells = '';
-  for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) {
-    const corner = (x < 7 && y < 7) || (x > size-8 && y < 7) || (x < 7 && y > size-8);
-    let on;
-    if (corner) {
-      const lx = x < 7 ? x : x - (size - 7);
-      const ly = y < 7 ? y : y - (size - 7);
-      on = (lx === 0 || lx === 6 || ly === 0 || ly === 6 || (lx >= 2 && lx <= 4 && ly >= 2 && ly <= 4));
-    } else on = rand() > 0.5;
-    if (on) cells += `<rect x="${x*cell}" y="${y*cell}" width="${cell}" height="${cell}" fill="#1A1A1A"/>`;
-  }
-  return `<svg width="${size*cell}" height="${size*cell}" viewBox="0 0 ${size*cell} ${size*cell}">${cells}</svg>`;
-}
-
-async function PageNotifications() {
-  const list = await API.notifications(State.user.id);
-  const html = `
-    <div class="page-header">
-      <button class="back" onclick="history.back()">${Icons.chevronLeft}</button>
-      <h1>Уведомления</h1>
-    </div>
-    <div class="list-card">
-      ${list.length === 0 ? `<div class="empty"><h3>Уведомлений нет</h3></div>` : list.map(n => `
-        <div class="list-row">
-          <div class="tx-icon ${!n.is_read ? 'in' : ''}">${Icons.bell}</div>
-          <div class="tx-meta">
-            <p class="tx-title">${escapeHtml(n.title)}</p>
-            <p class="tx-sub">${escapeHtml(n.body || '')} · ${fmtDate(n.created_at, true)}</p>
-          </div>
-          ${!n.is_read ? `<span class="badge success">Новое</span>` : ''}
-        </div>
-      `).join('')}
-    </div>
-    ${BottomNav()}
-  `;
-  render(html);
-}
-
-async function PageProfile() {
-  const u = State.user;
-  const accounts = await API.accounts(u.id);
-  const cards = await API.cards(u.id);
-  const txs = await API.transactions(u.id);
-  const html = `
-    <div class="page-header">
-      <h1>Профиль</h1>
-      <button class="back" style="margin-left:auto" data-action="logout">${Icons.logout}</button>
-    </div>
-    <div class="section text-c" style="padding-top:20px">
-      <div class="avatar-circle" style="width:80px;height:80px;margin:0 auto 12px;font-size:24px;font-weight:700">${initials(u)}</div>
-      <div style="font-size:20px;font-weight:700">${escapeHtml(u.first_name)} ${escapeHtml(u.last_name)}</div>
-      <div class="muted mono mt-8">${u.asd_id}</div>
-    </div>
-    <div class="section mt-20">
-      <div class="balance-card" style="flex-direction:column;align-items:stretch;gap:12px">
-        <div class="row between"><span class="muted">Email</span><span>${escapeHtml(u.email)}</span></div>
-        <div class="row between"><span class="muted">Телефон</span><span class="mono">${u.phone}</span></div>
-        <div class="row between"><span class="muted">Счетов</span><b>${accounts.length}</b></div>
-        <div class="row between"><span class="muted">Карт</span><b>${cards.length}</b></div>
-        <div class="row between"><span class="muted">Операций</span><b>${txs.length}</b></div>
-      </div>
-    </div>
-    <div class="section mt-16" style="display:flex;flex-direction:column;gap:8px">
-      <a class="btn btn-secondary btn-block" href="/profile/edit" data-link>Изменить профиль</a>
-      <a class="btn btn-secondary btn-block" href="/settings/security" data-link>${Icons.shield} Безопасность</a>
-      <a class="btn btn-secondary btn-block" href="/settings" data-link>${Icons.settings} Настройки</a>
-      <a class="btn btn-secondary btn-block" href="/admin" data-link style="${['ADMIN','SUPER_ADMIN'].includes(u.role) ? '' : 'display:none'}">Админ-панель</a>
-    </div>
-    ${BottomNav()}
-  `;
-  render(html);
-}
-
-async function PageProfileEdit() {
-  const u = State.user;
-  const html = `
-    <div class="page-header">
-      <button class="back" onclick="history.back()">${Icons.chevronLeft}</button>
-      <h1>Профиль</h1>
-    </div>
-    <div class="section">
-      <form id="profile-form" style="display:flex;flex-direction:column;gap:12px">
-        <div class="field"><label>Имя</label><input class="input" name="first_name" value="${escapeHtml(u.first_name)}" required /></div>
-        <div class="field"><label>Фамилия</label><input class="input" name="last_name" value="${escapeHtml(u.last_name)}" required /></div>
-        <div class="field"><label>Email</label><input class="input" name="email" type="email" value="${escapeHtml(u.email)}" required /></div>
-        <div class="field"><label>Телефон</label><input class="input" name="phone" value="${escapeHtml(u.phone)}" required /></div>
-        <button class="btn btn-green btn-block" type="submit">Сохранить</button>
-      </form>
-    </div>
-    ${BottomNav()}
-  `;
-  render(html);
-  document.getElementById('profile-form').addEventListener('submit', e => {
-    e.preventDefault();
-    const fd = new FormData(e.target);
-    DB.update('users', State.user.id, {
-      first_name: fd.get('first_name'), last_name: fd.get('last_name'),
-      email: fd.get('email'), phone: fd.get('phone'),
-    });
-    State.user = DB.byId('users', State.user.id);
-    toast('Профиль сохранён');
-    Router.navigate('/profile');
-  });
-}
-
-async function PageSettings() {
-  const sections = [
-    { href: '/settings/security', title: 'Безопасность', desc: 'Пароль, 2FA, сессии' },
-    { href: '/settings/privacy', title: 'Приватность', desc: 'Видимость профиля' },
-    { href: '/settings/notifications', title: 'Уведомления', desc: 'Push, email, SMS' },
-    { href: '/settings/appearance', title: 'Внешний вид', desc: 'Тема' },
-    { href: '/settings/limits', title: 'Лимиты', desc: 'Дневные и месячные' },
-    { href: '/settings/devices', title: 'Устройства', desc: 'Активные сессии' },
-  ];
-  const html = `
-    <div class="page-header">
-      <button class="back" onclick="history.back()">${Icons.chevronLeft}</button>
-      <h1>Настройки</h1>
-    </div>
-    <div class="list-card">
-      ${sections.map(s => `
-        <a href="${s.href}" data-link class="list-row">
-          <div class="tx-meta">
-            <p class="tx-title">${s.title}</p>
-            <p class="tx-sub">${s.desc}</p>
-          </div>
-          <span class="muted">${Icons.chevronRight}</span>
-        </a>
-      `).join('')}
-    </div>
-    ${BottomNav()}
-  `;
-  render(html);
-}
-
-async function PageSettingsSecurity() {
-  const sessions = DB.byUser('sessions', State.user.id);
-  const html = `
-    <div class="page-header">
-      <button class="back" onclick="history.back()">${Icons.chevronLeft}</button>
-      <h1>Безопасность</h1>
-    </div>
-    <div class="section">
-      <form id="pwd-form" style="display:flex;flex-direction:column;gap:12px">
-        <div class="field"><label>Текущий пароль</label><input class="input" type="password" name="current" required /></div>
-        <div class="field"><label>Новый пароль</label><input class="input" type="password" name="new" required /></div>
-        <div class="field"><label>Повторите</label><input class="input" type="password" name="confirm" required /></div>
-        <button class="btn btn-green btn-block" type="submit">Сменить пароль</button>
-      </form>
-    </div>
-    <div class="section mt-16">
-      <div class="balance-card" style="flex-direction:column;align-items:stretch;gap:10px">
-        <div class="row between"><span class="muted">Активных сессий</span><b>${sessions.length}</b></div>
-        <button class="btn btn-secondary btn-block" data-action="logout-all">Выйти со всех устройств</button>
-      </div>
-    </div>
-    ${BottomNav()}
-  `;
-  render(html);
-  document.getElementById('pwd-form').addEventListener('submit', async e => {
-    e.preventDefault();
-    const fd = new FormData(e.target);
-    const h = await Hash.sha256(fd.get('current') + ':asd-salt');
-    if (h !== State.user.password_hash) { toast('Неверный текущий пароль'); return; }
-    if (fd.get('new') !== fd.get('confirm')) { toast('Пароли не совпадают'); return; }
-    if (fd.get('new').length < 8) { toast('Пароль слишком короткий'); return; }
-    DB.update('users', State.user.id, { password_hash: await Hash.sha256(fd.get('new') + ':asd-salt') });
-    notify(State.user.id, 'security', 'Пароль изменён', '');
-    toast('Пароль изменён');
-    Router.navigate('/settings');
-  });
-}
-
-async function PageSettingsPrivacy() {
-  const html = `
-    <div class="page-header">
-      <button class="back" onclick="history.back()">${Icons.chevronLeft}</button>
-      <h1>Приватность</h1>
-    </div>
-    <div class="section">
-      <div class="balance-card" style="flex-direction:column;align-items:stretch;gap:14px">
-        <div class="row between"><span>ASD ID в поиске</span><input type="checkbox" checked /></div>
-        <div class="row between"><span>Email в поиске</span><input type="checkbox" checked /></div>
-        <div class="row between"><span>Телефон в поиске</span><input type="checkbox" /></div>
-      </div>
-      <button class="btn btn-green btn-block mt-16" data-action="save-privacy">Сохранить</button>
-    </div>
-    ${BottomNav()}
-  `;
-  render(html);
-}
-async function PageSettingsNotifications() {
-  const html = `
-    <div class="page-header">
-      <button class="back" onclick="history.back()">${Icons.chevronLeft}</button>
-      <h1>Уведомления</h1>
-    </div>
-    <div class="section">
-      <div class="balance-card" style="flex-direction:column;align-items:stretch;gap:14px">
-        <div class="row between"><span>Push</span><input type="checkbox" checked /></div>
-        <div class="row between"><span>Email</span><input type="checkbox" checked /></div>
-        <div class="row between"><span>SMS</span><input type="checkbox" /></div>
-      </div>
-      <button class="btn btn-green btn-block mt-16" data-action="save-notifications">Сохранить</button>
-    </div>
-    ${BottomNav()}
-  `;
-  render(html);
-}
-async function PageSettingsAppearance() {
-  const t = State.settings.theme;
-  const html = `
-    <div class="page-header">
-      <button class="back" onclick="history.back()">${Icons.chevronLeft}</button>
-      <h1>Внешний вид</h1>
-    </div>
-    <div class="section">
-      <div class="balance-card" style="flex-direction:column;align-items:stretch;gap:12px">
-        <button class="btn ${t === 'light' ? 'btn-primary' : 'btn-secondary'} btn-block" data-action="set-theme" data-theme="light">Светлая</button>
-        <button class="btn ${t === 'dark' ? 'btn-primary' : 'btn-secondary'} btn-block" data-action="set-theme" data-theme="dark">Тёмная</button>
-      </div>
-    </div>
-    ${BottomNav()}
-  `;
-  render(html);
-}
-async function PageSettingsLimits() {
-  const u = State.user;
-  const spent = DB.byUser('transactions', u.id).filter(t => t.direction === 'out' && t.created_at > Date.now() - 86400000).reduce((s,t) => s + t.amount, 0);
-  const limit = 150000;
-  const pct = Math.min(100, (spent / limit) * 100);
-  const html = `
-    <div class="page-header">
-      <button class="back" onclick="history.back()">${Icons.chevronLeft}</button>
-      <h1>Лимиты</h1>
-    </div>
-    <div class="section">
-      <div class="balance-card" style="flex-direction:column;align-items:stretch;gap:10px">
-        <div class="row between"><span class="muted">Дневной лимит</span><b>${fmt(spent)} / ${fmt(limit)}</b></div>
-        <div style="height:6px;background:var(--bg-sunken);border-radius:3px;overflow:hidden"><div style="height:100%;width:${pct}%;background:var(--green)"></div></div>
-        <div class="muted" style="font-size:13px">Осталось: ${fmt(Math.max(0, limit - spent))}</div>
-      </div>
-    </div>
-    ${BottomNav()}
-  `;
-  render(html);
-}
-async function PageSettingsDevices() {
-  const sessions = DB.byUser('sessions', State.user.id);
-  const html = `
-    <div class="page-header">
-      <button class="back" onclick="history.back()">${Icons.chevronLeft}</button>
-      <h1>Устройства</h1>
-    </div>
-    <div class="list-card">
-      ${sessions.length === 0 ? `<div class="empty">Нет активных устройств</div>` : sessions.map(s => `
-        <div class="list-row">
-          <div class="tx-icon">${Icons.device}</div>
-          <div class="tx-meta"><p class="tx-title">${escapeHtml(s.device || 'Устройство')}</p><p class="tx-sub">${fmtDate(s.last_active || Date.now(), true)}</p></div>
-        </div>
-      `).join('')}
-    </div>
-    ${BottomNav()}
-  `;
-  render(html);
-}
-
-async function PageAnalytics() {
-  const txs = await API.transactions(State.user.id);
-  const out = txs.filter(t => t.direction === 'out');
-  const total = out.reduce((s,t) => s + t.amount, 0) || 1;
-  const byCat = {};
-  out.forEach(t => { const k = t.category || 'other'; byCat[k] = (byCat[k] || 0) + t.amount; });
-  const names = { food: 'Продукты', transport: 'Транспорт', fun: 'Развлечения', shopping: 'Покупки', subs: 'Подписки', other: 'Другое' };
-  const html = `
-    <div class="page-header">
-      <h1>Аналитика</h1>
-    </div>
-    <div class="section">
-      <div class="balance-card" style="flex-direction:column;align-items:stretch;gap:10px">
-        <div class="muted">Расходы за период</div>
-        <div style="font-size:28px;font-weight:800">${fmt(total)}</div>
-        <svg viewBox="0 0 300 100" style="width:100%;height:100px;margin-top:12px">
-          ${(() => {
-            const days = [];
-            for (let i = 6; i >= 0; i--) {
-              const d = new Date(); d.setDate(d.getDate() - i); d.setHours(0,0,0,0);
-              const next = d.getTime() + 86400000;
-              const amount = out.filter(t => t.created_at >= d.getTime() && t.created_at < next).reduce((s,t) => s + t.amount, 0);
-              days.push(amount);
-            }
-            const max = Math.max(...days, 1);
-            return days.map((v, i) => {
-              const w = 300 / 7, h = (v / max) * 70;
-              return `<rect x="${i * w + 8}" y="${85 - h}" width="${w - 16}" height="${h}" rx="6" fill="var(--green)"/>`;
-            }).join('');
-          })()}
-        </svg>
-      </div>
-    </div>
-    <div class="sec-head"><h3>По категориям</h3></div>
-    <div class="list-card">
-      ${Object.entries(byCat).length === 0 ? `<div class="empty">Нет данных</div>` : Object.entries(byCat).map(([k,v]) => `
-        <div class="list-row">
-          <div class="tx-meta"><p class="tx-title">${names[k] || k}</p><p class="tx-sub">${((v/total)*100).toFixed(0)}% от расходов</p></div>
-          <div class="tx-amount">${fmt(v)}</div>
-        </div>
-      `).join('')}
-    </div>
-    ${BottomNav()}
-  `;
-  render(html);
-}
-
-async function PageSearch(query) {
-  const q = query.q || '';
-  let users = [], txs = [];
-  if (q.length >= 2) {
-    users = await API.searchUsers(q);
-    txs = (await API.transactions(State.user.id)).filter(t => (t.description||'').toLowerCase().includes(q.toLowerCase()));
-  }
-  const html = `
-    <div class="page-header">
-      <button class="back" onclick="history.back()">${Icons.chevronLeft}</button>
-      <h1>Поиск</h1>
-    </div>
-    <div class="section">
-      <div class="search-box" style="background:var(--bg-card)">
-        <span class="icon">${Icons.search}</span>
-        <input id="q" placeholder="Имя, ASD ID, телефон" value="${escapeHtml(q)}" autofocus />
-      </div>
-    </div>
-    ${q.length < 2 ? `<div class="empty"><h3>Начните вводить запрос</h3><p>Минимум 2 символа</p></div>` : `
-      ${users.length ? `<div class="sec-head"><h3>Пользователи</h3></div><div class="list-card">${users.map(u => `
-        <a class="list-row" href="/transfers" data-link>
-          <div class="tx-icon">${initials(u)}</div>
-          <div class="tx-meta"><p class="tx-title">${escapeHtml(u.first_name)} ${escapeHtml(u.last_name)}</p><p class="tx-sub mono">${u.asd_id}</p></div>
-          <span class="muted">${Icons.chevronRight}</span>
-        </a>`).join('')}</div>` : ''}
-      ${txs.length ? `<div class="sec-head mt-16"><h3>Операции</h3></div><div class="list-card">${txs.slice(0,20).map(UI.txRow).join('')}</div>` : ''}
-    `}
-    ${BottomNav()}
-  `;
-  render(html);
-  const input = document.getElementById('q');
-  if (input) {
-    input.focus();
-    let t;
-    input.addEventListener('input', () => {
-      clearTimeout(t);
-      t = setTimeout(() => Router.navigate('/search?q=' + encodeURIComponent(input.value), true), 350);
-    });
-  }
-}
-
-async function PageSupport() {
-  const html = `
-    <div class="page-header">
-      <h1>Чаты</h1>
-    </div>
-    <div class="section">
-      <div class="balance-card" style="flex-direction:column;align-items:stretch;gap:12px">
-        <div><b>Поддержка ASD BANK</b><div class="muted mt-8">Обычно отвечаем за 5 минут</div></div>
-        <button class="btn btn-green btn-block" data-action="start-chat">Написать в чат</button>
-      </div>
-    </div>
-    <div class="sec-head"><h3>Частые вопросы</h3></div>
-    <div class="list-card">
-      ${['Как перевести деньги?','Как заблокировать карту?','Как изменить лимит?','Как получить кэшбэк?'].map(q => `
-        <div class="list-row"><div class="tx-meta"><p class="tx-title">${q}</p></div><span class="muted">${Icons.chevronRight}</span></div>
-      `).join('')}
-    </div>
-    ${BottomNav()}
-  `;
-  render(html);
-}
-
-async function PageAdmin() {
-  if (!['ADMIN','SUPER_ADMIN'].includes(State.user.role)) return render403();
-  const html = `
-    <div class="page-header">
-      <button class="back" onclick="history.back()">${Icons.chevronLeft}</button>
-      <h1>Админ-панель</h1>
-    </div>
-    <div class="section">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-        <div class="balance-card" style="flex-direction:column;align-items:flex-start"><div class="muted" style="font-size:13px">Пользователи</div><div style="font-size:24px;font-weight:800">${DB.data.users.length}</div></div>
-        <div class="balance-card" style="flex-direction:column;align-items:flex-start"><div class="muted" style="font-size:13px">Счета</div><div style="font-size:24px;font-weight:800">${DB.data.accounts.length}</div></div>
-        <div class="balance-card" style="flex-direction:column;align-items:flex-start"><div class="muted" style="font-size:13px">Карты</div><div style="font-size:24px;font-weight:800">${DB.data.cards.length}</div></div>
-        <div class="balance-card" style="flex-direction:column;align-items:flex-start"><div class="muted" style="font-size:13px">Транзакции</div><div style="font-size:24px;font-weight:800">${DB.data.transactions.length}</div></div>
-      </div>
-    </div>
-    <div class="list-card mt-16">
-      <a class="list-row" href="/admin/users" data-link><div class="tx-meta"><p class="tx-title">Пользователи</p></div><span class="muted">${Icons.chevronRight}</span></a>
-      <a class="list-row" href="/admin/transactions" data-link><div class="tx-meta"><p class="tx-title">Транзакции</p></div><span class="muted">${Icons.chevronRight}</span></a>
-      <a class="list-row" href="/admin/security" data-link><div class="tx-meta"><p class="tx-title">Безопасность</p></div><span class="muted">${Icons.chevronRight}</span></a>
-    </div>
-    ${BottomNav()}
-  `;
-  render(html);
-}
-async function PageAdminUsers() {
-  if (!['ADMIN','SUPER_ADMIN'].includes(State.user.role)) return render403();
-  const html = `
-    <div class="page-header">
-      <button class="back" onclick="history.back()">${Icons.chevronLeft}</button>
-      <h1>Пользователи</h1>
-    </div>
-    <div class="list-card">
-      ${DB.data.users.map(u => `
-        <div class="list-row">
-          <div class="tx-icon">${initials(u)}</div>
-          <div class="tx-meta"><p class="tx-title">${escapeHtml(u.first_name)} ${escapeHtml(u.last_name)}</p><p class="tx-sub mono">${u.asd_id} · ${u.email}</p></div>
-          <span class="badge ${u.role === 'USER' ? '' : 'success'}">${u.role}</span>
-        </div>
-      `).join('')}
-    </div>
-    ${BottomNav()}
-  `;
-  render(html);
-}
-async function PageAdminTransactions() {
-  if (!['ADMIN','SUPER_ADMIN'].includes(State.user.role)) return render403();
-  const txs = [...DB.data.transactions].reverse().slice(0, 50);
-  const html = `
-    <div class="page-header">
-      <button class="back" onclick="history.back()">${Icons.chevronLeft}</button>
-      <h1>Транзакции</h1>
-    </div>
-    <div class="list-card">
-      ${txs.map(t => {
-        const u = DB.byId('users', t.user_id);
-        return `<div class="list-row"><div class="tx-meta"><p class="tx-title">${u ? escapeHtml(u.first_name + ' ' + u.last_name) : '—'}</p><p class="tx-sub mono">${t.ref}</p></div><div class="tx-amount">${fmt(t.amount)}</div></div>`;
-      }).join('')}
-    </div>
-    ${BottomNav()}
-  `;
-  render(html);
-}
-async function PageAdminSecurity() {
-  if (!['ADMIN','SUPER_ADMIN'].includes(State.user.role)) return render403();
-  const logs = [...DB.data.audit_logs].reverse().slice(0, 50);
-  const html = `
-    <div class="page-header">
-      <button class="back" onclick="history.back()">${Icons.chevronLeft}</button>
-      <h1>Безопасность</h1>
-    </div>
-    <div class="list-card">
-      ${logs.length === 0 ? `<div class="empty">Событий нет</div>` : logs.map(l => `
-        <div class="list-row">
-          <div class="tx-icon">${Icons.shield}</div>
-          <div class="tx-meta"><p class="tx-title">${l.action}</p><p class="tx-sub">${fmtDate(l.created_at, true)}</p></div>
-        </div>
-      `).join('')}
-    </div>
-    ${BottomNav()}
-  `;
-  render(html);
-}
-
-async function PageLogin() {
-  const html = `
-    <div class="auth-wrap">
-      <div class="auth-logo"><div class="mark">ASD</div><div class="name">ASD BANK</div></div>
-      <h1>Вход</h1>
-      <p class="sub">Введите данные для входа в аккаунт</p>
-      <form id="login-form" style="display:flex;flex-direction:column;gap:12px">
-        <div class="field"><label>Email или телефон</label><input class="input" name="login" required autocomplete="username" /></div>
-        <div class="field"><label>Пароль</label><input class="input" name="password" type="password" required autocomplete="current-password" /></div>
-        <button class="btn btn-green btn-block" type="submit" id="login-btn">Войти</button>
-        <div class="row between mt-12" style="font-size:13px">
-          <a class="muted" href="/forgot-password" data-link>Забыли пароль?</a>
-          <a class="muted" href="/register" data-link>Создать аккаунт</a>
-        </div>
-      </form>
-    </div>`;
-  render(html, { noScroll: true });
-  document.getElementById('login-form').addEventListener('submit', async e => {
-    e.preventDefault();
-    const fd = new FormData(e.target);
-    const b = document.getElementById('login-btn');
-    b.disabled = true; b.textContent = 'Вход...';
-    try {
-      const { user } = await API.login(fd.get('login'), fd.get('password'));
-      State.user = user;
-      localStorage.setItem('asd_uid', user.id);
-      State.emit();
-      toast('Добро пожаловать, ' + user.first_name);
-      Router.navigate('/');
-    } catch (err) {
-      toast(err.message);
-      b.disabled = false; b.textContent = 'Войти';
+    if (this.blocking) {
+      this.lArm.position.y = 1.9;
+      this.rArm.position.y = 1.9;
+    } else {
+      this.lArm.position.y = 1.55;
+      this.rArm.position.y = 1.55;
     }
-  });
-}
 
-async function PageRegister() {
-  const html = `
-    <div class="auth-wrap">
-      <div class="auth-logo"><div class="mark">ASD</div><div class="name">ASD BANK</div></div>
-      <h1>Регистрация</h1>
-      <p class="sub">Создайте аккаунт за 30 секунд</p>
-      <form id="reg-form" style="display:flex;flex-direction:column;gap:12px">
-        <div class="field"><label>Имя</label><input class="input" name="first_name" required /></div>
-        <div class="field"><label>Фамилия</label><input class="input" name="last_name" required /></div>
-        <div class="field"><label>Email</label><input class="input" name="email" type="email" required /></div>
-        <div class="field"><label>Телефон</label><input class="input" name="phone" required placeholder="+7..." /></div>
-        <div class="field"><label>Пароль</label><input class="input" name="password" type="password" required /></div>
-        <button class="btn btn-green btn-block" type="submit" id="reg-btn">Создать аккаунт</button>
-        <div class="text-c mt-8" style="font-size:13px">
-          Уже есть аккаунт? <a href="/login" data-link style="color:var(--blue)">Войти</a>
-        </div>
-      </form>
-    </div>`;
-  render(html, { noScroll: true });
-  document.getElementById('reg-form').addEventListener('submit', async e => {
-    e.preventDefault();
-    const fd = new FormData(e.target);
-    const b = document.getElementById('reg-btn');
-    b.disabled = true; b.textContent = 'Создание...';
-    try {
-      const { user } = await API.register(Object.fromEntries(fd));
-      State.user = user;
-      localStorage.setItem('asd_uid', user.id);
-      State.emit();
-      toast('Аккаунт создан');
-      Router.navigate('/');
-    } catch (err) {
-      toast(err.message);
-      b.disabled = false; b.textContent = 'Создать аккаунт';
+    const r = Math.sqrt(this.x*this.x);
+    if (r > 6.5) this.x = (this.x / r) * 6.5;
+
+    const dist = Math.abs(opponent.x - this.x);
+    if (dist < 0.9 && this.onGround && opponent.onGround) {
+      const push = (0.9 - dist) * 0.5;
+      const dir = this.x < opponent.x ? -1 : 1;
+      this.x += dir * push;
     }
-  });
+  }
+
+  attack(type, opponent) {
+    if (this.attackCooldown > 0 || !this.alive) return;
+    const cost = type === 'punch' ? 8 : 15;
+    if (this.stamina < cost) return;
+
+    this.stamina -= cost;
+    const range = type === 'punch' ? 1.6 : 1.9;
+    const damage = type === 'punch' ? 6 : 11;
+    const cooldown = type === 'punch' ? 0.32 : 0.55;
+
+    if (type === 'punch') this.punchAnim = 1;
+    else this.kickAnim = 1;
+
+    this.attackCooldown = cooldown;
+
+    const dist = Math.abs(opponent.x - this.x);
+    if (dist <= range) {
+      const dir = Math.sign(opponent.x - this.x);
+      if (dir === this.facing) {
+        if (opponent.blocking && opponent.stamina > 5) {
+          opponent.stamina -= damage * 0.5;
+          return;
+        }
+        if (opponent.hitCooldown > 0) return;
+        opponent.hp = Math.max(0, opponent.hp - damage);
+        opponent.hitCooldown = 0.25;
+        opponent.stamina = Math.max(0, opponent.stamina - 5);
+        opponent.x += this.facing * 0.15;
+
+        if (opponent.hp <= 0) {
+          opponent.alive = false;
+          opponent.group.rotation.z = this.facing * Math.PI/2 * 0.9;
+        }
+      }
+    }
+  }
 }
 
-async function PageForgot() {
-  const html = `
-    <div class="auth-wrap">
-      <div class="auth-logo"><div class="mark">ASD</div><div class="name">ASD BANK</div></div>
-      <h1>Восстановление</h1>
-      <p class="sub">Введём email для сброса пароля</p>
-      <form id="f-form" style="display:flex;flex-direction:column;gap:12px">
-        <div class="field"><label>Email или телефон</label><input class="input" required /></div>
-        <button class="btn btn-green btn-block" type="submit">Отправить ссылку</button>
-        <div class="text-c" style="font-size:13px"><a class="muted" href="/login" data-link>Назад</a></div>
-      </form>
-    </div>`;
-  render(html, { noScroll: true });
-  document.getElementById('f-form').addEventListener('submit', e => {
-    e.preventDefault();
-    toast('Ссылка отправлена');
-    Router.navigate('/login');
-  });
-}
+const player = new Fighter(0x2255cc, -2, 1);
+const enemy  = new Fighter(0xcc2222,  2, -1);
 
-function render404() {
-  render(`
-    <div class="auth-wrap text-c" style="justify-content:center">
-      <div style="font-size:72px;font-weight:800;color:var(--fg);letter-spacing:-0.04em">404</div>
-      <h1 style="margin-top:16px">Страница не найдена</h1>
-      <p class="sub">Возможно, ссылка устарела</p>
-      <a href="/" data-link class="btn btn-green">На главную</a>
-    </div>`);
-}
-function render403() {
-  render(`
-    <div class="auth-wrap text-c" style="justify-content:center">
-      <div style="font-size:72px;font-weight:800;color:var(--red);letter-spacing:-0.04em">403</div>
-      <h1 style="margin-top:16px">Доступ запрещён</h1>
-      <p class="sub">У вас нет прав для этой страницы</p>
-      <a href="/" data-link class="btn btn-green">На главную</a>
-    </div>`);
-}
-
-document.addEventListener('click', e => {
-  const el = e.target.closest('[data-action]');
-  if (!el) return;
-  const a = el.dataset.action;
-  const v = el.dataset.value;
-
-  if (a === 'copy' && v) { navigator.clipboard.writeText(v); toast('Скопировано'); }
-  if (a === 'logout') { State.user = null; localStorage.removeItem('asd_uid'); Router.navigate('/login'); }
-  if (a === 'logout-all') { State.user = null; localStorage.removeItem('asd_uid'); toast('Вы вышли со всех устройств'); Router.navigate('/login'); }
-  if (a === 'create-card') {
-    const acc = DB.data.accounts.find(x => x.user_id === State.user.id);
-    const last4 = String(Math.floor(1000 + Math.random() * 9000));
-    DB.insert('cards', {
-      user_id: State.user.id, account_id: acc.id,
-      pan_last4: last4, exp_month: 12, exp_year: new Date().getFullYear() + 4,
-      brand: 'ASD', kind: 'debit', status: 'active', daily_limit: 150000,
-      color: ['red','black','green','blue'][Math.floor(Math.random()*4)],
-      holder: (State.user.first_name + ' ' + State.user.last_name).toUpperCase(),
-      created_at: Date.now(),
-    });
-    audit('card_create');
-    toast('Карта выпущена');
-    PageCards();
+// --- Клавиатура ---
+const keys = {};
+addEventListener('keydown', e => {
+  keys[e.code] = true;
+  if (e.code === 'Space') e.preventDefault();
+  if (e.code === 'KeyJ' && player.alive) player.attack('punch', enemy);
+  if (e.code === 'KeyK' && player.alive) player.attack('kick', enemy);
+  if (e.code === 'Space' && player.alive && player.dodgeCooldown <= 0 && player.stamina >= 12) {
+    player.stamina -= 12;
+    player.dodgeTimer = 0.18;
+    player.dodgeDir = -player.facing;
+    player.dodgeCooldown = 0.5;
   }
-  if (a === 'reveal-card') toast('Требуется подтверждение');
-  if (a === 'toggle-card') {
-    const c = DB.byId('cards', +el.dataset.id);
-    c.status = c.status === 'active' ? 'locked' : 'active';
-    audit('card_' + c.status, { id: c.id });
-    toast(c.status === 'locked' ? 'Карта заблокирована' : 'Карта разблокирована');
-    PageCardDetail({ id: c.id });
-  }
-  if (a === 'reissue-card') toast('Перевыпуск запрошен');
-  if (a === 'open-account') {
-    DB.insert('accounts', {
-      user_id: State.user.id,
-      account_number: '40817810099' + String(3000000000 + DB.data.accounts.length),
-      currency: 'RUB', kind: 'savings', balance: 0, available_balance: 0, status: 'active',
-      created_at: Date.now(), updated_at: Date.now(),
-    });
-    toast('Счёт открыт');
-    PageAccounts();
-  }
-  if (a === 'repeat-tx') {
-    const tx = DB.byId('transactions', +el.dataset.id);
-    if (!tx || tx.direction !== 'out' || !tx.counterparty) { toast('Повтор недоступен'); return; }
-    const rcp = DB.byId('users', tx.counterparty);
-    const a2 = DB.byId('accounts', tx.account_id);
-    sessionStorage.setItem('asd_pending', JSON.stringify({
-      fromAccountId: tx.account_id, toUserId: tx.counterparty, amount: tx.amount,
-      currency: tx.currency, description: 'Повтор операции',
-      idempotencyKey: genIdem(),
-      recipient: { name: rcp.first_name + ' ' + rcp.last_name, asd_id: rcp.asd_id, email: rcp.email },
-      account: { id: a2.id, number: a2.account_number },
-    }));
-    Router.navigate('/transfer-confirmation');
-  }
-  if (a === 'set-theme') {
-    State.settings.theme = el.dataset.theme;
-    document.documentElement.dataset.theme = el.dataset.theme;
-    PageSettingsAppearance();
-  }
-  if (a === 'save-privacy' || a === 'save-notifications') toast('Сохранено');
-  if (a === 'start-chat') toast('Чат откроется после подключения');
 });
+addEventListener('keyup', e => keys[e.code] = false);
 
-function buildRoutes() {
-  Router.on('/',                     PageHome,                { auth: true });
-  Router.on('/accounts',             PageAccounts,            { auth: true });
-  Router.on('/accounts/:id',         PageAccountDetail,       { auth: true });
-  Router.on('/cards',                PageCards,               { auth: true });
-  Router.on('/cards/:id',            PageCardDetail,          { auth: true });
-  Router.on('/transfers',            PageTransfers,            { auth: true });
-  Router.on('/transfer-confirmation',PageTransferConfirmation,{ auth: true });
-  Router.on('/transfer-success',     PageTransferSuccess,     { auth: true });
-  Router.on('/transactions',         PageTransactions,        { auth: true });
-  Router.on('/transactions/:id/receipt', PageReceipt,         { auth: true });
-  Router.on('/transactions/:id',     PageTransactionDetail,   { auth: true });
-  Router.on('/payments',             PagePayments,            { auth: true });
-  Router.on('/payments/:id',         PagePaymentCategory,     { auth: true });
-  Router.on('/deposit',              PageDeposit,             { auth: true });
-  Router.on('/receive',              PageReceive,             { auth: true });
-  Router.on('/qr',                   PageQR,                  { auth: true });
-  Router.on('/notifications',        PageNotifications,       { auth: true });
-  Router.on('/analytics',            PageAnalytics,           { auth: true });
-  Router.on('/profile',              PageProfile,             { auth: true });
-  Router.on('/profile/edit',         PageProfileEdit,         { auth: true });
-  Router.on('/settings',             PageSettings,            { auth: true });
-  Router.on('/settings/security',    PageSettingsSecurity,    { auth: true });
-  Router.on('/settings/privacy',     PageSettingsPrivacy,     { auth: true });
-  Router.on('/settings/notifications', PageSettingsNotifications, { auth: true });
-  Router.on('/settings/appearance',  PageSettingsAppearance,  { auth: true });
-  Router.on('/settings/limits',      PageSettingsLimits,      { auth: true });
-  Router.on('/settings/devices',     PageSettingsDevices,     { auth: true });
-  Router.on('/search',               PageSearch,              { auth: true });
-  Router.on('/support',              PageSupport,             { auth: true });
-  Router.on('/admin',                PageAdmin,               { auth: true, role: ['ADMIN','SUPER_ADMIN'] });
-  Router.on('/admin/users',          PageAdminUsers,          { auth: true, role: ['ADMIN','SUPER_ADMIN'] });
-  Router.on('/admin/transactions',   PageAdminTransactions,   { auth: true, role: ['ADMIN','SUPER_ADMIN'] });
-  Router.on('/admin/security',       PageAdminSecurity,       { auth: true, role: ['ADMIN','SUPER_ADMIN'] });
-  Router.on('/login',                PageLogin,               { guest: true });
-  Router.on('/register',             PageRegister,            { guest: true });
-  Router.on('/forgot-password',      PageForgot,              { guest: true });
-  Router.setNotFound(() => render404());
+// --- Сенсорные кнопки ---
+const touchState = { left:false, right:false, block:false };
+
+function setupTouch(id, onDown, onUp) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const down = (e) => { e.preventDefault(); el.classList.add('pressed'); onDown && onDown(); };
+  const up = (e) => { e.preventDefault(); el.classList.remove('pressed'); onUp && onUp(); };
+
+  el.addEventListener('touchstart', down, { passive:false });
+  el.addEventListener('touchend', up, { passive:false });
+  el.addEventListener('touchcancel', up, { passive:false });
+  el.addEventListener('mousedown', down);
+  el.addEventListener('mouseup', up);
+  el.addEventListener('mouseleave', up);
 }
 
-(async () => {
-  await seed();
-  const uid = localStorage.getItem('asd_uid');
-  if (uid) State.user = DB.byId('users', +uid) || null;
-  buildRoutes();
-  const path = location.pathname;
-  const guestOnly = ['/login','/register','/forgot-password'].includes(path);
-  if (!State.user && !guestOnly) { history.replaceState(null, '', '/login'); Router.resolve('/login'); }
-  else Router.resolve(path);
-})();
+if (isMobile) {
+  document.getElementById('touchUI').classList.add('active');
+  document.getElementById('hint').classList.add('mobile');
+
+  setupTouch('btnLeft', () => touchState.left = true, () => touchState.left = false);
+  setupTouch('btnRight', () => touchState.right = true, () => touchState.right = false);
+  setupTouch('btnBlock', () => touchState.block = true, () => touchState.block = false);
+
+  setupTouch('btnJump', () => {
+    if (player.alive && player.onGround && player.stamina >= 10) {
+      player.velY = 0.35; player.onGround = false; player.stamina -= 10;
+    }
+  });
+
+  setupTouch('btnPunch', () => player.alive && player.attack('punch', enemy));
+  setupTouch('btnKick',  () => player.alive && player.attack('kick', enemy));
+
+  setupTouch('btnDodge', () => {
+    if (player.alive && player.dodgeCooldown <= 0 && player.stamina >= 12) {
+      player.stamina -= 12;
+      player.dodgeTimer = 0.18;
+      player.dodgeDir = -player.facing;
+      player.dodgeCooldown = 0.5;
+    }
+  });
+}
+
+// --- HUD ---
+const p1fill = document.getElementById('p1fill');
+const p2fill = document.getElementById('p2fill');
+const p1sfill = document.getElementById('p1sfill');
+const p2sfill = document.getElementById('p2sfill');
+const msgEl = document.getElementById('msg');
+
+function updateHUD() {
+  p1fill.style.width = player.hp + '%';
+  p2fill.style.width = enemy.hp + '%';
+  p1sfill.style.width = player.stamina + '%';
+  p2sfill.style.width = enemy.stamina + '%';
+}
+
+function showMsg(text, color='#fff') {
+  msgEl.textContent = text;
+  msgEl.style.color = color;
+  msgEl.style.opacity = 1;
+}
+
+// --- ИИ ---
+let aiTimer = 0;
+function updateAI(dt) {
+  if (!enemy.alive || !player.alive) return;
+  aiTimer -= dt;
+  const dist = Math.abs(player.x - enemy.x);
+
+  if (dist > 1.4) {
+    const dir = Math.sign(player.x - enemy.x);
+    enemy.x += dir * enemy.speed * 0.8;
+  }
+
+  enemy.blocking = (dist < 1.8 && enemy.stamina > 30 && Math.random() < 0.3 && aiTimer <= 0);
+
+  if (aiTimer <= 0 && dist < 1.9) {
+    const r = Math.random();
+    if (r < 0.5) { enemy.attack('punch', player); aiTimer = 0.5 + Math.random()*0.4; }
+    else if (r < 0.85) { enemy.attack('kick', player); aiTimer = 0.7 + Math.random()*0.5; }
+    else { enemy.blocking = true; aiTimer = 0.3; }
+  }
+}
+
+// --- Игровой цикл ---
+let last = performance.now();
+let gameOver = false;
+
+function animate(now) {
+  requestAnimationFrame(animate);
+  const dt = Math.min(0.05, (now - last) / 1000);
+  last = now;
+
+  if (!gameOver) {
+    if (player.alive) {
+      // Управление: клавиатура ИЛИ тач
+      const goLeft  = keys['KeyA'] || touchState.left;
+      const goRight = keys['KeyD'] || touchState.right;
+      const block   = keys['KeyL'] || touchState.block;
+
+      player.blocking = block;
+      if (!player.blocking && player.dodgeTimer <= 0) {
+        if (goLeft)  player.x -= player.speed * (player.stamina > 20 ? 1 : 0.6);
+        if (goRight) player.x += player.speed * (player.stamina > 20 ? 1 : 0.6);
+      }
+      if (keys['KeyW'] && player.onGround && player.stamina >= 10) {
+        player.velY = 0.35; player.onGround = false; player.stamina -= 10;
+      }
+    }
+
+    updateAI(dt);
+    player.update(dt, enemy);
+    enemy.update(dt, player);
+    updateHUD();
+
+    const centerX = (player.x + enemy.x) / 2;
+    camera.position.x = THREE.MathUtils.lerp(camera.position.x, centerX * 0.5, dt * 3);
+    camera.lookAt(centerX * 0.5, 1.3, 0);
+
+    if (!player.alive || !enemy.alive) {
+      gameOver = true;
+      if (enemy.alive) showMsg('ПОРАЖЕНИЕ', '#f44');
+      else if (player.alive) showMsg('ПОБЕДА!', '#4f4');
+      else showMsg('НИЧЬЯ', '#ff0');
+      setTimeout(() => {
+        showMsg('Перезагрузка...', '#aaa');
+        setTimeout(() => location.reload(), 1500);
+      }, 2000);
+    }
+  }
+
+  renderer.render(scene, camera);
+}
+requestAnimationFrame(animate);
+
+// --- Ресайз ---
+function onResize() {
+  camera.aspect = innerWidth/innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, isMobile ? 1.5 : 2));
+
+  // Подсказка про поворот
+  const rotate = document.getElementById('rotateHint');
+  if (isMobile && innerHeight > innerWidth) rotate.classList.add('show');
+  else rotate.classList.remove('show');
+}
+addEventListener('resize', onResize);
+addEventListener('orientationchange', () => setTimeout(onResize, 200));
+onResize();
 </script>
 </body>
 </html>
