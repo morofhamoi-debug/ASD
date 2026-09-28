@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
 <title>THE ROOM</title>
 <style>
   html, body {
@@ -69,6 +69,204 @@
     text-align: center; max-width: 60vw; line-height: 1.6;
   }
   #caption.on { opacity: 0.9; }
+
+  /* ============================================================
+     MOBILE UI
+     ============================================================ */
+
+  #mobile-ui { display: none; }
+  body.mobile.started #mobile-ui { display: block; }
+
+  body.mobile {
+    touch-action: none;
+    overscroll-behavior: none;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  body.mobile #c { touch-action: none; }
+  body.mobile * {
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+  }
+  body.mobile #prompt { display: none !important; }
+  body.mobile #caption { bottom: 27%; }
+
+  #mobile-ui {
+    position: fixed; inset: 0;
+    pointer-events: none;
+    z-index: 8;
+  }
+
+  #joystick-base {
+    position: fixed;
+    left: calc(20px + env(safe-area-inset-left, 0px));
+    bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+    width: 132px; height: 132px;
+    border-radius: 50%;
+    background:
+      radial-gradient(circle at 50% 50%,
+        rgba(24,20,16,0.35) 0%,
+        rgba(12,10,8,0.22) 60%,
+        rgba(8,7,6,0.10) 100%);
+    border: 1px solid rgba(180,168,144,0.14);
+    box-shadow:
+      inset 0 0 28px rgba(0,0,0,0.55),
+      0 4px 22px rgba(0,0,0,0.55);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+    touch-action: none;
+    pointer-events: auto;
+    z-index: 9;
+  }
+  #joystick-base::after {
+    content: '';
+    position: absolute;
+    inset: 22%;
+    border-radius: 50%;
+    border: 1px solid rgba(180,168,144,0.06);
+    pointer-events: none;
+  }
+
+  #joystick-knob {
+    position: absolute;
+    left: 50%; top: 50%;
+    width: 58px; height: 58px;
+    margin: -29px 0 0 -29px;
+    border-radius: 50%;
+    background:
+      radial-gradient(circle at 38% 32%,
+        rgba(150,138,118,0.42),
+        rgba(56,50,40,0.55) 55%,
+        rgba(28,24,20,0.70) 100%);
+    border: 1px solid rgba(200,186,160,0.20);
+    box-shadow:
+      0 4px 14px rgba(0,0,0,0.60),
+      inset 0 1px 1px rgba(255,255,255,0.06);
+    pointer-events: none;
+    will-change: transform;
+  }
+
+  .mbtn {
+    position: fixed;
+    display: flex; align-items: center; justify-content: center;
+    background:
+      radial-gradient(circle at 40% 30%,
+        rgba(46,40,32,0.55),
+        rgba(14,12,10,0.72));
+    border: 1px solid rgba(180,168,144,0.16);
+    color: rgba(184,172,150,0.72);
+    border-radius: 50%;
+    box-shadow:
+      0 4px 16px rgba(0,0,0,0.55),
+      inset 0 1px 1px rgba(255,255,255,0.05);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    touch-action: none;
+    pointer-events: auto;
+    user-select: none;
+    -webkit-user-select: none;
+    font-family: "Georgia", "Times New Roman", serif;
+    cursor: pointer;
+    z-index: 9;
+    padding: 0;
+    transition: opacity .25s ease, transform .08s ease, background .12s ease, border-color .12s ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .mbtn:active, .mbtn.on { transform: scale(0.94); }
+
+  #interact-btn {
+    right: calc(24px + env(safe-area-inset-right, 0px));
+    top: 50%;
+    transform: translateY(-50%);
+    width: 78px; height: 78px;
+    font-size: 24px;
+    letter-spacing: 0.02em;
+    color: rgba(200,186,160,0.85);
+    border-color: rgba(200,186,160,0.22);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .3s ease, transform .08s ease, background .12s ease;
+  }
+  #interact-btn.on {
+    opacity: 0.92;
+    pointer-events: auto;
+  }
+  #interact-btn:active { transform: translateY(-50%) scale(0.94); }
+
+  #sprint-btn {
+    right: calc(30px + env(safe-area-inset-right, 0px));
+    bottom: calc(26px + env(safe-area-inset-bottom, 0px));
+    width: 60px; height: 60px;
+    opacity: 0.6;
+  }
+  #sprint-btn.on {
+    opacity: 0.95;
+    background:
+      radial-gradient(circle at 40% 30%,
+        rgba(96,82,58,0.70),
+        rgba(30,25,18,0.85));
+    border-color: rgba(220,198,168,0.32);
+  }
+
+  #fs-btn {
+    top: calc(14px + env(safe-area-inset-top, 0px));
+    right: calc(14px + env(safe-area-inset-right, 0px));
+    width: 38px; height: 38px;
+    opacity: 0.42;
+    color: rgba(180,168,144,0.85);
+  }
+  #fs-btn:active { opacity: 0.85; }
+
+  #rotate-overlay {
+    position: fixed; inset: 0; z-index: 40;
+    background: #000;
+    display: none;
+    flex-direction: column;
+    align-items: center; justify-content: center;
+    color: #7b7368;
+    font-family: "Georgia", "Times New Roman", serif;
+    font-size: 11px;
+    letter-spacing: 0.55em;
+    text-transform: uppercase;
+    text-indent: 0.55em;
+    pointer-events: auto;
+  }
+  body.mobile.portrait #rotate-overlay { display: flex; }
+
+  .rot-icon {
+    width: 40px; height: 66px;
+    border: 1.5px solid #494137;
+    border-radius: 6px;
+    margin-bottom: 28px;
+    position: relative;
+    opacity: 0.85;
+  }
+  .rot-icon::after {
+    content: '';
+    position: absolute;
+    bottom: 5px; left: 50%;
+    transform: translateX(-50%);
+    width: 14px; height: 1.5px;
+    background: #494137;
+  }
+  .rot-icon::before {
+    content: '';
+    position: absolute;
+    top: 5px; left: 50%;
+    transform: translateX(-50%);
+    width: 10px; height: 1.5px;
+    background: #494137;
+  }
+
+  /* Prompt flicker for rotate overlay */
+  @keyframes rotfade {
+    0%, 100% { opacity: 0.55; }
+    50% { opacity: 1.0; }
+  }
+  .rot-text { animation: rotfade 2.8s ease-in-out infinite; }
 </style>
 </head>
 <body>
@@ -83,6 +281,40 @@
   <button id="enter">Click to enter</button>
 </div>
 
+<!-- ============================================================
+     MOBILE UI (hidden on desktop)
+     ============================================================ -->
+<div id="mobile-ui">
+  <div id="joystick-base">
+    <div id="joystick-knob"></div>
+  </div>
+
+  <div id="interact-btn" class="mbtn" aria-label="Interact">
+    <span>E</span>
+  </div>
+
+  <div id="sprint-btn" class="mbtn" aria-label="Sprint">
+    <svg viewBox="0 0 24 24" width="24" height="24"
+         fill="none" stroke="currentColor" stroke-width="1.7"
+         stroke-linecap="round" stroke-linejoin="round">
+      <path d="M13 3 L5 13 h5 l-1 8 L18 10 h-5 l1 -7 z"/>
+    </svg>
+  </div>
+
+  <button id="fs-btn" class="mbtn" aria-label="Fullscreen">
+    <svg viewBox="0 0 24 24" width="16" height="16"
+         fill="none" stroke="currentColor" stroke-width="1.8"
+         stroke-linecap="round" stroke-linejoin="round">
+      <path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>
+    </svg>
+  </button>
+</div>
+
+<div id="rotate-overlay">
+  <div class="rot-icon"></div>
+  <div class="rot-text">Rotate your device</div>
+</div>
+
 <script type="importmap">
 {
   "imports": {
@@ -93,6 +325,22 @@
 
 <script type="module">
 import * as THREE from 'three';
+
+/* ============================================================================
+   MOBILE DETECTION (defined first so it can influence setup below)
+   ========================================================================= */
+
+const IS_TOUCH = (navigator.maxTouchPoints > 0) || ('ontouchstart' in window);
+const IS_MOBILE = IS_TOUCH && (
+  /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+  || (window.matchMedia && window.matchMedia("(pointer: coarse)").matches)
+);
+
+if (IS_MOBILE) {
+  document.body.classList.add('mobile');
+  document.documentElement.style.webkitTextSizeAdjust = '100%';
+  document.documentElement.style.webkitTapHighlightColor = 'transparent';
+}
 
 /* ============================================================================
    0. MATH / RANDOM / NOISE UTILITIES
@@ -862,7 +1110,7 @@ const renderer = new THREE.WebGLRenderer({
   powerPreference: 'high-performance',
   stencil: false
 });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, IS_MOBILE ? 1.0 : 1.5));
 renderer.setSize(window.innerWidth, window.innerHeight, false);
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -2057,7 +2305,7 @@ let mirrorMesh = null;
 
   // mirror surface
   const geo = new THREE.PlaneGeometry(fwd, fh, 1, 1);
-  mirrorMesh = new Mirror(geo, { rtSize: 512, dustMap: texFromCanvas(TEX.dust, 1, 1, false) });
+  mirrorMesh = new Mirror(geo, { rtSize: IS_MOBILE ? 256 : 512, dustMap: texFromCanvas(TEX.dust, 1, 1, false) });
   mirrorMesh.position.z = 0.004;
   mirrorMesh.userData.interact = 'mirror';
   g.add(mirrorMesh);
@@ -2091,6 +2339,14 @@ moon.shadow.radius = 2.0;
 
 window.__moon = moon;
 window.__moonBase = 1.45;
+
+/* Mobile quality adjustment for shadows (applied before first render) */
+if (IS_MOBILE) {
+  moon.shadow.mapSize.set(1024, 1024);
+  if (window.__lampLight) {
+    window.__lampLight.shadow.mapSize.set(512, 512);
+  }
+}
 
 /* ============================================================================
    11. PLANAR MIRROR (approximate real reflection, dirtied)
@@ -2268,7 +2524,7 @@ Mirror.prototype.constructor = Mirror;
 const POST = (function () {
   const rtScene = new THREE.WebGLRenderTarget(1, 1, {
     type: THREE.HalfFloatType,
-    samples: 4
+    samples: IS_MOBILE ? 0 : 4
   });
   rtScene.texture.minFilter = THREE.LinearFilter;
   rtScene.texture.magFilter = THREE.LinearFilter;
@@ -2436,7 +2692,7 @@ const POST = (function () {
   }
 
   function resize(w, h) {
-    const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+    const dpr = Math.min(window.devicePixelRatio || 1, IS_MOBILE ? 1.0 : 1.5);
     const W = Math.max(2, Math.floor(w * dpr));
     const H = Math.max(2, Math.floor(h * dpr));
 
@@ -2627,15 +2883,21 @@ function updateInteraction() {
     else if (t === 'deskDrawer') label = '[E] open drawer';
     promptEl.textContent = label;
     promptEl.classList.add('on');
+    if (IS_MOBILE && interactBtn) interactBtn.classList.add('on');
   } else {
     promptEl.classList.remove('on');
+    if (IS_MOBILE && interactBtn) interactBtn.classList.remove('on');
   }
 }
 
 let lampOn = true;
 
 function tryInteract() {
-  if (!locked || !currentTarget) return;
+  if (IS_MOBILE) {
+    if (!currentTarget) return;
+  } else {
+    if (!locked || !currentTarget) return;
+  }
   const t = currentTarget.userData.interact;
 
   if (t === 'lamp') {
@@ -3408,26 +3670,237 @@ const enterBtn = document.getElementById('enter');
 
 let started = false;
 
+/* ============================================================================
+   18b. MOBILE UI HOOKS
+   ========================================================================= */
+
+const joystickBase = document.getElementById('joystick-base');
+const joystickKnob = document.getElementById('joystick-knob');
+const interactBtn = document.getElementById('interact-btn');
+const sprintBtn = document.getElementById('sprint-btn');
+const fsBtn = document.getElementById('fs-btn');
+
+if (IS_MOBILE && enterBtn) {
+  enterBtn.textContent = 'Touch to enter';
+}
+
+/* Fullscreen toggle (safe across browsers) */
+function toggleFullscreen() {
+  try {
+    const el = document.documentElement;
+    const isFs = document.fullscreenElement || document.webkitFullscreenElement ||
+                 document.mozFullScreenElement || document.msFullscreenElement;
+    if (isFs) {
+      const ex = document.exitFullscreen || document.webkitExitFullscreen ||
+                 document.mozCancelFullScreen || document.msExitFullscreen;
+      if (ex) ex.call(document);
+    } else {
+      const req = el.requestFullscreen || el.webkitRequestFullscreen ||
+                  el.mozRequestFullScreen || el.msRequestFullscreen;
+      if (req) req.call(el);
+    }
+  } catch (e) { /* graceful fallback */ }
+}
+
+if (fsBtn) {
+  fsBtn.addEventListener('click', (e) => { e.stopPropagation(); toggleFullscreen(); });
+  fsBtn.addEventListener('touchend', (e) => {
+    e.preventDefault(); e.stopPropagation(); toggleFullscreen();
+  }, { passive: false });
+}
+
+/* ---------- Virtual Joystick ---------- */
+let joystickTouchId = null;
+let joystickOriginX = 0;
+let joystickOriginY = 0;
+const JOYSTICK_MAX_R = 46;
+
+function joystickApply(clientX, clientY) {
+  let dx = clientX - joystickOriginX;
+  let dy = clientY - joystickOriginY;
+  const dist = Math.hypot(dx, dy);
+  if (dist > JOYSTICK_MAX_R) {
+    const k = JOYSTICK_MAX_R / dist;
+    dx *= k; dy *= k;
+  }
+  if (joystickKnob) {
+    joystickKnob.style.transform = 'translate(' + dx.toFixed(1) + 'px, ' + dy.toFixed(1) + 'px)';
+  }
+  const nx = dx / JOYSTICK_MAX_R;
+  const ny = dy / JOYSTICK_MAX_R;
+  keys['KeyW'] = ny < -0.28;
+  keys['KeyS'] = ny >  0.28;
+  keys['KeyA'] = nx < -0.28;
+  keys['KeyD'] = nx >  0.28;
+}
+
+function joystickReset() {
+  if (joystickKnob) joystickKnob.style.transform = 'translate(0px, 0px)';
+  keys['KeyW'] = false;
+  keys['KeyS'] = false;
+  keys['KeyA'] = false;
+  keys['KeyD'] = false;
+}
+
+if (IS_MOBILE && joystickBase) {
+  joystickBase.addEventListener('touchstart', (e) => {
+    if (!started) return;
+    if (joystickTouchId !== null) return;
+    const t = e.changedTouches[0];
+    joystickTouchId = t.identifier;
+    const rect = joystickBase.getBoundingClientRect();
+    joystickOriginX = rect.left + rect.width / 2;
+    joystickOriginY = rect.top + rect.height / 2;
+    joystickApply(t.clientX, t.clientY);
+    e.preventDefault();
+    e.stopPropagation();
+  }, { passive: false });
+
+  joystickBase.addEventListener('touchmove', (e) => {
+    if (joystickTouchId === null) return;
+    for (let i = 0; i < e.changedTouches.length; i++) {
+      const t = e.changedTouches[i];
+      if (t.identifier === joystickTouchId) {
+        joystickApply(t.clientX, t.clientY);
+      }
+    }
+    e.preventDefault();
+    e.stopPropagation();
+  }, { passive: false });
+
+  const endJoystick = (e) => {
+    if (joystickTouchId === null) return;
+    for (let i = 0; i < e.changedTouches.length; i++) {
+      if (e.changedTouches[i].identifier === joystickTouchId) {
+        joystickTouchId = null;
+        joystickReset();
+      }
+    }
+  };
+  joystickBase.addEventListener('touchend', endJoystick, { passive: false });
+  joystickBase.addEventListener('touchcancel', endJoystick, { passive: false });
+}
+
+/* ---------- Camera Look (canvas, right side feel) ---------- */
+const lookTouches = new Map();
+const LOOK_SENS = IS_MOBILE ? 0.0052 : 0.0021;
+
+canvas.addEventListener('touchstart', (e) => {
+  if (!started) return;
+  if (!IS_MOBILE) return;
+  for (let i = 0; i < e.changedTouches.length; i++) {
+    const t = e.changedTouches[i];
+    lookTouches.set(t.identifier, { x: t.clientX, y: t.clientY });
+  }
+  e.preventDefault();
+}, { passive: false });
+
+canvas.addEventListener('touchmove', (e) => {
+  if (!started) return;
+  if (!IS_MOBILE) return;
+  for (let i = 0; i < e.changedTouches.length; i++) {
+    const t = e.changedTouches[i];
+    const p = lookTouches.get(t.identifier);
+    if (!p) continue;
+    const dx = t.clientX - p.x;
+    const dy = t.clientY - p.y;
+    player.yaw -= dx * LOOK_SENS;
+    player.pitch -= dy * LOOK_SENS;
+    player.pitch = clamp(player.pitch, -1.30, 1.30);
+    p.x = t.clientX;
+    p.y = t.clientY;
+  }
+  e.preventDefault();
+}, { passive: false });
+
+const endLook = (e) => {
+  for (let i = 0; i < e.changedTouches.length; i++) {
+    lookTouches.delete(e.changedTouches[i].identifier);
+  }
+};
+canvas.addEventListener('touchend', endLook);
+canvas.addEventListener('touchcancel', endLook);
+
+/* ---------- Interaction Button ---------- */
+if (interactBtn) {
+  const onInteract = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    tryInteract();
+  };
+  interactBtn.addEventListener('touchstart', onInteract, { passive: false });
+  interactBtn.addEventListener('click', (e) => { e.stopPropagation(); tryInteract(); });
+}
+
+/* ---------- Sprint Button (hold) ---------- */
+if (sprintBtn) {
+  const sprintOn = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    keys['ShiftLeft'] = true;
+    sprintBtn.classList.add('on');
+  };
+  const sprintOff = (e) => {
+    if (e) e.stopPropagation();
+    keys['ShiftLeft'] = false;
+    sprintBtn.classList.remove('on');
+  };
+  sprintBtn.addEventListener('touchstart', sprintOn, { passive: false });
+  sprintBtn.addEventListener('touchend', sprintOff);
+  sprintBtn.addEventListener('touchcancel', sprintOff);
+  sprintBtn.addEventListener('mousedown', sprintOn);
+  sprintBtn.addEventListener('mouseup', sprintOff);
+  sprintBtn.addEventListener('mouseleave', sprintOff);
+}
+
+/* ---------- Orientation ---------- */
+function checkOrientation() {
+  if (!IS_MOBILE) return;
+  const isPortrait = window.innerHeight > window.innerWidth;
+  document.body.classList.toggle('portrait', isPortrait);
+}
+window.addEventListener('orientationchange', () => {
+  setTimeout(checkOrientation, 60);
+});
+window.addEventListener('resize', checkOrientation);
+checkOrientation();
+
+/* ---------- Start Experience ---------- */
 function startExperience() {
   if (started) return;
   started = true;
 
-  Audio.init();
-  Audio.resume();
+  try {
+    Audio.init();
+    Audio.resume();
+  } catch (e) { /* audio may be unavailable */ }
+
+  // Add 'started' class to enable mobile UI visibility
+  document.body.classList.add('started');
 
   overlay.classList.add('hidden');
   setTimeout(() => { overlay.style.display = 'none'; }, 1800);
 
-  canvas.requestPointerLock();
+  if (IS_MOBILE) {
+    // Best-effort fullscreen request on mobile
+    try { toggleFullscreen(); } catch (e) {}
+  } else {
+    // Desktop: request pointer lock
+    if (canvas.requestPointerLock) canvas.requestPointerLock();
+  }
 
   // opening beat: a distant creak so the room is not silent on entry
   setTimeout(() => { Audio.woodCreak(0.045, -0.5, 1.1); }, 1400);
 }
 
 enterBtn.addEventListener('click', startExperience);
+enterBtn.addEventListener('touchend', (e) => {
+  e.preventDefault();
+  startExperience();
+}, { passive: false });
 
 canvas.addEventListener('click', () => {
-  if (started && !locked) canvas.requestPointerLock();
+  if (started && !locked && !IS_MOBILE) canvas.requestPointerLock();
 });
 
 document.addEventListener('keydown', (e) => {
@@ -3441,13 +3914,28 @@ document.addEventListener('keydown', (e) => {
 function onResize() {
   const w = window.innerWidth, h = window.innerHeight;
   renderer.setSize(w, h, false);
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
+  const maxRatio = IS_MOBILE ? 1.0 : 1.5;
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, maxRatio));
   camera.aspect = w / h;
   camera.updateProjectionMatrix();
   POST.resize(w, h);
+  checkOrientation();
 }
 window.addEventListener('resize', onResize);
+window.addEventListener('orientationchange', () => {
+  setTimeout(onResize, 120);
+});
 onResize();
+
+/* Prevent iOS double-tap zoom / bounces on empty areas of the body */
+if (IS_MOBILE) {
+  document.addEventListener('gesturestart', (e) => e.preventDefault());
+  document.addEventListener('touchmove', (e) => {
+    if (e.target === document.body || e.target === canvas) {
+      e.preventDefault();
+    }
+  }, { passive: false });
+}
 
 /* ============================================================================
    20. MAIN LOOP
