@@ -1,85 +1,3509 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Привет</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+<title>THE ROOM</title>
+<style>
+  html, body {
+    margin: 0; padding: 0; width: 100%; height: 100%;
+    background: #000; overflow: hidden;
+    font-family: "Georgia", "Times New Roman", serif;
+    color: #8d857a;
+    cursor: default;
+  }
+  #c { display: block; width: 100%; height: 100%; }
 
-        body {
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #0a0a0a;
-            overflow: hidden;
-            position: relative;
-        }
+  #overlay {
+    position: fixed; inset: 0; z-index: 20;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    background: #000;
+    transition: opacity 1.6s ease;
+  }
+  #overlay.hidden { opacity: 0; pointer-events: none; }
 
-        /* Плавающие цветные пятна на фоне */
-        body::before,
-        body::after {
-            content: '';
-            position: absolute;
-            width: 500px;
-            height: 500px;
-            border-radius: 50%;
-            filter: blur(100px);
-            opacity: 0.6;
-            animation: float 8s ease-in-out infinite;
-        }
+  #overlay h1 {
+    margin: 0 0 10px 0;
+    font-size: 15px; font-weight: 400;
+    letter-spacing: 0.62em; text-transform: uppercase;
+    color: #6b6459;
+    text-indent: 0.62em;
+  }
+  #overlay .sub {
+    margin: 0; font-size: 10px; letter-spacing: 0.36em;
+    color: #3d3933; text-transform: uppercase;
+  }
+  #enter {
+    margin-top: 52px;
+    font-size: 10px; letter-spacing: 0.42em; text-transform: uppercase;
+    color: #8b8278;
+    border: 1px solid #262220;
+    padding: 15px 34px;
+    background: transparent;
+    font-family: inherit;
+    cursor: pointer;
+    transition: color .8s ease, border-color .8s ease, background .8s ease;
+    text-indent: 0.42em;
+  }
+  #enter:hover { color: #cbc2b6; border-color: #494137; background: rgba(255,255,255,0.015); }
 
-        body::before {
-            background: #7c3aed;
-            top: -150px;
-            left: -150px;
-        }
+  #prompt {
+    position: fixed; left: 50%; bottom: 13%;
+    transform: translateX(-50%);
+    font-size: 10px; letter-spacing: 0.36em; text-transform: uppercase;
+    color: #b3aa9e; opacity: 0; transition: opacity .35s ease;
+    text-shadow: 0 0 16px #000, 0 0 3px #000;
+    pointer-events: none; z-index: 6;
+    white-space: nowrap;
+  }
+  #prompt.on { opacity: 0.85; }
 
-        body::after {
-            background: #06b6d4;
-            bottom: -150px;
-            right: -150px;
-            animation-delay: -4s;
-        }
+  #caption {
+    position: fixed; left: 50%; bottom: 21%;
+    transform: translateX(-50%);
+    font-size: 12.5px; font-style: italic; letter-spacing: 0.09em;
+    color: #9a9186; opacity: 0; transition: opacity 1.4s ease;
+    text-shadow: 0 0 18px #000, 0 0 4px #000;
+    pointer-events: none; z-index: 6;
+    text-align: center; max-width: 60vw; line-height: 1.6;
+  }
+  #caption.on { opacity: 0.9; }
 
-        @keyframes float {
-            0%, 100% { transform: translate(0, 0) scale(1); }
-            50% { transform: translate(50px, 50px) scale(1.1); }
-        }
-
-        h1 {
-            position: relative;
-            z-index: 1;
-            font-size: clamp(3rem, 12vw, 8rem);
-            font-weight: 800;
-            letter-spacing: -0.02em;
-            background: linear-gradient(135deg, #ffffff 0%, #a78bfa 50%, #22d3ee 100%);
-            -webkit-background-clip: text;
-            background-clip: text;
-            -webkit-text-fill-color: transparent;
-            animation: fadeIn 1s ease-out;
-            user-select: none;
-        }
-
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-    </style>
+  #boot {
+    position: fixed; inset: 0; background: #000; z-index: 30;
+    display: flex; align-items: center; justify-content: center;
+    color: #3a352f; font-size: 10px; letter-spacing: 0.4em;
+    transition: opacity 1s ease;
+  }
+  #boot.hidden { opacity: 0; pointer-events: none; }
+</style>
 </head>
 <body>
-    <h1>Привет</h1>
+<canvas id="c"></canvas>
+
+<div id="prompt">[E] interact</div>
+<div id="caption"></div>
+
+<div id="overlay">
+  <h1>The Room</h1>
+  <p class="sub">somewhere in the house</p>
+  <button id="enter">Click to enter</button>
+</div>
+
+<div id="boot">loading</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+
+/* ============================================================================
+   0. MATH / RANDOM / NOISE UTILITIES
+   ========================================================================= */
+
+function mulberry32(a) {
+  return function () {
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+const clamp = (v, a, b) => v < a ? a : (v > b ? b : v);
+const lerp = (a, b, t) => a + (b - a) * t;
+
+function makeValueNoise(seed) {
+  const rnd = mulberry32(seed);
+  const S = 128;
+  const g = new Float32Array(S * S);
+  for (let i = 0; i < S * S; i++) g[i] = rnd();
+  const at = (x, y) => {
+    x = ((x % S) + S) % S; y = ((y % S) + S) % S;
+    return g[y * S + x];
+  };
+  const sm = t => t * t * (3 - 2 * t);
+  return function (x, y) {
+    const xi = Math.floor(x), yi = Math.floor(y);
+    const fx = sm(x - xi), fy = sm(y - yi);
+    const a = at(xi, yi), b = at(xi + 1, yi), c = at(xi, yi + 1), d = at(xi + 1, yi + 1);
+    return (a * (1 - fx) + b * fx) * (1 - fy) + (c * (1 - fx) + d * fx) * fy;
+  };
+}
+
+function makeFbm(seed, oct) {
+  oct = oct || 4;
+  const n = makeValueNoise(seed);
+  return function (x, y) {
+    let a = 0.5, f = 1, s = 0, tot = 0;
+    for (let i = 0; i < oct; i++) {
+      s += a * n(x * f, y * f);
+      tot += a; a *= 0.5; f *= 2;
+    }
+    return s / tot;
+  };
+}
+
+function newCanvas(w, h) {
+  const cv = document.createElement('canvas');
+  cv.width = w; cv.height = h;
+  return cv;
+}
+
+/* --- generate a tangent-space normal map from a canvas' luminance --- */
+function normalFromCanvas(src, strength) {
+  const w = src.width, h = src.height;
+  const sctx = src.getContext('2d', { willReadFrequently: true });
+  const img = sctx.getImageData(0, 0, w, h).data;
+  const lum = new Float32Array(w * h);
+  for (let i = 0; i < w * h; i++) {
+    lum[i] = (img[i * 4] * 0.299 + img[i * 4 + 1] * 0.587 + img[i * 4 + 2] * 0.114) / 255;
+  }
+  const out = newCanvas(w, h);
+  const octx = out.getContext('2d');
+  const oimg = octx.createImageData(w, h);
+  const d = oimg.data;
+  for (let y = 0; y < h; y++) {
+    const yp = ((y - 1 + h) % h) * w, yn = ((y + 1) % h) * w, yc = y * w;
+    for (let x = 0; x < w; x++) {
+      const xp = (x - 1 + w) % w, xn = (x + 1) % w;
+      const l = lum[yc + xp], r = lum[yc + xn];
+      const u = lum[yp + x], dn = lum[yn + x];
+      let nx = (l - r) * strength, ny = (u - dn) * strength, nz = 1.0;
+      const len = Math.sqrt(nx * nx + ny * ny + nz * nz);
+      nx /= len; ny /= len; nz /= len;
+      const i4 = (yc + x) * 4;
+      d[i4] = (nx * 0.5 + 0.5) * 255;
+      d[i4 + 1] = (ny * 0.5 + 0.5) * 255;
+      d[i4 + 2] = (nz * 0.5 + 0.5) * 255;
+      d[i4 + 3] = 255;
+    }
+  }
+  octx.putImageData(oimg, 0, 0);
+  return out;
+}
+
+function texFromCanvas(cv, repeatX, repeatY, srgb) {
+  const t = new THREE.CanvasTexture(cv);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  t.repeat.set(repeatX || 1, repeatY || 1);
+  t.anisotropy = 8;
+  if (srgb !== false) t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
+
+/* ============================================================================
+   1. PROCEDURAL TEXTURE FACTORY
+   ========================================================================= */
+
+/* ---------- generic mottled noise overlay helper ---------- */
+function overlayNoise(ctx, W, H, seed, res, scale, alpha, mode) {
+  const cv = newCanvas(res, res);
+  const c2 = cv.getContext('2d');
+  const img = c2.createImageData(res, res);
+  const f = makeFbm(seed, 5);
+  for (let y = 0; y < res; y++) {
+    for (let x = 0; x < res; x++) {
+      const v = f(x / scale, y / scale);
+      const i = (y * res + x) * 4;
+      const t = Math.floor(clamp(v, 0, 1) * 255);
+      img.data[i] = t; img.data[i + 1] = t; img.data[i + 2] = t; img.data[i + 3] = 255;
+    }
+  }
+  c2.putImageData(img, 0, 0);
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.globalCompositeOperation = mode || 'overlay';
+  ctx.drawImage(cv, 0, 0, W, H);
+  ctx.restore();
+}
+
+function fineGrain(ctx, W, H, seed, alpha) {
+  const res = 256;
+  const cv = newCanvas(res, res);
+  const c2 = cv.getContext('2d');
+  const img = c2.createImageData(res, res);
+  const rnd = mulberry32(seed);
+  for (let i = 0; i < res * res; i++) {
+    const v = Math.floor(rnd() * 255);
+    img.data[i * 4] = v; img.data[i * 4 + 1] = v; img.data[i * 4 + 2] = v; img.data[i * 4 + 3] = 255;
+  }
+  c2.putImageData(img, 0, 0);
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.globalCompositeOperation = 'overlay';
+  ctx.drawImage(cv, 0, 0, W, H);
+  ctx.restore();
+}
+
+/* ---------- irregular blob path ---------- */
+function blobPath(ctx, cx, cy, r, pts, rnd, wob) {
+  wob = wob || 0.42;
+  ctx.beginPath();
+  for (let i = 0; i <= pts; i++) {
+    const a = (i / pts) * Math.PI * 2;
+    const rr = r * (1 - wob * 0.5 + rnd() * wob);
+    const x = cx + Math.cos(a) * rr;
+    const y = cy + Math.sin(a) * rr * 0.82;
+    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  }
+  ctx.closePath();
+}
+
+/* ---------- cracks ---------- */
+function drawCrack(ctx, x, y, len, rnd, W, H) {
+  let ang = rnd() * Math.PI * 2;
+  let cx = x, cy = y;
+  const steps = 10 + Math.floor(rnd() * 18);
+  const seg = len / steps;
+  ctx.save();
+  ctx.lineCap = 'round';
+  // shadow pass
+  ctx.strokeStyle = 'rgba(18,15,12,0.55)';
+  ctx.lineWidth = 1.6;
+  ctx.beginPath();
+  ctx.moveTo(cx, cy);
+  const path = [[cx, cy]];
+  for (let i = 0; i < steps; i++) {
+    ang += (rnd() - 0.5) * 0.85;
+    cx += Math.cos(ang) * seg;
+    cy += Math.sin(ang) * seg;
+    path.push([cx, cy]);
+    ctx.lineTo(cx, cy);
+  }
+  ctx.stroke();
+
+  // highlight (chipped edge) offset by 1px
+  ctx.strokeStyle = 'rgba(190,182,166,0.12)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  for (let i = 0; i < path.length; i++) {
+    const p = path[i];
+    if (i === 0) ctx.moveTo(p[0] + 1.2, p[1] + 1.2);
+    else ctx.lineTo(p[0] + 1.2, p[1] + 1.2);
+  }
+  ctx.stroke();
+
+  // branches
+  const branches = Math.floor(rnd() * 3);
+  for (let b = 0; b < branches; b++) {
+    const idx = 2 + Math.floor(rnd() * (path.length - 3));
+    const p = path[idx];
+    let a2 = ang + (rnd() - 0.5) * 2.0;
+    let bx = p[0], by = p[1];
+    ctx.strokeStyle = 'rgba(18,15,12,0.36)';
+    ctx.lineWidth = 1.0;
+    ctx.beginPath();
+    ctx.moveTo(bx, by);
+    const bs = 3 + Math.floor(rnd() * 8);
+    for (let i = 0; i < bs; i++) {
+      a2 += (rnd() - 0.5) * 0.9;
+      bx += Math.cos(a2) * seg * 0.8;
+      by += Math.sin(a2) * seg * 0.8;
+      ctx.lineTo(bx, by);
+    }
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+/* ---------- WALL TEXTURE ---------- */
+function makeWallTexture(W, H, seed) {
+  const cv = newCanvas(W, H);
+  const ctx = cv.getContext('2d');
+  const rnd = mulberry32(seed);
+
+  // base vertical gradient (dirtier + darker toward floor)
+  const g = ctx.createLinearGradient(0, 0, 0, H);
+  g.addColorStop(0.00, '#7d7768');
+  g.addColorStop(0.30, '#847d6d');
+  g.addColorStop(0.62, '#797264');
+  g.addColorStop(0.86, '#6b6455');
+  g.addColorStop(1.00, '#514c42');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, W, H);
+
+  // large mottling
+  overlayNoise(ctx, W, H, seed + 3, 128, 20, 0.34, 'overlay');
+  overlayNoise(ctx, W, H, seed + 9, 128, 52, 0.22, 'soft-light');
+
+  // vertical damp streaks
+  ctx.save();
+  for (let i = 0; i < 58; i++) {
+    const x = rnd() * W;
+    const w = 3 + rnd() * 48;
+    const y0 = rnd() * H * 0.55;
+    const h = H * 0.25 + rnd() * H * 0.75;
+    const a = 0.012 + rnd() * 0.05;
+    const grd = ctx.createLinearGradient(x, y0, x, y0 + h);
+    grd.addColorStop(0, 'rgba(38,34,28,0)');
+    grd.addColorStop(0.28, 'rgba(38,34,28,' + a.toFixed(4) + ')');
+    grd.addColorStop(0.72, 'rgba(30,27,22,' + (a * 0.8).toFixed(4) + ')');
+    grd.addColorStop(1, 'rgba(26,23,19,0)');
+    ctx.fillStyle = grd;
+    ctx.fillRect(x, y0, w, h);
+  }
+  ctx.restore();
+
+  // moisture stains (lower half + corners)
+  for (let i = 0; i < 16; i++) {
+    const cx = rnd() * W;
+    const cy = H * 0.40 + rnd() * H * 0.62;
+    const r = 45 + rnd() * 190;
+    const dark = rnd() < 0.55;
+    const grd = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+    if (dark) {
+      grd.addColorStop(0, 'rgba(52,42,30,0.20)');
+      grd.addColorStop(0.5, 'rgba(52,42,30,0.085)');
+      grd.addColorStop(1, 'rgba(52,42,30,0)');
+    } else {
+      grd.addColorStop(0, 'rgba(104,96,74,0.16)');
+      grd.addColorStop(0.5, 'rgba(104,96,74,0.06)');
+      grd.addColorStop(1, 'rgba(104,96,74,0)');
+    }
+    ctx.fillStyle = grd;
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, 7); ctx.fill();
+  }
+
+  // peeling paint patches
+  for (let i = 0; i < 13; i++) {
+    const cx = rnd() * W;
+    const cy = rnd() * H;
+    const r = 12 + rnd() * 62;
+    ctx.save();
+    blobPath(ctx, cx, cy, r, 14, rnd, 0.55);
+    // dark rim
+    ctx.shadowColor = 'rgba(20,17,14,0.55)';
+    ctx.shadowBlur = 6;
+    ctx.fillStyle = 'rgba(146,139,122,0.20)';
+    ctx.fill();
+    ctx.restore();
+
+    ctx.save();
+    blobPath(ctx, cx + 1, cy + 1.4, r * 0.82, 14, mulberry32(seed + i * 7), 0.55);
+    ctx.fillStyle = 'rgba(96,90,76,0.30)';
+    ctx.fill();
+    ctx.restore();
+
+    ctx.save();
+    blobPath(ctx, cx, cy, r, 14, mulberry32(seed + i * 13), 0.55);
+    ctx.strokeStyle = 'rgba(22,19,15,0.42)';
+    ctx.lineWidth = 1.1;
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // cracks
+  for (let i = 0; i < 9; i++) {
+    drawCrack(ctx, rnd() * W, rnd() * H, 70 + rnd() * 230, rnd, W, H);
+  }
+
+  // fine scratches
+  ctx.save();
+  ctx.lineCap = 'round';
+  for (let i = 0; i < 46; i++) {
+    const x = rnd() * W, y = rnd() * H;
+    const a = rnd() * Math.PI * 2;
+    const l = 6 + rnd() * 52;
+    ctx.strokeStyle = rnd() < 0.5
+      ? 'rgba(178,170,152,0.055)'
+      : 'rgba(28,24,20,0.075)';
+    ctx.lineWidth = 0.6 + rnd() * 1.1;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x + Math.cos(a) * l, y + Math.sin(a) * l);
+    ctx.stroke();
+  }
+  ctx.restore();
+
+  // dirt band at the bottom (accumulation)
+  const gb = ctx.createLinearGradient(0, H * 0.66, 0, H);
+  gb.addColorStop(0, 'rgba(26,22,17,0)');
+  gb.addColorStop(0.7, 'rgba(26,22,17,0.22)');
+  gb.addColorStop(1, 'rgba(18,15,11,0.44)');
+  ctx.fillStyle = gb;
+  ctx.fillRect(0, H * 0.66, W, H * 0.34);
+
+  // corner darkening
+  const corners = [[0, 0], [W, 0], [0, H], [W, H]];
+  for (let i = 0; i < 4; i++) {
+    const cx = corners[i][0], cy = corners[i][1];
+    const grd = ctx.createRadialGradient(cx, cy, 0, cx, cy, W * 0.38);
+    grd.addColorStop(0, 'rgba(10,9,8,0.30)');
+    grd.addColorStop(0.6, 'rgba(10,9,8,0.09)');
+    grd.addColorStop(1, 'rgba(10,9,8,0)');
+    ctx.fillStyle = grd;
+    ctx.fillRect(0, 0, W, H);
+  }
+
+  // ceiling-edge shadow (top of wall)
+  const gt = ctx.createLinearGradient(0, 0, 0, H * 0.16);
+  gt.addColorStop(0, 'rgba(10,9,8,0.36)');
+  gt.addColorStop(1, 'rgba(10,9,8,0)');
+  ctx.fillStyle = gt;
+  ctx.fillRect(0, 0, W, H * 0.16);
+
+  fineGrain(ctx, W, H, seed + 77, 0.10);
+
+  return cv;
+}
+
+/* ---------- CEILING TEXTURE ---------- */
+function makeCeilingTexture(W, H, seed) {
+  const cv = newCanvas(W, H);
+  const ctx = cv.getContext('2d');
+  const rnd = mulberry32(seed);
+
+  const g = ctx.createLinearGradient(0, 0, W, H);
+  g.addColorStop(0, '#6d6759');
+  g.addColorStop(0.5, '#726b5c');
+  g.addColorStop(1, '#5a5549');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, W, H);
+
+  overlayNoise(ctx, W, H, seed + 21, 128, 24, 0.32, 'overlay');
+  overlayNoise(ctx, W, H, seed + 31, 96, 60, 0.24, 'soft-light');
+
+  // water damage rings
+  for (let i = 0; i < 7; i++) {
+    const cx = rnd() * W, cy = rnd() * H;
+    const R = 60 + rnd() * 200;
+    for (let k = 0; k < 5; k++) {
+      const rr = R * (0.35 + k * 0.17);
+      const grd = ctx.createRadialGradient(cx, cy, rr * 0.72, cx, cy, rr);
+      grd.addColorStop(0, 'rgba(94,72,42,0)');
+      grd.addColorStop(0.65, 'rgba(94,72,42,' + (0.055 - k * 0.008) + ')');
+      grd.addColorStop(1, 'rgba(72,54,32,0)');
+      ctx.fillStyle = grd;
+      ctx.beginPath(); ctx.arc(cx, cy, rr, 0, 7); ctx.fill();
+    }
+    const grd2 = ctx.createRadialGradient(cx, cy, 0, cx, cy, R * 0.5);
+    grd2.addColorStop(0, 'rgba(108,84,50,0.11)');
+    grd2.addColorStop(1, 'rgba(108,84,50,0)');
+    ctx.fillStyle = grd2;
+    ctx.beginPath(); ctx.arc(cx, cy, R * 0.5, 0, 7); ctx.fill();
+  }
+
+  // cracks
+  for (let i = 0; i < 12; i++) {
+    drawCrack(ctx, rnd() * W, rnd() * H, 60 + rnd() * 200, rnd, W, H);
+  }
+
+  // dark corner accumulation
+  const corners = [[0, 0], [W, 0], [0, H], [W, H]];
+  for (let i = 0; i < 4; i++) {
+    const cx = corners[i][0], cy = corners[i][1];
+    const grd = ctx.createRadialGradient(cx, cy, 0, cx, cy, W * 0.4);
+    grd.addColorStop(0, 'rgba(8,8,8,0.34)');
+    grd.addColorStop(0.65, 'rgba(8,8,8,0.10)');
+    grd.addColorStop(1, 'rgba(8,8,8,0)');
+    ctx.fillStyle = grd;
+    ctx.fillRect(0, 0, W, H);
+  }
+
+  fineGrain(ctx, W, H, seed + 91, 0.09);
+  return cv;
+}
+
+/* ---------- WOOD PLANK TEXTURE (one board, u = width, v = length) ---------- */
+function makePlankTexture(W, H, seed) {
+  const cv = newCanvas(W, H);
+  const ctx = cv.getContext('2d');
+  const rnd = mulberry32(seed);
+
+  const baseHue = 24 + rnd() * 12;
+  const baseLight = 16 + rnd() * 9;
+  ctx.fillStyle = 'hsl(' + baseHue + ', 22%, ' + baseLight + '%)';
+  ctx.fillRect(0, 0, W, H);
+
+  // long grain lines
+  for (let i = 0; i < 90; i++) {
+    const x = rnd() * W;
+    const w = 0.6 + rnd() * 3.4;
+    const drift = (rnd() - 0.5) * 26;
+    const a = 0.03 + rnd() * 0.14;
+    const dark = rnd() < 0.72;
+    ctx.strokeStyle = dark
+      ? 'rgba(24,15,8,' + a.toFixed(3) + ')'
+      : 'rgba(150,118,80,' + (a * 0.65).toFixed(3) + ')';
+    ctx.lineWidth = w;
+    ctx.beginPath();
+    ctx.moveTo(x, -10);
+    ctx.bezierCurveTo(x + drift, H * 0.33, x - drift * 0.8, H * 0.66, x + drift * 0.4, H + 10);
+    ctx.stroke();
+  }
+
+  // knots
+  const knots = 1 + Math.floor(rnd() * 3);
+  for (let k = 0; k < knots; k++) {
+    const cx = W * (0.2 + rnd() * 0.6);
+    const cy = H * (0.12 + rnd() * 0.76);
+    const r = 4 + rnd() * 10;
+    for (let i = 6; i >= 0; i--) {
+      const rr = r * (1 + i * 0.55);
+      ctx.strokeStyle = 'rgba(30,18,9,' + (0.16 - i * 0.02) + ')';
+      ctx.lineWidth = 1.3;
+      ctx.beginPath();
+      ctx.ellipse(cx, cy, rr * 0.65, rr, 0, 0, 7);
+      ctx.stroke();
+    }
+    const grd = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+    grd.addColorStop(0, 'rgba(18,10,5,0.85)');
+    grd.addColorStop(1, 'rgba(18,10,5,0)');
+    ctx.fillStyle = grd;
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, 7); ctx.fill();
+  }
+
+  // nail holes near the ends
+  for (let i = 0; i < 2; i++) {
+    const nx = W * (0.25 + rnd() * 0.5);
+    const ny = i === 0 ? H * 0.07 : H * 0.93;
+    const grd = ctx.createRadialGradient(nx, ny, 0, nx, ny, 5);
+    grd.addColorStop(0, 'rgba(8,6,4,0.9)');
+    grd.addColorStop(0.55, 'rgba(30,22,14,0.5)');
+    grd.addColorStop(1, 'rgba(30,22,14,0)');
+    ctx.fillStyle = grd;
+    ctx.beginPath(); ctx.arc(nx, ny, 5, 0, 7); ctx.fill();
+  }
+
+  // end-grain darkening
+  const ge1 = ctx.createLinearGradient(0, 0, 0, H * 0.06);
+  ge1.addColorStop(0, 'rgba(14,9,5,0.6)');
+  ge1.addColorStop(1, 'rgba(14,9,5,0)');
+  ctx.fillStyle = ge1; ctx.fillRect(0, 0, W, H * 0.06);
+  const ge2 = ctx.createLinearGradient(0, H, 0, H * 0.94);
+  ge2.addColorStop(0, 'rgba(14,9,5,0.6)');
+  ge2.addColorStop(1, 'rgba(14,9,5,0)');
+  ctx.fillStyle = ge2; ctx.fillRect(0, H * 0.94, W, H * 0.06);
+
+  // side edge darkening (gap shadow)
+  const gs1 = ctx.createLinearGradient(0, 0, W * 0.10, 0);
+  gs1.addColorStop(0, 'rgba(10,7,4,0.75)');
+  gs1.addColorStop(1, 'rgba(10,7,4,0)');
+  ctx.fillStyle = gs1; ctx.fillRect(0, 0, W * 0.10, H);
+  const gs2 = ctx.createLinearGradient(W, 0, W * 0.90, 0);
+  gs2.addColorStop(0, 'rgba(10,7,4,0.75)');
+  gs2.addColorStop(1, 'rgba(10,7,4,0)');
+  ctx.fillStyle = gs2; ctx.fillRect(W * 0.90, 0, W * 0.10, H);
+
+  // scratches + wear
+  for (let i = 0; i < 34; i++) {
+    const x = rnd() * W, y = rnd() * H;
+    const a = (rnd() - 0.5) * 0.7 + Math.PI * 0.5;
+    const l = 8 + rnd() * 70;
+    ctx.strokeStyle = rnd() < 0.45
+      ? 'rgba(168,138,98,0.11)'
+      : 'rgba(16,10,5,0.20)';
+    ctx.lineWidth = 0.6 + rnd() * 1.0;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x + Math.cos(a) * l, y + Math.sin(a) * l);
+    ctx.stroke();
+  }
+
+  // stains
+  for (let i = 0; i < 5; i++) {
+    const cx = rnd() * W, cy = rnd() * H, r = 10 + rnd() * 46;
+    const grd = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+    grd.addColorStop(0, 'rgba(20,13,8,0.24)');
+    grd.addColorStop(1, 'rgba(20,13,8,0)');
+    ctx.fillStyle = grd;
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, 7); ctx.fill();
+  }
+
+  fineGrain(ctx, W, H, seed + 41, 0.13);
+  return cv;
+}
+
+/* ---------- GENERIC WOOD (furniture) ---------- */
+function makeWoodTexture(W, H, seed, hue, light) {
+  const cv = newCanvas(W, H);
+  const ctx = cv.getContext('2d');
+  const rnd = mulberry32(seed);
+
+  ctx.fillStyle = 'hsl(' + hue + ', 24%, ' + light + '%)';
+  ctx.fillRect(0, 0, W, H);
+
+  for (let i = 0; i < 130; i++) {
+    const y = rnd() * H;
+    const h = 0.5 + rnd() * 3.2;
+    const drift = (rnd() - 0.5) * 30;
+    const a = 0.03 + rnd() * 0.15;
+    ctx.strokeStyle = rnd() < 0.7
+      ? 'rgba(22,13,7,' + a.toFixed(3) + ')'
+      : 'rgba(156,124,86,' + (a * 0.6).toFixed(3) + ')';
+    ctx.lineWidth = h;
+    ctx.beginPath();
+    ctx.moveTo(-10, y);
+    ctx.bezierCurveTo(W * 0.3, y + drift, W * 0.7, y - drift, W + 10, y + drift * 0.4);
+    ctx.stroke();
+  }
+
+  for (let k = 0; k < 3; k++) {
+    const cx = rnd() * W, cy = rnd() * H, r = 5 + rnd() * 14;
+    for (let i = 5; i >= 0; i--) {
+      ctx.strokeStyle = 'rgba(24,14,7,' + (0.18 - i * 0.025) + ')';
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.ellipse(cx, cy, r * (1 + i * 0.6), r * (1 + i * 0.6) * 0.4, rnd() * 3, 0, 7);
+      ctx.stroke();
+    }
+  }
+
+  overlayNoise(ctx, W, H, seed + 5, 128, 26, 0.30, 'overlay');
+  fineGrain(ctx, W, H, seed + 13, 0.12);
+
+  // wear / darkening at the edges
+  const grd = ctx.createLinearGradient(0, 0, 0, H);
+  grd.addColorStop(0, 'rgba(12,8,5,0.24)');
+  grd.addColorStop(0.25, 'rgba(12,8,5,0)');
+  grd.addColorStop(0.75, 'rgba(12,8,5,0)');
+  grd.addColorStop(1, 'rgba(12,8,5,0.30)');
+  ctx.fillStyle = grd;
+  ctx.fillRect(0, 0, W, H);
+
+  return cv;
+}
+
+/* ---------- FABRIC ---------- */
+function makeFabricTexture(W, H, seed, hue, sat, light) {
+  const cv = newCanvas(W, H);
+  const ctx = cv.getContext('2d');
+  const rnd = mulberry32(seed);
+
+  ctx.fillStyle = 'hsl(' + hue + ', ' + sat + '%, ' + light + '%)';
+  ctx.fillRect(0, 0, W, H);
+
+  // weave
+  const step = 3;
+  for (let y = 0; y < H; y += step) {
+    ctx.fillStyle = 'rgba(0,0,0,' + (0.03 + rnd() * 0.03) + ')';
+    ctx.fillRect(0, y, W, 1);
+  }
+  for (let x = 0; x < W; x += step) {
+    ctx.fillStyle = 'rgba(255,255,255,' + (0.012 + rnd() * 0.018) + ')';
+    ctx.fillRect(x, 0, 1, H);
+  }
+
+  overlayNoise(ctx, W, H, seed + 3, 96, 22, 0.28, 'overlay');
+  fineGrain(ctx, W, H, seed + 8, 0.16);
+
+  // grime patches
+  for (let i = 0; i < 14; i++) {
+    const cx = rnd() * W, cy = rnd() * H, r = 12 + rnd() * 60;
+    const grd = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+    grd.addColorStop(0, 'rgba(40,34,24,0.18)');
+    grd.addColorStop(1, 'rgba(40,34,24,0)');
+    ctx.fillStyle = grd;
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, 7); ctx.fill();
+  }
+
+  return cv;
+}
+
+/* ---------- PAPER ---------- */
+function makePaperTexture(seed) {
+  const W = 256, H = 256;
+  const cv = newCanvas(W, H);
+  const ctx = cv.getContext('2d');
+  const rnd = mulberry32(seed);
+  ctx.fillStyle = '#b6ad99';
+  ctx.fillRect(0, 0, W, H);
+  overlayNoise(ctx, W, H, seed + 2, 96, 18, 0.30, 'overlay');
+  for (let i = 0; i < 26; i++) {
+    const x = rnd() * W, y = rnd() * H;
+    const r = 4 + rnd() * 26;
+    const grd = ctx.createRadialGradient(x, y, 0, x, y, r);
+    grd.addColorStop(0, 'rgba(126,102,66,0.22)');
+    grd.addColorStop(1, 'rgba(126,102,66,0)');
+    ctx.fillStyle = grd;
+    ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.fill();
+  }
+  fineGrain(ctx, W, H, seed + 6, 0.14);
+  return cv;
+}
+
+/* ---------- FLOOR GRUNGE OVERLAY (alpha) ---------- */
+function makeFloorGrunge(W, H, seed) {
+  const cv = newCanvas(W, H);
+  const ctx = cv.getContext('2d');
+  const rnd = mulberry32(seed);
+
+  ctx.clearRect(0, 0, W, H);
+
+  // dust accumulation along walls
+  const edges = [
+    [0, 0, W, H * 0.16, 'top'],
+    [0, H * 0.84, W, H * 0.16, 'bottom'],
+    [0, 0, W * 0.16, H, 'left'],
+    [W * 0.84, 0, W * 0.16, H, 'right']
+  ];
+  for (const e of edges) {
+    const grd = e[4] === 'top'
+      ? ctx.createLinearGradient(0, e[1], 0, e[1] + e[3])
+      : e[4] === 'bottom'
+        ? ctx.createLinearGradient(0, e[1] + e[3], 0, e[1])
+        : e[4] === 'left'
+          ? ctx.createLinearGradient(e[0], 0, e[0] + e[2], 0)
+          : ctx.createLinearGradient(e[0] + e[2], 0, e[0], 0);
+    grd.addColorStop(0, 'rgba(58,50,38,0.55)');
+    grd.addColorStop(0.55, 'rgba(58,50,38,0.20)');
+    grd.addColorStop(1, 'rgba(58,50,38,0)');
+    ctx.fillStyle = grd;
+    ctx.fillRect(e[0], e[1], e[2], e[3]);
+  }
+
+  // dark traffic patches / stains
+  for (let i = 0; i < 26; i++) {
+    const cx = rnd() * W, cy = rnd() * H;
+    const rx = 30 + rnd() * 170, ry = 30 + rnd() * 170;
+    const grd = ctx.createRadialGradient(cx, cy, 0, cx, cy, Math.max(rx, ry));
+    grd.addColorStop(0, 'rgba(30,24,16,' + (0.10 + rnd() * 0.24).toFixed(3) + ')');
+    grd.addColorStop(0.6, 'rgba(30,24,16,' + (0.04 + rnd() * 0.08).toFixed(3) + ')');
+    grd.addColorStop(1, 'rgba(30,24,16,0)');
+    ctx.fillStyle = grd;
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, rx, ry, rnd() * 3, 0, 7);
+    ctx.fill();
+  }
+
+  // speckle dust
+  for (let i = 0; i < 2600; i++) {
+    const x = rnd() * W, y = rnd() * H;
+    const a = rnd() * 0.20;
+    ctx.fillStyle = 'rgba(120,108,86,' + a.toFixed(3) + ')';
+    ctx.fillRect(x, y, 1 + rnd() * 1.6, 1 + rnd() * 1.6);
+  }
+
+  return cv;
+}
+
+/* ---------- DUST / SCRATCH MAP (used by the mirror, RG = warp, B = dust) ---------- */
+function makeDustMap(size, seed) {
+  const cv = newCanvas(size, size);
+  const ctx = cv.getContext('2d');
+  const img = ctx.createImageData(size, size);
+  const rnd = mulberry32(seed);
+  const f1 = makeFbm(seed + 1, 5);
+  const f2 = makeFbm(seed + 2, 6);
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < size; x++) {
+      const i = (y * size + x) * 4;
+      const warp = f1(x / 26, y / 26);
+      const dust = f2(x / 14, y / 14);
+      img.data[i] = Math.floor(warp * 255);
+      img.data[i + 1] = Math.floor((1 - warp) * 255);
+      img.data[i + 2] = Math.floor(clamp(dust * 1.35 - 0.18, 0, 1) * 255);
+      img.data[i + 3] = 255;
+    }
+  }
+  ctx.putImageData(img, 0, 0);
+  // a few dark smudges
+  for (let i = 0; i < 20; i++) {
+    const cx = rnd() * size, cy = rnd() * size, r = 6 + rnd() * 40;
+    const grd = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+    grd.addColorStop(0, 'rgba(0,0,0,0.55)');
+    grd.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = grd;
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, 7); ctx.fill();
+  }
+  return cv;
+}
+
+/* ---------- CLOCK FACE ---------- */
+function makeClockFace(size, seed) {
+  const cv = newCanvas(size, size);
+  const ctx = cv.getContext('2d');
+  const rnd = mulberry32(seed);
+  const c = size / 2;
+
+  ctx.fillStyle = '#0a0b08';
+  ctx.beginPath(); ctx.arc(c, c, c - 2, 0, 7); ctx.fill();
+
+  ctx.strokeStyle = 'rgba(150,150,130,0.30)';
+  ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.arc(c, c, c - 5, 0, 7); ctx.stroke();
+
+  for (let i = 0; i < 12; i++) {
+    const a = (i / 12) * Math.PI * 2;
+    const r1 = c - 12, r2 = c - 20;
+    ctx.strokeStyle = 'rgba(170,170,148,0.45)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(c + Math.cos(a) * r1, c + Math.sin(a) * r1);
+    ctx.lineTo(c + Math.cos(a) * r2, c + Math.sin(a) * r2);
+    ctx.stroke();
+  }
+
+  // hands
+  ctx.strokeStyle = 'rgba(190,190,165,0.70)';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(c, c);
+  const ha = (-70 + rnd() * 140) * Math.PI / 180;
+  ctx.lineTo(c + Math.cos(ha) * c * 0.42, c + Math.sin(ha) * c * 0.42);
+  ctx.stroke();
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(c, c);
+  const ma = (rnd() * 360) * Math.PI / 180;
+  ctx.lineTo(c + Math.cos(ma) * c * 0.66, c + Math.sin(ma) * c * 0.66);
+  ctx.stroke();
+
+  fineGrain(ctx, size, size, seed + 3, 0.20);
+  return cv;
+}
+
+/* ============================================================================
+   2. RENDERER / SCENE / CAMERA
+   ========================================================================= */
+
+const canvas = document.getElementById('c');
+const renderer = new THREE.WebGLRenderer({
+  canvas,
+  antialias: false,
+  powerPreference: 'high-performance',
+  stencil: false
+});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
+renderer.setSize(window.innerWidth, window.innerHeight, false);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.outputColorSpace = THREE.LinearSRGBColorSpace;
+renderer.toneMapping = THREE.NoToneMapping;
+renderer.autoClear = true;
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x000000);
+scene.fog = new THREE.FogExp2(0x06070b, 0.072);
+
+const camera = new THREE.PerspectiveCamera(68, window.innerWidth / window.innerHeight, 0.045, 70);
+
+/* ============================================================================
+   3. ROOM CONSTANTS
+   ========================================================================= */
+
+const ROOM = { w: 6.0, l: 5.0, h: 2.9 };
+const HX = ROOM.w / 2;   //  3.0
+const HZ = ROOM.l / 2;   //  2.5
+const WALL_T = 0.16;
+
+const WINDOW = { x: 0.70, y: 1.65, w: 1.10, h: 1.35 };
+const DOOR = { x: -1.50, w: 0.95, h: 2.10 };
+
+/* ============================================================================
+   4. TEXTURES & MATERIALS
+   ========================================================================= */
+
+const TEX = {};
+
+TEX.wallA = makeWallTexture(1024, 512, 1337);
+TEX.wallB = makeWallTexture(1024, 512, 4242);
+TEX.wallC = makeWallTexture(1024, 512, 9182);
+TEX.wallD = makeWallTexture(1024, 512, 5150);
+TEX.ceiling = makeCeilingTexture(1024, 1024, 2718);
+
+TEX.plank = [
+  makePlankTexture(128, 512, 111),
+  makePlankTexture(128, 512, 222),
+  makePlankTexture(128, 512, 333)
+];
+TEX.plankNormal = [
+  texFromCanvas(normalFromCanvas(TEX.plank[0], 1.6), 1, 1, false),
+  texFromCanvas(normalFromCanvas(TEX.plank[1], 1.6), 1, 1, false),
+  texFromCanvas(normalFromCanvas(TEX.plank[2], 1.6), 1, 1, false)
+];
+
+TEX.woodDark = makeWoodTexture(512, 512, 808, 22, 15);
+TEX.woodMid = makeWoodTexture(512, 512, 909, 26, 22);
+TEX.woodLight = makeWoodTexture(512, 512, 1010, 30, 27);
+TEX.woodDarkN = texFromCanvas(normalFromCanvas(TEX.woodDark, 1.2), 1, 1, false);
+TEX.woodMidN = texFromCanvas(normalFromCanvas(TEX.woodMid, 1.2), 1, 1, false);
+
+TEX.fabricSheet = makeFabricTexture(256, 256, 300, 42, 8, 52);
+TEX.fabricBlanket = makeFabricTexture(256, 256, 301, 96, 12, 20);
+TEX.fabricPillow = makeFabricTexture(256, 256, 302, 40, 7, 58);
+TEX.fabricSheetN = texFromCanvas(normalFromCanvas(TEX.fabricSheet, 2.2), 1, 1, false);
+TEX.fabricBlanketN = texFromCanvas(normalFromCanvas(TEX.fabricBlanket, 2.6), 1, 1, false);
+
+TEX.paper = makePaperTexture(55);
+TEX.floorGrunge = makeFloorGrunge(1024, 1024, 77);
+TEX.dust = makeDustMap(256, 31);
+TEX.clockFace = makeClockFace(128, 12);
+
+function matWall(cv, seed) {
+  const map = texFromCanvas(cv, 1, 1);
+  const nrm = texFromCanvas(normalFromCanvas(cv, 0.9), 1, 1, false);
+  return new THREE.MeshStandardMaterial({
+    map: map,
+    normalMap: nrm,
+    normalScale: new THREE.Vector2(0.55, 0.55),
+    roughness: 0.96,
+    metalness: 0.0,
+    color: 0xffffff
+  });
+}
+
+const MAT = {};
+
+MAT.wallA = matWall(TEX.wallA);
+MAT.wallB = matWall(TEX.wallB);
+MAT.wallC = matWall(TEX.wallC);
+MAT.wallD = matWall(TEX.wallD);
+
+MAT.ceiling = (() => {
+  const map = texFromCanvas(TEX.ceiling, 1, 1);
+  const nrm = texFromCanvas(normalFromCanvas(TEX.ceiling, 0.7), 1, 1, false);
+  return new THREE.MeshStandardMaterial({
+    map: map, normalMap: nrm,
+    normalScale: new THREE.Vector2(0.4, 0.4),
+    roughness: 0.98, metalness: 0.0
+  });
+})();
+
+MAT.plank = TEX.plank.map((cv, i) => new THREE.MeshStandardMaterial({
+  map: texFromCanvas(cv, 1, 1),
+  normalMap: TEX.plankNormal[i],
+  normalScale: new THREE.Vector2(0.7, 0.7),
+  roughness: 0.82,
+  metalness: 0.0,
+  color: 0xffffff
+}));
+
+MAT.woodDark = new THREE.MeshStandardMaterial({
+  map: texFromCanvas(TEX.woodDark, 2, 2),
+  normalMap: TEX.woodDarkN,
+  normalScale: new THREE.Vector2(0.5, 0.5),
+  roughness: 0.86, metalness: 0.0
+});
+
+MAT.woodMid = new THREE.MeshStandardMaterial({
+  map: texFromCanvas(TEX.woodMid, 2, 2),
+  normalMap: TEX.woodMidN,
+  normalScale: new THREE.Vector2(0.5, 0.5),
+  roughness: 0.80, metalness: 0.0
+});
+
+MAT.woodLight = new THREE.MeshStandardMaterial({
+  map: texFromCanvas(TEX.woodLight, 2, 2),
+  roughness: 0.78, metalness: 0.0
+});
+
+MAT.wardrobeInterior = new THREE.MeshStandardMaterial({
+  color: 0x0d0b09, roughness: 1.0, metalness: 0.0
+});
+
+MAT.metal = new THREE.MeshStandardMaterial({
+  color: 0x33322e, roughness: 0.44, metalness: 0.82
+});
+
+MAT.metalDark = new THREE.MeshStandardMaterial({
+  color: 0x1e1d1a, roughness: 0.55, metalness: 0.72
+});
+
+MAT.brass = new THREE.MeshStandardMaterial({
+  color: 0x6b5a34, roughness: 0.42, metalness: 0.9
+});
+
+MAT.sheet = new THREE.MeshStandardMaterial({
+  map: texFromCanvas(TEX.fabricSheet, 3, 3),
+  normalMap: TEX.fabricSheetN,
+  normalScale: new THREE.Vector2(0.8, 0.8),
+  roughness: 1.0, metalness: 0.0,
+  color: 0x8e8878,
+  side: THREE.DoubleSide
+});
+
+MAT.blanket = new THREE.MeshStandardMaterial({
+  map: texFromCanvas(TEX.fabricBlanket, 4, 4),
+  normalMap: TEX.fabricBlanketN,
+  normalScale: new THREE.Vector2(1.0, 1.0),
+  roughness: 1.0, metalness: 0.0,
+  color: 0x5a5142,
+  side: THREE.DoubleSide
+});
+
+MAT.pillow = new THREE.MeshStandardMaterial({
+  map: texFromCanvas(TEX.fabricPillow, 2, 2),
+  roughness: 1.0, metalness: 0.0,
+  color: 0x9a9382
+});
+
+MAT.mattress = new THREE.MeshStandardMaterial({
+  map: texFromCanvas(TEX.fabricSheet, 3, 3),
+  roughness: 1.0, metalness: 0.0,
+  color: 0x6e6a5c
+});
+
+MAT.paper = new THREE.MeshStandardMaterial({
+  map: texFromCanvas(TEX.paper, 1, 1),
+  roughness: 0.94, metalness: 0.0,
+  color: 0xa39a86,
+  side: THREE.DoubleSide
+});
+
+MAT.ceramic = new THREE.MeshStandardMaterial({
+  color: 0x8b8578, roughness: 0.32, metalness: 0.0
+});
+
+MAT.ceramicDark = new THREE.MeshStandardMaterial({
+  color: 0x3a3630, roughness: 0.28, metalness: 0.0
+});
+
+MAT.dark = new THREE.MeshStandardMaterial({
+  color: 0x0a0908, roughness: 1.0, metalness: 0.0
+});
+
+MAT.glass = new THREE.MeshPhysicalMaterial({
+  color: 0x1a1e24,
+  roughness: 0.10,
+  metalness: 0.0,
+  transmission: 0.0,
+  transparent: true,
+  opacity: 0.16,
+  side: THREE.DoubleSide,
+  depthWrite: false
+});
+
+MAT.shade = new THREE.MeshStandardMaterial({
+  color: 0x6a5c46, roughness: 0.7, metalness: 0.25,
+  side: THREE.DoubleSide
+});
+
+MAT.bulb = new THREE.MeshStandardMaterial({
+  color: 0xffb066,
+  emissive: 0xff9a4a,
+  emissiveIntensity: 1.0,
+  roughness: 0.4
+});
+
+MAT.grunge = new THREE.MeshStandardMaterial({
+  map: texFromCanvas(TEX.floorGrunge, 1, 1),
+  transparent: true,
+  opacity: 0.85,
+  depthWrite: false,
+  roughness: 1.0,
+  color: 0x2a2419
+});
+MAT.grunge.map.colorSpace = THREE.SRGBColorSpace;
+
+/* ============================================================================
+   5. SCENE BUILD HELPERS
+   ========================================================================= */
+
+const boxGeoCache = {};
+function boxGeo(w, h, d) {
+  const k = w.toFixed(4) + '_' + h.toFixed(4) + '_' + d.toFixed(4);
+  if (!boxGeoCache[k]) boxGeoCache[k] = new THREE.BoxGeometry(w, h, d);
+  return boxGeoCache[k];
+}
+
+function addBox(parent, w, h, d, mat, x, y, z, rx, ry, rz, cast, receive) {
+  const m = new THREE.Mesh(boxGeo(w, h, d), mat);
+  m.position.set(x, y, z);
+  if (rx || ry || rz) m.rotation.set(rx || 0, ry || 0, rz || 0);
+  m.castShadow = cast !== false;
+  m.receiveShadow = receive !== false;
+  parent.add(m);
+  return m;
+}
+
+/* displace a geometry with fbm noise to break up perfect surfaces */
+function roughen(geo, amp, freq, seed, axisMask) {
+  const pos = geo.attributes.position;
+  const f = makeFbm(seed, 4);
+  const ax = axisMask || [1, 1, 1];
+  for (let i = 0; i < pos.count; i++) {
+    const x = pos.getX(i), y = pos.getY(i), z = pos.getZ(i);
+    const n1 = f(x * freq, y * freq);
+    const n2 = f(z * freq + 31.7, x * freq + 11.3);
+    const n3 = f(y * freq + 71.1, z * freq + 53.9);
+    pos.setXYZ(i,
+      x + (n1 - 0.5) * amp * ax[0],
+      y + (n2 - 0.5) * amp * ax[1],
+      z + (n3 - 0.5) * amp * ax[2]
+    );
+  }
+  geo.computeVertexNormals();
+  return geo;
+}
+
+/* cloth-like wrinkles: long ridges + noise */
+function clothify(geo, ridgeAmp, ridgeFreq, noiseAmp, noiseFreq, seed, dirAxis) {
+  const pos = geo.attributes.position;
+  const f = makeFbm(seed, 4);
+  const f2 = makeFbm(seed + 77, 3);
+  for (let i = 0; i < pos.count; i++) {
+    const x = pos.getX(i), y = pos.getY(i), z = pos.getZ(i);
+    const u = dirAxis === 'x' ? x : z;
+    const ridge = Math.sin(u * ridgeFreq + f(x * 0.6, z * 0.6) * 5.0) * ridgeAmp;
+    const n = (f2(x * noiseFreq, z * noiseFreq) - 0.5) * noiseAmp;
+    pos.setY(i, y + ridge + n);
+  }
+  geo.computeVertexNormals();
+  return geo;
+}
+
+/* ============================================================================
+   6. THE ROOM SHELL
+   ========================================================================= */
+
+const roomGroup = new THREE.Group();
+scene.add(roomGroup);
+
+/* --- FLOOR PLANKS --- */
+(function buildFloor() {
+  const rnd = mulberry32(90210);
+  const plankH = 0.028;
+  const yTop = 0.0;
+  const xStart = -HX - 0.35, xEnd = HX + 0.35;
+  const zStart = -HZ - 0.35, zEnd = HZ + 0.35;
+
+  const buckets = [[], [], []];
+
+  let x = xStart;
+  let col = 0;
+  while (x < xEnd) {
+    const w = 0.105 + rnd() * 0.115;
+    const cx = x + w / 2;
+    let z = zStart;
+    while (z < zEnd) {
+      const len = 0.85 + rnd() * 0.75;
+      const cz = Math.min(z + len / 2, zEnd + 0.2);
+      const l = Math.min(len, zEnd + 0.4 - z);
+      if (l < 0.12) break;
+
+      const yOff = (rnd() - 0.5) * 0.008;
+      const rotY = (rnd() - 0.5) * 0.014;
+      const rotZ = (rnd() - 0.5) * 0.006;
+      const tilt = (rnd() - 0.5) * 0.010;
+
+      const b = (col + (rnd() < 0.5 ? 0 : 1)) % 3;
+      buckets[b].push({
+        x: cx, y: yTop - plankH / 2 + yOff, z: cz,
+        sx: w - 0.006, sy: plankH, sz: l - 0.008,
+        ry: rotY, rz: rotZ, rx: tilt,
+        tint: 0.62 + rnd() * 0.55
+      });
+
+      z += len + 0.006 + rnd() * 0.02;
+    }
+    x += w + 0.005;
+    col++;
+  }
+
+  const unit = new THREE.BoxGeometry(1, 1, 1);
+  const mtx = new THREE.Matrix4();
+  const quat = new THREE.Quaternion();
+  const eul = new THREE.Euler();
+  const pos = new THREE.Vector3();
+  const scl = new THREE.Vector3();
+  const colr = new THREE.Color();
+
+  for (let bi = 0; bi < 3; bi++) {
+    const list = buckets[bi];
+    if (!list.length) continue;
+    const inst = new THREE.InstancedMesh(unit, MAT.plank[bi], list.length);
+    inst.castShadow = false;
+    inst.receiveShadow = true;
+    for (let i = 0; i < list.length; i++) {
+      const d = list[i];
+      pos.set(d.x, d.y, d.z);
+      eul.set(d.rx, d.ry, d.rz);
+      quat.setFromEuler(eul);
+      scl.set(d.sx, d.sy, d.sz);
+      mtx.compose(pos, quat, scl);
+      inst.setMatrixAt(i, mtx);
+      colr.setRGB(d.tint, d.tint * (0.94 + 0.10 * Math.random()), d.tint * 0.92);
+      inst.setColorAt(i, colr);
+    }
+    inst.instanceMatrix.needsUpdate = true;
+    if (inst.instanceColor) inst.instanceColor.needsUpdate = true;
+    roomGroup.add(inst);
+  }
+
+  // underlay so gaps never show through to nothing
+  const under = new THREE.Mesh(
+    new THREE.PlaneGeometry(ROOM.w + 0.8, ROOM.l + 0.8),
+    MAT.dark
+  );
+  under.rotation.x = -Math.PI / 2;
+  under.position.y = -0.06;
+  under.receiveShadow = true;
+  roomGroup.add(under);
+
+  // dust / grunge overlay
+  const ov = new THREE.Mesh(
+    new THREE.PlaneGeometry(ROOM.w, ROOM.l),
+    MAT.grunge
+  );
+  ov.rotation.x = -Math.PI / 2;
+  ov.position.y = 0.0045;
+  ov.receiveShadow = false;
+  ov.renderOrder = 1;
+  roomGroup.add(ov);
+})();
+
+/* --- CEILING --- */
+(function buildCeiling() {
+  const geo = new THREE.PlaneGeometry(ROOM.w + 0.6, ROOM.l + 0.6, 26, 22);
+  const pos = geo.attributes.position;
+  const f = makeFbm(4242, 4);
+  for (let i = 0; i < pos.count; i++) {
+    const x = pos.getX(i), y = pos.getY(i);
+    const sag = -0.028 * Math.sin((x / (ROOM.w * 0.5)) * Math.PI * 0.5) * Math.cos((y / (ROOM.l * 0.5)) * Math.PI * 0.5);
+    const n = (f(x * 0.5, y * 0.5) - 0.5) * 0.022;
+    pos.setZ(i, sag + n);
+  }
+  geo.computeVertexNormals();
+  const m = new THREE.Mesh(geo, MAT.ceiling);
+  m.rotation.x = Math.PI / 2;
+  m.position.y = ROOM.h;
+  m.receiveShadow = true;
+  m.castShadow = false;
+  roomGroup.add(m);
+})();
+
+/* --- WALLS --- */
+
+// West wall (x = -3)
+addBox(roomGroup, WALL_T, ROOM.h + 0.4, ROOM.l + 0.6, MAT.wallC, -HX - WALL_T / 2, ROOM.h / 2, 0);
+// East wall (x = +3)
+addBox(roomGroup, WALL_T, ROOM.h + 0.4, ROOM.l + 0.6, MAT.wallD, HX + WALL_T / 2, ROOM.h / 2, 0);
+
+// North wall (z = -2.5) with window opening
+(function northWall() {
+  const zc = -HZ - WALL_T / 2;
+  const wx0 = WINDOW.x - WINDOW.w / 2;
+  const wx1 = WINDOW.x + WINDOW.w / 2;
+  const wy0 = WINDOW.y - WINDOW.h / 2;
+  const wy1 = WINDOW.y + WINDOW.h / 2;
+
+  // left segment
+  const lw = wx0 - (-HX - WALL_T);
+  addBox(roomGroup, lw, ROOM.h + 0.4, WALL_T, MAT.wallA,
+    -HX - WALL_T + lw / 2, ROOM.h / 2, zc);
+  // right segment
+  const rw = (HX + WALL_T) - wx1;
+  addBox(roomGroup, rw, ROOM.h + 0.4, WALL_T, MAT.wallB,
+    wx1 + rw / 2, ROOM.h / 2, zc);
+  // below window
+  addBox(roomGroup, WINDOW.w, wy0, WALL_T, MAT.wallA,
+    WINDOW.x, wy0 / 2, zc);
+  // above window
+  const th = ROOM.h - wy1;
+  addBox(roomGroup, WINDOW.w, th, WALL_T, MAT.wallB,
+    WINDOW.x, wy1 + th / 2, zc);
+})();
+
+// South wall (z = +2.5) with door opening
+(function southWall() {
+  const zc = HZ + WALL_T / 2;
+  const dx0 = DOOR.x - DOOR.w / 2;
+  const dx1 = DOOR.x + DOOR.w / 2;
+
+  const lw = dx0 - (-HX - WALL_T);
+  addBox(roomGroup, lw, ROOM.h + 0.4, WALL_T, MAT.wallC,
+    -HX - WALL_T + lw / 2, ROOM.h / 2, zc);
+  const rw = (HX + WALL_T) - dx1;
+  addBox(roomGroup, rw, ROOM.h + 0.4, WALL_T, MAT.wallD,
+    dx1 + rw / 2, ROOM.h / 2, zc);
+  const th = ROOM.h - DOOR.h;
+  addBox(roomGroup, DOOR.w, th, WALL_T, MAT.wallA,
+    DOOR.x, DOOR.h + th / 2, zc);
+})();
+
+/* --- BASEBOARDS --- */
+(function baseboards() {
+  const bbH = 0.115, bbT = 0.022;
+  const mat = MAT.woodLight;
+  // north
+  addBox(roomGroup, ROOM.w, bbH, bbT, mat, 0, bbH / 2, -HZ + bbT / 2, 0, 0, 0, false, true);
+  // south (broken into two to skip the door)
+  const d0 = DOOR.x - DOOR.w / 2, d1 = DOOR.x + DOOR.w / 2;
+  addBox(roomGroup, d0 + HX, bbH, bbT, mat, (-HX + d0) / 2, bbH / 2, HZ - bbT / 2, 0, 0, 0, false, true);
+  addBox(roomGroup, HX - d1, bbH, bbT, mat, (d1 + HX) / 2, bbH / 2, HZ - bbT / 2, 0, 0, 0, false, true);
+  // west
+  addBox(roomGroup, bbT, bbH, ROOM.l, mat, -HX + bbT / 2, bbH / 2, 0, 0, 0, 0, false, true);
+  // east
+  addBox(roomGroup, bbT, bbH, ROOM.l, mat, HX - bbT / 2, bbH / 2, 0, 0, 0, 0, false, true);
+})();
+
+/* ============================================================================
+   7. WINDOW
+   ========================================================================= */
+
+(function buildWindow() {
+  const zc = -HZ - WALL_T / 2;
+  const frameD = 0.14;
+  const fw = 0.055;
+  const glassZ = -HZ - WALL_T / 2;
+
+  // outer frame
+  const x0 = WINDOW.x - WINDOW.w / 2, x1 = WINDOW.x + WINDOW.w / 2;
+  const y0 = WINDOW.y - WINDOW.h / 2, y1 = WINDOW.y + WINDOW.h / 2;
+
+  const fm = MAT.woodLight;
+
+  addBox(roomGroup, WINDOW.w + fw * 2, fw, frameD, fm, WINDOW.x, y1 + fw / 2, zc);
+  addBox(roomGroup, WINDOW.w + fw * 2, fw, frameD, fm, WINDOW.x, y0 - fw / 2, zc);
+  addBox(roomGroup, fw, WINDOW.h + fw * 2, frameD, fm, x0 - fw / 2, WINDOW.y, zc);
+  addBox(roomGroup, fw, WINDOW.h + fw * 2, frameD, fm, x1 + fw / 2, WINDOW.y, zc);
+
+  // muntins
+  addBox(roomGroup, 0.028, WINDOW.h, 0.05, fm, WINDOW.x, WINDOW.y, zc);
+  addBox(roomGroup, WINDOW.w, 0.028, 0.05, fm, WINDOW.x, WINDOW.y + 0.12, zc);
+
+  // interior sill
+  addBox(roomGroup, WINDOW.w + 0.30, 0.045, 0.20, fm,
+    WINDOW.x, y0 - 0.022, -HZ + 0.10);
+
+  // glass
+  const glass = new THREE.Mesh(
+    new THREE.PlaneGeometry(WINDOW.w, WINDOW.h),
+    MAT.glass
+  );
+  glass.position.set(WINDOW.x, WINDOW.y, glassZ);
+  roomGroup.add(glass);
+
+  // glass dirt overlay (very subtle)
+  const dirtCv = newCanvas(256, 256);
+  const dctx = dirtCv.getContext('2d');
+  const drnd = mulberry32(9911);
+  dctx.clearRect(0, 0, 256, 256);
+  for (let i = 0; i < 90; i++) {
+    const cx = drnd() * 256, cy = drnd() * 256, r = 3 + drnd() * 34;
+    const g = dctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+    g.addColorStop(0, 'rgba(120,124,116,' + (0.02 + drnd() * 0.10).toFixed(3) + ')');
+    g.addColorStop(1, 'rgba(120,124,116,0)');
+    dctx.fillStyle = g;
+    dctx.beginPath(); dctx.arc(cx, cy, r, 0, 7); dctx.fill();
+  }
+  // fingerprints smudges
+  for (let i = 0; i < 12; i++) {
+    const cx = drnd() * 256, cy = drnd() * 256;
+    const g = dctx.createRadialGradient(cx, cy, 0, cx, cy, 14);
+    g.addColorStop(0, 'rgba(180,186,180,0.06)');
+    g.addColorStop(1, 'rgba(180,186,180,0)');
+    dctx.fillStyle = g;
+    dctx.beginPath(); dctx.arc(cx, cy, 14, 0, 7); dctx.fill();
+  }
+  for (let i = 0; i < 30; i++) {
+    const x = drnd() * 256, y = drnd() * 256, a = drnd() * 6.28, l = 5 + drnd() * 40;
+    dctx.strokeStyle = 'rgba(200,204,198,0.05)';
+    dctx.lineWidth = 0.7;
+    dctx.beginPath(); dctx.moveTo(x, y); dctx.lineTo(x + Math.cos(a) * l, y + Math.sin(a) * l); dctx.stroke();
+  }
+  const dirtTex = texFromCanvas(dirtCv, 1, 1);
+  const dirtMat = new THREE.MeshBasicMaterial({
+    map: dirtTex, transparent: true, opacity: 0.9,
+    depthWrite: false, blending: THREE.NormalBlending
+  });
+  const dirtMesh = new THREE.Mesh(new THREE.PlaneGeometry(WINDOW.w, WINDOW.h), dirtMat);
+  dirtMesh.position.set(WINDOW.x, WINDOW.y, glassZ + 0.004);
+  roomGroup.add(dirtMesh);
+})();
+
+/* --- OUTSIDE --- */
+(function buildOutside() {
+  // ground plane far away
+  const ground = new THREE.Mesh(
+    new THREE.PlaneGeometry(90, 90),
+    new THREE.MeshStandardMaterial({ color: 0x05060a, roughness: 1.0 })
+  );
+  ground.rotation.x = -Math.PI / 2;
+  ground.position.set(0, -1.4, -22);
+  scene.add(ground);
+
+  // distant tree / structure silhouettes
+  const silMat = new THREE.MeshBasicMaterial({ color: 0x020305, fog: true });
+  const rnd = mulberry32(5150);
+  for (let i = 0; i < 22; i++) {
+    const x = -30 + rnd() * 60;
+    const z = -9 - rnd() * 22;
+    const h = 3 + rnd() * 9;
+    const w = 0.14 + rnd() * 0.5;
+    const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, w), silMat);
+    m.position.set(x, h / 2 - 1.4, z);
+    m.rotation.y = rnd() * 3;
+    m.rotation.z = (rnd() - 0.5) * 0.12;
+    scene.add(m);
+  }
+
+  // faint silhouette that occasionally passes
+  const shadowCv = newCanvas(128, 128);
+  const sctx = shadowCv.getContext('2d');
+  const g = sctx.createRadialGradient(64, 64, 0, 64, 64, 64);
+  g.addColorStop(0, 'rgba(0,0,0,0.95)');
+  g.addColorStop(0.5, 'rgba(0,0,0,0.45)');
+  g.addColorStop(1, 'rgba(0,0,0,0)');
+  sctx.fillStyle = g;
+  sctx.fillRect(0, 0, 128, 128);
+  const shTex = new THREE.CanvasTexture(shadowCv);
+
+  const passer = new THREE.Mesh(
+    new THREE.PlaneGeometry(1.7, 2.6),
+    new THREE.MeshBasicMaterial({
+      map: shTex, transparent: true, opacity: 0,
+      depthWrite: false, color: 0x000000
+    })
+  );
+  passer.position.set(0, 1.2, -5.5);
+  passer.renderOrder = -1;
+  scene.add(passer);
+  window.__passer = passer;
+})();
+
+/* ============================================================================
+   8. DOOR
+   ========================================================================= */
+
+const doorState = { open: false, handleAngle: 0 };
+
+(function buildDoor() {
+  const zc = HZ + WALL_T / 2;
+  const doorGroup = new THREE.Group();
+  doorGroup.position.set(DOOR.x, 0, zc - 0.03);
+  roomGroup.add(doorGroup);
+
+  // frame
+  const fm = MAT.woodDark;
+  const fw = 0.065;
+  addBox(roomGroup, fw, DOOR.h + fw, WALL_T + 0.06, fm, DOOR.x - DOOR.w / 2 - fw / 2, (DOOR.h + fw) / 2, zc - 0.02);
+  addBox(roomGroup, fw, DOOR.h + fw, WALL_T + 0.06, fm, DOOR.x + DOOR.w / 2 + fw / 2, (DOOR.h + fw) / 2, zc - 0.02);
+  addBox(roomGroup, DOOR.w + fw * 2, fw, WALL_T + 0.06, fm, DOOR.x, DOOR.h + fw / 2, zc - 0.02);
+
+  // slab
+  const slabH = 2.03;
+  const slab = addBox(doorGroup, DOOR.w - 0.02, slabH, 0.048, MAT.woodDark, 0, slabH / 2 + 0.025, 0);
+  slab.userData.interact = 'door';
+
+  // recessed panels
+  const pm = MAT.woodMid;
+  addBox(doorGroup, DOOR.w - 0.24, 0.70, 0.012, pm, 0, 1.42, 0.028, 0, 0, 0, false, true);
+  addBox(doorGroup, DOOR.w - 0.24, 0.62, 0.012, pm, 0, 0.52, 0.028, 0, 0, 0, false, true);
+
+  // handle
+  const hg = new THREE.Group();
+  hg.position.set(DOOR.w / 2 - 0.10, 1.02, 0.04);
+  doorGroup.add(hg);
+  const rose = new THREE.Mesh(new THREE.CylinderGeometry(0.028, 0.028, 0.014, 14), MAT.brass);
+  rose.rotation.x = Math.PI / 2;
+  hg.add(rose);
+  const lever = new THREE.Mesh(new THREE.CylinderGeometry(0.009, 0.011, 0.11, 10), MAT.brass);
+  lever.rotation.z = Math.PI / 2;
+  lever.position.set(-0.048, 0, 0.022);
+  hg.add(lever);
+  const knob = new THREE.Mesh(new THREE.SphereGeometry(0.016, 10, 8), MAT.brass);
+  knob.position.set(-0.10, 0, 0.022);
+  hg.add(knob);
+  window.__doorHandleGroup = hg;
+
+  // dark void behind the door
+  const voidPlane = new THREE.Mesh(
+    new THREE.PlaneGeometry(DOOR.w + 0.3, DOOR.h + 0.3),
+    new THREE.MeshBasicMaterial({ color: 0x000000 })
+  );
+  voidPlane.position.set(DOOR.x, DOOR.h / 2, zc + 0.35);
+  voidPlane.rotation.y = Math.PI;
+  roomGroup.add(voidPlane);
+
+  // light leaking under the door
+  const glowMat = new THREE.MeshBasicMaterial({
+    color: 0xffb070, transparent: true, opacity: 0.0, depthWrite: false
+  });
+  const glow = new THREE.Mesh(new THREE.PlaneGeometry(DOOR.w - 0.04, 0.09), glowMat);
+  glow.rotation.x = -Math.PI / 2;
+  glow.position.set(DOOR.x, 0.012, zc - 0.10);
+  roomGroup.add(glow);
+  window.__doorGlow = glowMat;
+})();
+
+/* ============================================================================
+   9. FURNITURE
+   ========================================================================= */
+
+/* ---------- BED ---------- */
+const bedGroup = new THREE.Group();
+(function buildBed() {
+  const bw = 1.42, bl = 2.02;
+  const bx = -HX + 0.10 + bw / 2;   // centred against the west wall
+  const bz = -HZ + 0.22 + bl / 2;
+  bedGroup.position.set(bx, 0, bz);
+  scene.add(bedGroup);
+
+  const wm = MAT.woodDark;
+
+  // corner posts
+  const postH = 0.62;
+  const px = bw / 2 - 0.05, pz = bl / 2 - 0.05;
+  addBox(bedGroup, 0.075, postH, 0.075, wm, -px, postH / 2, -pz);
+  addBox(bedGroup, 0.075, postH, 0.075, wm, px, postH / 2, -pz);
+  addBox(bedGroup, 0.075, postH, 0.075, wm, -px, postH / 2, pz);
+  addBox(bedGroup, 0.075, postH, 0.075, wm, px, postH / 2, pz);
+
+  // side rails
+  addBox(bedGroup, 0.045, 0.16, bl, wm, -px, 0.42, 0);
+  addBox(bedGroup, 0.045, 0.16, bl, wm, px, 0.42, 0);
+  addBox(bedGroup, bw, 0.16, 0.045, wm, 0, 0.42, pz);
+
+  // slats
+  for (let i = 0; i < 8; i++) {
+    const z = -bl / 2 + 0.16 + i * ((bl - 0.32) / 7);
+    addBox(bedGroup, bw - 0.12, 0.022, 0.055, MAT.woodMid, 0, 0.36, z, 0, 0, 0, false, true);
+  }
+
+  // headboard
+  const hb = new THREE.Group();
+  hb.position.set(0, 0, -pz - 0.03);
+  bedGroup.add(hb);
+  addBox(hb, bw, 0.06, 0.075, wm, 0, 1.14, 0);
+  addBox(hb, bw, 0.06, 0.075, wm, 0, 0.78, 0);
+  for (let i = 0; i < 3; i++) {
+    const x = -bw / 2 + 0.12 + i * ((bw - 0.24) / 2);
+    addBox(hb, 0.055, 0.62, 0.06, wm, x, 0.90, 0);
+  }
+  addBox(hb, bw, 0.30, 0.05, wm, 0, 1.40, 0);
+
+  // mattress (slightly sagging, irregular)
+  const mGeo = new THREE.BoxGeometry(bw - 0.10, 0.20, bl - 0.10, 22, 6, 30);
+  const mpos = mGeo.attributes.position;
+  const mf = makeFbm(6161, 4);
+  for (let i = 0; i < mpos.count; i++) {
+    const x = mpos.getX(i), y = mpos.getY(i), z = mpos.getZ(i);
+    const sag = -0.035 * Math.cos((x / ((bw - 0.10) / 2)) * 1.5) * Math.cos((z / ((bl - 0.10) / 2)) * 1.2);
+    const n = (mf(x * 2.4, z * 2.4) - 0.5) * 0.022;
+    const bulge = y > 0.05 ? (0.012 * Math.sin(x * 9) * Math.sin(z * 7)) : 0;
+    mpos.setY(i, y + sag * (y > 0 ? 1 : 0.2) + n + bulge);
+  }
+  mGeo.computeVertexNormals();
+  const mattress = new THREE.Mesh(mGeo, MAT.mattress);
+  mattress.position.set(0, 0.50, 0);
+  mattress.castShadow = true;
+  mattress.receiveShadow = true;
+  bedGroup.add(mattress);
+
+  // bedsheet — draped cloth over the lower 2/3
+  const sGeo = new THREE.BoxGeometry(bw - 0.08, 0.30, bl - 0.30, 26, 8, 34);
+  clothify(sGeo, 0.016, 7.5, 0.030, 1.6, 2201, 'x');
+  const spos = sGeo.attributes.position;
+  const sf = makeFbm(909, 4);
+  for (let i = 0; i < spos.count; i++) {
+    const x = spos.getX(i), y = spos.getY(i), z = spos.getZ(i);
+    // slight flare at the bottom
+    const flare = y < -0.05 ? 1.0 + (-y - 0.05) * 0.22 : 1.0;
+    spos.setX(i, x * flare);
+    spos.setZ(i, z + (sf(x * 1.4, z * 1.4) - 0.5) * 0.03);
+  }
+  sGeo.computeVertexNormals();
+  const sheet = new THREE.Mesh(sGeo, MAT.sheet);
+  sheet.position.set(0.01, 0.66, 0.28);
+  sheet.castShadow = true;
+  sheet.receiveShadow = true;
+  bedGroup.add(sheet);
+
+  // pillow
+  const pGeo = new THREE.BoxGeometry(0.60, 0.155, 0.40, 18, 6, 14);
+  clothify(pGeo, 0.011, 22, 0.020, 4.2, 3311, 'x');
+  const pillow = new THREE.Mesh(pGeo, MAT.pillow);
+  pillow.position.set(-0.10, 0.665, -bl / 2 + 0.36);
+  pillow.rotation.set(0.04, 0.09, 0.03);
+  pillow.castShadow = true;
+  pillow.receiveShadow = true;
+  bedGroup.add(pillow);
+
+  const pillow2 = new THREE.Mesh(pGeo.clone(), MAT.pillow);
+  pillow2.position.set(0.24, 0.655, -bl / 2 + 0.40);
+  pillow2.rotation.set(-0.02, -0.12, -0.05);
+  pillow2.scale.set(0.9, 0.85, 0.9);
+  pillow2.castShadow = true;
+  pillow2.receiveShadow = true;
+  bedGroup.add(pillow2);
+
+  // blanket — pulled partially back, hanging off the side
+  const bGeo = new THREE.BoxGeometry(bw + 0.14, 0.075, 1.30, 30, 5, 30);
+  clothify(bGeo, 0.026, 6.2, 0.034, 1.5, 7712, 'x');
+  const bpos = bGeo.attributes.position;
+  const bf = makeFbm(311, 4);
+  for (let i = 0; i < bpos.count; i++) {
+    const x = bpos.getX(i), z = bpos.getZ(i), y = bpos.getY(i);
+    const drape = -Math.max(0, Math.abs(x) - (bw / 2 - 0.02)) * 0.42;
+    bpos.setY(i, y + drape * 0.5);
+    bpos.setZ(i, z + (bf(x * 1.1, z * 1.1) - 0.5) * 0.045);
+  }
+  bGeo.computeVertexNormals();
+  const blanket = new THREE.Mesh(bGeo, MAT.blanket);
+  blanket.position.set(0.03, 0.79, 0.42);
+  blanket.rotation.set(0.02, 0.045, 0.012);
+  blanket.castShadow = true;
+  blanket.receiveShadow = true;
+  bedGroup.add(blanket);
+})();
+
+/* ---------- WARDROBE ---------- */
+const wardrobeDoorPivot = { angle: 0.20 };
+(function buildWardrobe() {
+  const W = 1.30, H = 2.16, D = 0.62;
+  const g = new THREE.Group();
+  g.position.set(HX - D / 2 - 0.02, 0, 1.50);
+  scene.add(g);
+
+  const wm = MAT.woodDark;
+  const t = 0.045;
+
+  // back
+  addBox(g, 0.03, H, W, MAT.wardrobeInterior, -D / 2 + 0.015, H / 2, 0, 0, 0, 0, false, true);
+  // sides
+  addBox(g, D, H, t, wm, 0, H / 2, -W / 2 + t / 2);
+  addBox(g, D, H, t, wm, 0, H / 2, W / 2 - t / 2);
+  // top / bottom
+  addBox(g, D, t, W, wm, 0, H - t / 2, 0);
+  addBox(g, D, t, W, wm, 0, t / 2, 0);
+  // interior shelf
+  addBox(g, D - 0.05, 0.028, W - 0.12, MAT.wardrobeInterior, 0, 1.32, 0, 0, 0, 0, false, true);
+  // hanging rod
+  const rod = new THREE.Mesh(new THREE.CylinderGeometry(0.014, 0.014, W - 0.12, 10), MAT.metalDark);
+  rod.rotation.x = Math.PI / 2;
+  rod.position.set(-0.06, 1.78, 0);
+  g.add(rod);
+
+  // hangers
+  for (let i = 0; i < 2; i++) {
+    const hg = new THREE.Group();
+    hg.position.set(-0.05, 1.70, -0.28 + i * 0.44);
+    hg.rotation.y = (i === 0 ? 0.12 : -0.08);
+    const hook = new THREE.Mesh(new THREE.TorusGeometry(0.024, 0.004, 6, 14, Math.PI * 1.4), MAT.metalDark);
+    hook.rotation.y = Math.PI / 2;
+    hook.position.y = 0.06;
+    hg.add(hook);
+    const bar = new THREE.Mesh(new THREE.CylinderGeometry(0.006, 0.006, 0.36, 6), MAT.metalDark);
+    bar.rotation.z = Math.PI / 2;
+    bar.rotation.y = Math.PI / 2;
+    bar.position.y = -0.14;
+    hg.add(bar);
+    g.add(hg);
+  }
+
+  // doors
+  const doorW = W / 2 - 0.012;
+  const doorH = H - 0.06;
+
+  // left door (closed) — pivot at outer edge
+  const lp = new THREE.Group();
+  lp.position.set(0, 0, -W / 2 + 0.012);
+  g.add(lp);
+  const ld = addBox(lp, 0.042, doorH, doorW, wm, D / 2 - 0.02, H / 2, doorW / 2);
+  ld.userData.interact = 'wardrobe';
+  addBox(lp, 0.014, doorH - 0.42, doorW - 0.14, MAT.woodMid, D / 2 + 0.004, H / 2, doorW / 2, 0, 0, 0, false, true);
+
+  // right door (slightly ajar) — pivot at outer edge
+  const rp = new THREE.Group();
+  rp.position.set(0, 0, W / 2 - 0.012);
+  g.add(rp);
+  const rd = addBox(rp, 0.042, doorH, doorW, wm, D / 2 - 0.02, H / 2, -doorW / 2);
+  rd.userData.interact = 'wardrobe';
+  addBox(rp, 0.014, doorH - 0.42, doorW - 0.14, MAT.woodMid, D / 2 + 0.004, H / 2, -doorW / 2, 0, 0, 0, false, true);
+
+  // handles
+  const h1 = new THREE.Mesh(new THREE.CylinderGeometry(0.011, 0.011, 0.09, 8), MAT.brass);
+  h1.rotation.z = Math.PI / 2;
+  h1.position.set(D / 2 + 0.02, 1.05, doorW - 0.10);
+  lp.add(h1);
+  const h2 = h1.clone();
+  h2.position.set(D / 2 + 0.02, 1.05, -(doorW - 0.10));
+  rp.add(h2);
+
+  // interior shadow catcher (keeps the inside genuinely black)
+  const inner = new THREE.Mesh(
+    new THREE.PlaneGeometry(D - 0.06, H - 0.06),
+    new THREE.MeshBasicMaterial({ color: 0x000000 })
+  );
+  inner.rotation.y = Math.PI / 2;
+  inner.position.set(-D / 2 + 0.04, H / 2, 0);
+  g.add(inner);
+
+  window.__wardrobeRightPivot = rp;
+  wardrobeDoorPivot.angle = 0.20;
+  rp.rotation.y = 0.20;
+})();
+
+/* ---------- DESK ---------- */
+const deskObjects = [];
+(function buildDesk() {
+  const DW = 1.30, DD = 0.58, DH = 0.75;
+  const g = new THREE.Group();
+  const cx = HX - DD / 2 - 0.03;
+  const cz = -1.20;
+  g.position.set(cx, 0, cz);
+  scene.add(g);
+
+  const wm = MAT.woodMid;
+
+  // top
+  const top = addBox(g, DD, 0.045, DW, wm, 0, DH, 0);
+  // legs
+  const lx = DD / 2 - 0.05, lz = DW / 2 - 0.06;
+  addBox(g, 0.06, DH, 0.06, MAT.woodDark, -lx, DH / 2, -lz);
+  addBox(g, 0.06, DH, 0.06, MAT.woodDark, -lx, DH / 2, lz);
+  addBox(g, 0.06, DH, 0.06, MAT.woodDark, lx, DH / 2, -lz);
+  addBox(g, 0.06, DH, 0.06, MAT.woodDark, lx, DH / 2, lz);
+
+  // back stretcher
+  addBox(g, 0.03, 0.08, DW - 0.16, MAT.woodDark, -lx, 0.24, 0);
+
+  // drawer
+  addBox(g, DD - 0.08, 0.16, DW - 0.14, MAT.woodDark, 0, DH - 0.13, 0, 0, 0, 0, true, true);
+  const dr = addBox(g, 0.012, 0.145, DW - 0.16, wm, DD / 2 - 0.05, DH - 0.13, 0, 0, 0, 0, false, true);
+  dr.userData.interact = 'deskDrawer';
+  const k = new THREE.Mesh(new THREE.SphereGeometry(0.015, 10, 8), MAT.brass);
+  k.position.set(DD / 2 + 0.005, DH - 0.13, 0);
+  g.add(k);
+
+  // ---- objects on the desk ----
+  const deskTopY = DH + 0.0225;
+
+  // stacked papers
+  const rnd = mulberry32(4477);
+  for (let i = 0; i < 7; i++) {
+    const pg = new THREE.PlaneGeometry(0.21, 0.29);
+    const p = new THREE.Mesh(pg, MAT.paper);
+    p.rotation.x = -Math.PI / 2;
+    p.rotation.z = (rnd() - 0.5) * 0.9;
+    p.position.set(
+      -0.10 + rnd() * 0.22,
+      deskTopY + 0.0012 * i,
+      -0.28 + rnd() * 0.30
+    );
+    p.castShadow = i === 6;
+    p.receiveShadow = true;
+    g.add(p);
+  }
+  // a couple of loose sheets near the edge
+  for (let i = 0; i < 2; i++) {
+    const p = new THREE.Mesh(new THREE.PlaneGeometry(0.21, 0.29), MAT.paper);
+    p.rotation.x = -Math.PI / 2;
+    p.rotation.z = (rnd() - 0.5) * 1.6;
+    p.position.set(0.18 + rnd() * 0.06, deskTopY + 0.001, 0.42 + rnd() * 0.08);
+    p.receiveShadow = true;
+    g.add(p);
+  }
+
+  // open book
+  const bk = new THREE.Group();
+  bk.position.set(-0.15, deskTopY, 0.10);
+  bk.rotation.y = 0.28;
+  g.add(bk);
+  const coverMat = MAT.woodDark;
+  const p1 = new THREE.Mesh(new THREE.BoxGeometry(0.19, 0.028, 0.26), coverMat);
+  p1.position.set(-0.095, 0.014, 0);
+  p1.rotation.z = 0.06;
+  p1.castShadow = true;
+  bk.add(p1);
+  const p2 = new THREE.Mesh(new THREE.BoxGeometry(0.19, 0.028, 0.26), coverMat);
+  p2.position.set(0.095, 0.014, 0);
+  p2.rotation.z = -0.06;
+  p2.castShadow = true;
+  bk.add(p2);
+  for (let s = 0; s < 2; s++) {
+    const pg = new THREE.Mesh(new THREE.BoxGeometry(0.172, 0.010, 0.24), MAT.paper);
+    pg.position.set(-0.088 + s * 0.176, 0.030, 0);
+    pg.rotation.z = s === 0 ? 0.06 : -0.06;
+    pg.receiveShadow = true;
+    bk.add(pg);
+  }
+  bk.userData.interact = 'book';
+  deskObjects.push(bk);
+
+  // ceramic cup
+  const cupG = new THREE.Group();
+  cupG.position.set(0.16, deskTopY, -0.32);
+  g.add(cupG);
+  const cup = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.040, 0.032, 0.085, 20, 1, true),
+    MAT.ceramic
+  );
+  cup.position.y = 0.0425;
+  cup.material.side = THREE.DoubleSide;
+  cup.castShadow = true;
+  cup.receiveShadow = true;
+  cupG.add(cup);
+  const cupBottom = new THREE.Mesh(new THREE.CylinderGeometry(0.032, 0.032, 0.006, 20), MAT.ceramic);
+  cupBottom.position.y = 0.003;
+  cupG.add(cupBottom);
+  const cupHandle = new THREE.Mesh(new THREE.TorusGeometry(0.024, 0.006, 8, 16, Math.PI * 1.3), MAT.ceramic);
+  cupHandle.position.set(0.045, 0.045, 0);
+  cupHandle.rotation.y = Math.PI / 2;
+  cupHandle.rotation.z = -0.4;
+  cupG.add(cupHandle);
+  // dark residue inside
+  const residue = new THREE.Mesh(new THREE.CircleGeometry(0.031, 18), new THREE.MeshStandardMaterial({
+    color: 0x120d08, roughness: 1.0
+  }));
+  residue.rotation.x = -Math.PI / 2;
+  residue.position.y = 0.008;
+  cupG.add(residue);
+  deskObjects.push(cupG);
+
+  // small wooden box
+  const boxG = new THREE.Group();
+  boxG.position.set(-0.06, deskTopY, 0.40);
+  boxG.rotation.y = -0.4;
+  g.add(boxG);
+  addBox(boxG, 0.13, 0.055, 0.085, MAT.woodDark, 0, 0.0275, 0, 0, 0, 0, true, true);
+  addBox(boxG, 0.132, 0.008, 0.088, MAT.woodMid, 0, 0.058, 0, 0, 0, 0, false, true);
+  deskObjects.push(boxG);
+
+  // pencil
+  const pencil = new THREE.Mesh(new THREE.CylinderGeometry(0.004, 0.004, 0.155, 6), MAT.woodLight);
+  pencil.rotation.z = Math.PI / 2;
+  pencil.rotation.y = 0.9;
+  pencil.position.set(0.05, deskTopY + 0.005, 0.02);
+  pencil.castShadow = true;
+  g.add(pencil);
+  const tip = new THREE.Mesh(new THREE.ConeGeometry(0.004, 0.012, 6), MAT.metalDark);
+  tip.rotation.z = -Math.PI / 2;
+  tip.rotation.y = 0.9;
+  tip.position.set(0.05 + Math.cos(0.9) * 0.083, deskTopY + 0.005, 0.02 - Math.sin(0.9) * 0.083);
+  g.add(tip);
+
+  // ---- desk lamp ----
+  const lampG = new THREE.Group();
+  lampG.position.set(-0.16, deskTopY, -0.20);
+  lampG.rotation.y = 0.55;
+  g.add(lampG);
+
+  const base = new THREE.Mesh(new THREE.CylinderGeometry(0.062, 0.072, 0.016, 20), MAT.metalDark);
+  base.position.y = 0.008;
+  base.castShadow = true;
+  base.receiveShadow = true;
+  lampG.add(base);
+
+  const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.010, 0.34, 8), MAT.metalDark);
+  stem.position.set(0.01, 0.18, 0);
+  stem.rotation.z = -0.10;
+  stem.castShadow = true;
+  lampG.add(stem);
+
+  const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.007, 0.007, 0.18, 8), MAT.metalDark);
+  arm.position.set(-0.06, 0.35, 0);
+  arm.rotation.z = 1.15;
+  arm.castShadow = true;
+  lampG.add(arm);
+
+  const shade = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.048, 0.098, 0.115, 22, 1, true),
+    MAT.shade
+  );
+  shade.position.set(-0.14, 0.335, 0);
+  shade.rotation.z = 0.55;
+  shade.castShadow = true;
+  lampG.add(shade);
+
+  const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.024, 12, 10), MAT.bulb);
+  bulb.position.set(-0.155, 0.315, 0);
+  lampG.add(bulb);
+
+  const lampLightWorld = new THREE.Vector3(-0.155, 0.30, 0);
+  lampG.localToWorld(lampLightWorld);
+
+  window.__lampLight = new THREE.PointLight(0xffa257, 7.0, 9.0, 2.0);
+  window.__lampLight.position.copy(lampLightWorld);
+  window.__lampLight.castShadow = true;
+  window.__lampLight.shadow.mapSize.set(1024, 1024);
+  window.__lampLight.shadow.bias = -0.0016;
+  window.__lampLight.shadow.normalBias = 0.02;
+  window.__lampLight.shadow.camera.near = 0.06;
+  window.__lampLight.shadow.camera.far = 9.0;
+  window.__lampLight.shadow.radius = 2.0;
+  scene.add(window.__lampLight);
+
+  window.__lampBulb = bulb;
+  window.__lampBaseIntensity = 7.0;
+
+  lampG.userData.interact = 'lamp';
+  deskObjects.push(lampG);
+  window.__deskLampGroup = lampG;
+})();
+
+/* ---------- CHAIR ---------- */
+(function buildChair() {
+  const g = new THREE.Group();
+  g.position.set(1.62, 0, -0.62);
+  g.rotation.y = -0.85;
+  scene.add(g);
+
+  const wm = MAT.woodDark;
+  const seatH = 0.45, seatW = 0.40, seatD = 0.40;
+
+  addBox(g, seatW, 0.035, seatD, wm, 0, seatH, 0);
+  const lx = seatW / 2 - 0.028, lz = seatD / 2 - 0.028;
+  addBox(g, 0.032, seatH, 0.032, wm, -lx, seatH / 2, -lz);
+  addBox(g, 0.032, seatH, 0.032, wm, lx, seatH / 2, -lz);
+  addBox(g, 0.032, seatH, 0.032, wm, -lx, seatH / 2, lz);
+  addBox(g, 0.032, seatH, 0.032, wm, lx, seatH / 2, lz);
+
+  // back posts
+  addBox(g, 0.030, 0.46, 0.030, wm, -lx, seatH + 0.23, -lz);
+  addBox(g, 0.030, 0.46, 0.030, wm, lx, seatH + 0.23, -lz);
+  // back slats
+  addBox(g, seatW, 0.065, 0.026, wm, 0, seatH + 0.40, -lz);
+  addBox(g, seatW - 0.04, 0.050, 0.022, wm, 0, seatH + 0.24, -lz);
+  // stretchers
+  addBox(g, seatW - 0.04, 0.022, 0.022, wm, 0, 0.16, -lz, 0, 0, 0, false, true);
+  addBox(g, seatW - 0.04, 0.022, 0.022, wm, 0, 0.16, lz, 0, 0, 0, false, true);
+})();
+
+/* ---------- NIGHTSTAND ---------- */
+const nightstandObjs = [];
+(function buildNightstand() {
+  const g = new THREE.Group();
+  g.position.set(-HX + 0.24, 0, 0.72);
+  scene.add(g);
+
+  const W = 0.42, H = 0.56, D = 0.38;
+  const wm = MAT.woodDark;
+
+  addBox(g, D, 0.03, W, wm, 0, H - 0.015, 0);
+  addBox(g, D, 0.03, W, wm, 0, 0.10, 0);
+  addBox(g, D, H - 0.10, 0.03, wm, 0, (H + 0.10) / 2 - 0.10, -W / 2 + 0.015);
+  addBox(g, D, H - 0.10, 0.03, wm, 0, (H + 0.10) / 2 - 0.10, W / 2 - 0.015);
+  addBox(g, 0.02, H - 0.10, W, MAT.wardrobeInterior, -D / 2 + 0.01, (H + 0.10) / 2 - 0.10, 0, 0, 0, 0, false, true);
+
+  // drawer
+  addBox(g, 0.012, 0.14, W - 0.06, MAT.woodMid, D / 2 - 0.006, 0.36, 0, 0, 0, 0, false, true);
+  const k = new THREE.Mesh(new THREE.SphereGeometry(0.012, 10, 8), MAT.brass);
+  k.position.set(D / 2 + 0.004, 0.36, 0);
+  g.add(k);
+
+  const topY = H;
+
+  // alarm clock
+  const clk = new THREE.Group();
+  clk.position.set(0.02, topY, -0.08);
+  clk.rotation.y = -0.35;
+  g.add(clk);
+  const body = new THREE.Mesh(new THREE.CylinderGeometry(0.052, 0.052, 0.032, 22), MAT.metalDark);
+  body.rotation.x = Math.PI / 2;
+  body.position.y = 0.052;
+  body.castShadow = true;
+  body.receiveShadow = true;
+  clk.add(body);
+  const faceMat = new THREE.MeshStandardMaterial({
+    map: texFromCanvas(TEX.clockFace, 1, 1),
+    emissiveMap: texFromCanvas(TEX.clockFace, 1, 1),
+    emissive: 0x5a6b52,
+    emissiveIntensity: 0.16,
+    roughness: 0.55
+  });
+  const face = new THREE.Mesh(new THREE.CircleGeometry(0.048, 24), faceMat);
+  face.position.set(0, 0.052, 0.017);
+  clk.add(face);
+  const foot1 = new THREE.Mesh(new THREE.CylinderGeometry(0.006, 0.006, 0.02, 6), MAT.metalDark);
+  foot1.position.set(-0.035, 0.010, 0);
+  clk.add(foot1);
+  const foot2 = foot1.clone(); foot2.position.x = 0.035; clk.add(foot2);
+  const bell = new THREE.Mesh(new THREE.SphereGeometry(0.014, 10, 8), MAT.metalDark);
+  bell.position.set(-0.045, 0.096, 0);
+  clk.add(bell);
+  const bell2 = bell.clone(); bell2.position.x = 0.045; clk.add(bell2);
+  nightstandObjs.push(clk);
+
+  // book
+  const bk = new THREE.Group();
+  bk.position.set(-0.05, topY, 0.13);
+  bk.rotation.y = 0.42;
+  g.add(bk);
+  addBox(bk, 0.135, 0.028, 0.19, MAT.woodDark, 0, 0.014, 0, 0, 0, 0, true, true);
+  addBox(bk, 0.126, 0.018, 0.181, MAT.paper, 0, 0.030, 0, 0, 0, 0, false, true);
+  nightstandObjs.push(bk);
+
+  // small mysterious object — a dark carved figure / stone
+  const obj = new THREE.Group();
+  obj.position.set(0.10, topY, 0.06);
+  g.add(obj);
+  const coreGeo = new THREE.DodecahedronGeometry(0.030, 0);
+  roughen(coreGeo, 0.012, 22, 515, [1, 1, 1]);
+  const core = new THREE.Mesh(coreGeo, new THREE.MeshStandardMaterial({
+    color: 0x191512, roughness: 0.94, metalness: 0.05
+  }));
+  core.position.y = 0.030;
+  core.scale.set(0.85, 1.35, 0.85);
+  core.castShadow = true;
+  core.receiveShadow = true;
+  obj.add(core);
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(0.036, 0.0035, 6, 18), MAT.metalDark);
+  ring.rotation.x = Math.PI / 2;
+  ring.position.y = 0.004;
+  obj.add(ring);
+  obj.userData.interact = 'relic';
+  nightstandObjs.push(obj);
+  window.__relic = obj;
+})();
+
+/* ---------- MIRROR ---------- */
+let mirrorMesh = null;
+(function buildMirror() {
+  const g = new THREE.Group();
+  g.position.set(HX - 0.035, 1.58, -1.20);
+  g.rotation.y = -Math.PI / 2;
+  scene.add(g);
+
+  // frame
+  const fw = 0.055, fh = 0.85, fwd = 0.62;
+  const fm = MAT.woodDark;
+  addBox(g, fwd + fw * 2, fw, 0.045, fm, 0, fh / 2 + fw / 2, 0);
+  addBox(g, fwd + fw * 2, fw, 0.045, fm, 0, -fh / 2 - fw / 2, 0);
+  addBox(g, fw, fh, 0.045, fm, -fwd / 2 - fw / 2, 0, 0);
+  addBox(g, fw, fh, 0.045, fm, fwd / 2 + fw / 2, 0, 0);
+  // backing
+  addBox(g, fwd + 0.02, fh + 0.02, 0.02, MAT.dark, 0, 0, -0.02, 0, 0, 0, false, true);
+
+  // mirror surface
+  const geo = new THREE.PlaneGeometry(fwd, fh, 1, 1);
+  mirrorMesh = new Mirror(geo, { rtSize: 512, dustMap: texFromCanvas(TEX.dust, 1, 1, false) });
+  mirrorMesh.position.z = 0.004;
+  mirrorMesh.userData.interact = 'mirror';
+  g.add(mirrorMesh);
+})();
+
+/* ============================================================================
+   10. LIGHTING
+   ========================================================================= */
+
+// extremely dim cool base
+const amb = new THREE.AmbientLight(0x1c2434, 0.30);
+scene.add(amb);
+
+// cold moonlight through the window
+const moon = new THREE.DirectionalLight(0x9fb6dc, 1.45);
+moon.position.set(2.6, 4.4, -9.0);
+moon.target.position.set(0.2, 0.55, 0.7);
+scene.add(moon);
+scene.add(moon.target);
+moon.castShadow = true;
+moon.shadow.mapSize.set(2048, 2048);
+moon.shadow.camera.left = -4.4;
+moon.shadow.camera.right = 4.4;
+moon.shadow.camera.top = 4.4;
+moon.shadow.camera.bottom = -4.4;
+moon.shadow.camera.near = 0.5;
+moon.shadow.camera.far = 26;
+moon.shadow.bias = -0.0008;
+moon.shadow.normalBias = 0.022;
+moon.shadow.radius = 2.0;
+
+window.__moon = moon;
+window.__moonBase = 1.45;
+
+/* ============================================================================
+   11. PLANAR MIRROR (approximate real reflection, dirtied)
+   ========================================================================= */
+
+function Mirror(geometry, options) {
+  const scope = this;
+  const rtSize = options.rtSize || 512;
+
+  const renderTarget = new THREE.WebGLRenderTarget(rtSize, rtSize, {
+    type: THREE.HalfFloatType
+  });
+  renderTarget.texture.minFilter = THREE.LinearFilter;
+  renderTarget.texture.magFilter = THREE.LinearFilter;
+
+  const virtualCamera = new THREE.PerspectiveCamera();
+
+  const textureMatrix = new THREE.Matrix4();
+
+  const material = new THREE.ShaderMaterial({
+    uniforms: {
+      tDiffuse: { value: renderTarget.texture },
+      tDust: { value: options.dustMap },
+      textureMatrix: { value: textureMatrix },
+      uTime: { value: 0 }
+    },
+    vertexShader: `
+      uniform mat4 textureMatrix;
+      varying vec4 vUv;
+      varying vec2 vLocal;
+      void main() {
+        vUv = textureMatrix * vec4( position, 1.0 );
+        vLocal = uv;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
+      }
+    `,
+    fragmentShader: `
+      uniform sampler2D tDiffuse;
+      uniform sampler2D tDust;
+      uniform float uTime;
+      varying vec4 vUv;
+      varying vec2 vLocal;
+
+      void main() {
+        vec2 uv = vUv.xy / vUv.w;
+
+        vec2 d = texture2D( tDust, vLocal * 1.7 ).rg - 0.5;
+        vec2 uvd = uv + d * 0.011;
+
+        vec3 col;
+        col.r = texture2D( tDiffuse, uvd ).r;
+        col.g = texture2D( tDiffuse, uv ).g;
+        col.b = texture2D( tDiffuse, uv - d * 0.007 ).b;
+
+        // old, dull, silvering-degraded mirror
+        col *= vec3( 0.46, 0.53, 0.58 );
+        col += vec3( 0.009, 0.011, 0.014 );
+
+        // dust & smudges
+        float dust = texture2D( tDust, vLocal * 0.85 ).b;
+        float dust2 = texture2D( tDust, vLocal * 2.6 + 0.3 ).b;
+        float dirt = smoothstep( 0.30, 0.95, dust * 0.75 + dust2 * 0.45 );
+        col = mix( col, col * 0.18 + vec3( 0.030, 0.029, 0.026 ), dirt * 0.85 );
+
+        // silvering rot creeping in from the edges
+        vec2 e = abs( vLocal - 0.5 ) * 2.0;
+        float edge = max( e.x, e.y );
+        float rot = smoothstep( 0.70, 1.03, edge + ( dust - 0.5 ) * 0.30 );
+        col = mix( col, vec3( 0.020, 0.021, 0.024 ), rot * 0.92 );
+
+        // faint vignette in the glass
+        float r = length( vLocal - 0.5 ) * 1.42;
+        col *= 1.0 - 0.55 * r * r;
+
+        gl_FragColor = vec4( col, 1.0 );
+      }
+    `
+  });
+
+  THREE.Mesh.call(this, geometry, material);
+
+  this.renderTarget = renderTarget;
+  this.virtualCamera = virtualCamera;
+  this.textureMatrix = textureMatrix;
+
+  let frameCount = 0;
+
+  const reflectorPlane = new THREE.Plane();
+  const normal = new THREE.Vector3();
+  const reflectorWorldPosition = new THREE.Vector3();
+  const cameraWorldPosition = new THREE.Vector3();
+  const rotationMatrix = new THREE.Matrix4();
+  const lookAtPosition = new THREE.Vector3(0, 0, -1);
+  const clipPlane = new THREE.Vector4();
+  const view = new THREE.Vector3();
+  const target = new THREE.Vector3();
+  const q = new THREE.Vector4();
+  const textureMatrixLocal = textureMatrix;
+
+  this.onBeforeRender = function (renderer, scene, camera) {
+    reflectorWorldPosition.setFromMatrixPosition(scope.matrixWorld);
+    cameraWorldPosition.setFromMatrixPosition(camera.matrixWorld);
+
+    rotationMatrix.extractRotation(scope.matrixWorld);
+    normal.set(0, 0, 1);
+    normal.applyMatrix4(rotationMatrix);
+
+    view.subVectors(reflectorWorldPosition, cameraWorldPosition);
+    if (view.dot(normal) > 0) return;
+    view.reflect(normal).negate();
+    view.add(reflectorWorldPosition);
+
+    rotationMatrix.extractRotation(camera.matrixWorld);
+    lookAtPosition.set(0, 0, -1);
+    lookAtPosition.applyMatrix4(rotationMatrix);
+    lookAtPosition.add(cameraWorldPosition);
+
+    target.subVectors(reflectorWorldPosition, lookAtPosition);
+    target.reflect(normal).negate();
+    target.add(reflectorWorldPosition);
+
+    virtualCamera.position.copy(view);
+    virtualCamera.up.set(0, 1, 0);
+    virtualCamera.up.applyMatrix4(rotationMatrix);
+    virtualCamera.up.reflect(normal);
+    virtualCamera.lookAt(target);
+    virtualCamera.far = camera.far;
+    virtualCamera.near = camera.near;
+    virtualCamera.aspect = 1.0;
+    virtualCamera.updateMatrixWorld();
+    virtualCamera.projectionMatrix.copy(camera.projectionMatrix);
+
+    textureMatrixLocal.set(
+      0.5, 0.0, 0.0, 0.5,
+      0.0, 0.5, 0.0, 0.5,
+      0.0, 0.0, 0.5, 0.5,
+      0.0, 0.0, 0.0, 1.0
+    );
+    textureMatrixLocal.multiply(virtualCamera.projectionMatrix);
+    textureMatrixLocal.multiply(virtualCamera.matrixWorldInverse);
+    textureMatrixLocal.multiply(scope.matrixWorld);
+
+    // throttle updates
+    frameCount++;
+    if (frameCount % 2 !== 0) return;
+
+    scope.visible = false;
+
+    const currentRenderTarget = renderer.getRenderTarget();
+    const currentXrEnabled = renderer.xr.enabled;
+    const currentShadowAutoUpdate = renderer.shadowMap.autoUpdate;
+
+    renderer.xr.enabled = false;
+    renderer.shadowMap.autoUpdate = false;
+
+    renderer.setRenderTarget(renderTarget);
+    renderer.state.buffers.depth.setMask(true);
+    if (renderer.autoClear === false) renderer.clear();
+    renderer.render(scene, virtualCamera);
+
+    renderer.xr.enabled = currentXrEnabled;
+    renderer.shadowMap.autoUpdate = currentShadowAutoUpdate;
+    renderer.setRenderTarget(currentRenderTarget);
+
+    scope.visible = true;
+  };
+}
+Mirror.prototype = Object.create(THREE.Mesh.prototype);
+Mirror.prototype.constructor = Mirror;
+
+/* ============================================================================
+   12. POST-PROCESSING
+   ========================================================================= */
+
+const POST = (function () {
+  const rtScene = new THREE.WebGLRenderTarget(1, 1, {
+    type: THREE.HalfFloatType,
+    samples: 4
+  });
+  rtScene.texture.minFilter = THREE.LinearFilter;
+  rtScene.texture.magFilter = THREE.LinearFilter;
+  rtScene.texture.generateMipmaps = false;
+
+  const rtBright = new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType });
+  rtBright.texture.minFilter = THREE.LinearFilter;
+  rtBright.texture.magFilter = THREE.LinearFilter;
+  rtBright.texture.generateMipmaps = false;
+
+  const rtBlurA = new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType });
+  const rtBlurB = new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType });
+  rtBlurA.texture.minFilter = rtBlurA.texture.magFilter = THREE.LinearFilter;
+  rtBlurB.texture.minFilter = rtBlurB.texture.magFilter = THREE.LinearFilter;
+  rtBlurA.texture.generateMipmaps = false;
+  rtBlurB.texture.generateMipmaps = false;
+
+  const fsScene = new THREE.Scene();
+  const fsCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+  const fsQuad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), null);
+  fsQuad.frustumCulled = false;
+  fsScene.add(fsQuad);
+
+  const VERT = `
+    varying vec2 vUv;
+    void main() {
+      vUv = uv;
+      gl_Position = vec4( position.xy, 0.0, 1.0 );
+    }
+  `;
+
+  const brightMat = new THREE.ShaderMaterial({
+    uniforms: {
+      tDiffuse: { value: null },
+      uThreshold: { value: 0.42 }
+    },
+    vertexShader: VERT,
+    fragmentShader: `
+      uniform sampler2D tDiffuse;
+      uniform float uThreshold;
+      varying vec2 vUv;
+      void main() {
+        vec3 c = texture2D( tDiffuse, vUv ).rgb;
+        float l = dot( c, vec3( 0.2126, 0.7152, 0.0722 ) );
+        float k = smoothstep( uThreshold, uThreshold + 0.85, l );
+        gl_FragColor = vec4( c * k, 1.0 );
+      }
+    `,
+    depthTest: false,
+    depthWrite: false
+  });
+
+  const blurMat = new THREE.ShaderMaterial({
+    uniforms: {
+      tDiffuse: { value: null },
+      uDir: { value: new THREE.Vector2() }
+    },
+    vertexShader: VERT,
+    fragmentShader: `
+      uniform sampler2D tDiffuse;
+      uniform vec2 uDir;
+      varying vec2 vUv;
+      void main() {
+        vec3 s = texture2D( tDiffuse, vUv ).rgb * 0.227027;
+        s += texture2D( tDiffuse, vUv + uDir * 1.3846 ).rgb * 0.316216;
+        s += texture2D( tDiffuse, vUv - uDir * 1.3846 ).rgb * 0.316216;
+        s += texture2D( tDiffuse, vUv + uDir * 3.2308 ).rgb * 0.070270;
+        s += texture2D( tDiffuse, vUv - uDir * 3.2308 ).rgb * 0.070270;
+        gl_FragColor = vec4( s, 1.0 );
+      }
+    `,
+    depthTest: false,
+    depthWrite: false
+  });
+
+  const compositeMat = new THREE.ShaderMaterial({
+    uniforms: {
+      tScene: { value: rtScene.texture },
+      tBloom: { value: rtBlurB.texture },
+      uTime: { value: 0 },
+      uRes: { value: new THREE.Vector2(1, 1) },
+      uExposure: { value: 1.18 },
+      uVignette: { value: 1.0 },
+      uFade: { value: 1.0 }
+    },
+    vertexShader: VERT,
+    fragmentShader: `
+      uniform sampler2D tScene;
+      uniform sampler2D tBloom;
+      uniform float uTime;
+      uniform vec2 uRes;
+      uniform float uExposure;
+      uniform float uVignette;
+      uniform float uFade;
+      varying vec2 vUv;
+
+      vec3 aces( vec3 x ) {
+        return clamp( ( x * ( 2.51 * x + 0.03 ) ) / ( x * ( 2.43 * x + 0.59 ) + 0.14 ), 0.0, 1.0 );
+      }
+
+      float hash( vec2 p ) {
+        return fract( sin( dot( p, vec2( 127.1, 311.7 ) ) ) * 43758.5453123 );
+      }
+
+      void main() {
+        vec2 uv = vUv;
+        vec2 c = uv - 0.5;
+        float r2 = dot( c, c );
+
+        // subtle chromatic aberration, stronger toward the edges
+        float ca = 0.0013 * r2 + 0.00035;
+        vec3 col;
+        col.r = texture2D( tScene, uv + c * ca ).r;
+        col.g = texture2D( tScene, uv ).g;
+        col.b = texture2D( tScene, uv - c * ca ).b;
+
+        // bloom
+        vec3 bloom = texture2D( tBloom, uv ).rgb;
+        col += bloom * 0.62;
+
+        // exposure
+        col *= uExposure;
+
+        // color grade: cool, desaturated shadows; faintly warm midtones
+        float lum = dot( col, vec3( 0.2126, 0.7152, 0.0722 ) );
+        vec3 cool = col * vec3( 0.84, 0.91, 1.10 );
+        vec3 warm = col * vec3( 1.07, 0.98, 0.86 );
+        col = mix( cool, warm, clamp( lum * 1.6, 0.0, 1.0 ) );
+
+        // gentle desaturation overall
+        float l2 = dot( col, vec3( 0.2126, 0.7152, 0.0722 ) );
+        col = mix( vec3( l2 ), col, 0.86 );
+
+        // tone map
+        col = aces( col );
+
+        // vignette
+        float vig = smoothstep( 1.05, 0.18, r2 * 2.05 );
+        col *= mix( mix( 0.38, 1.0, vig ), 1.0, 1.0 - uVignette );
+
+        // very subtle film grain
+        float g = hash( uv * uRes + vec2( uTime * 37.13, uTime * 21.71 ) ) - 0.5;
+        float g2 = hash( uv * uRes * 2.13 + vec2( uTime * 71.3, uTime * 43.7 ) ) - 0.5;
+        col += ( g * 0.030 + g2 * 0.014 ) * ( 1.0 - l2 * 0.7 );
+
+        // slight lift so pure black never fully crushes
+        col += vec3( 0.004, 0.005, 0.007 );
+
+        col *= uFade;
+
+        // approximate sRGB encode (renderer output is linear)
+        col = pow( clamp( col, 0.0, 1.0 ), vec3( 1.0 / 2.2 ) );
+
+        gl_FragColor = vec4( col, 1.0 );
+      }
+    `,
+    depthTest: false,
+    depthWrite: false
+  });
+
+  function blit(mat, target) {
+    fsQuad.material = mat;
+    renderer.setRenderTarget(target);
+    renderer.render(fsScene, fsCam);
+  }
+
+  function resize(w, h) {
+    const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+    const W = Math.max(2, Math.floor(w * dpr));
+    const H = Math.max(2, Math.floor(h * dpr));
+
+    rtScene.setSize(W, H);
+
+    const bw = Math.max(2, Math.floor(W / 4));
+    const bh = Math.max(2, Math.floor(H / 4));
+    rtBright.setSize(bw, bh);
+    rtBlurA.setSize(bw, bh);
+    rtBlurB.setSize(bw, bh);
+
+    compositeMat.uniforms.uRes.value.set(W, H);
+  }
+
+  function render(sceneRef, camRef, time) {
+    renderer.setRenderTarget(rtScene);
+    renderer.clear();
+    renderer.render(sceneRef, camRef);
+
+    const bw = rtBright.width, bh = rtBright.height;
+
+    blit(brightMat, rtBright);
+
+    blurMat.uniforms.tDiffuse.value = rtBright.texture;
+    blurMat.uniforms.uDir.value.set(1.0 / bw, 0);
+    blit(blurMat, rtBlurA);
+
+    blurMat.uniforms.tDiffuse.value = rtBlurA.texture;
+    blurMat.uniforms.uDir.value.set(0, 1.0 / bh);
+    blit(blurMat, rtBlurB);
+
+    // second, wider blur pass for a softer glow
+    blurMat.uniforms.tDiffuse.value = rtBlurB.texture;
+    blurMat.uniforms.uDir.value.set(2.4 / bw, 0);
+    blit(blurMat, rtBlurA);
+
+    blurMat.uniforms.tDiffuse.value = rtBlurA.texture;
+    blurMat.uniforms.uDir.value.set(0, 2.4 / bh);
+    blit(blurMat, rtBlurB);
+
+    compositeMat.uniforms.uTime.value = time;
+    compositeMat.uniforms.tScene.value = rtScene.texture;
+    compositeMat.uniforms.tBloom.value = rtBlurB.texture;
+
+    blit(compositeMat, null);
+  }
+
+  return { resize: resize, render: render, compositeMat: compositeMat, rtScene: rtScene };
+})();
+
+POST.resize(window.innerWidth, window.innerHeight);
+
+/* ============================================================================
+   13. CONTROLS
+   ========================================================================= */
+
+const player = {
+  pos: new THREE.Vector3(0.35, 0, 1.75),
+  vel: new THREE.Vector3(),
+  yaw: -0.62,
+  pitch: -0.06,
+  eyeHeight: 1.63,
+  bobT: 0,
+  bobY: 0,
+  bobX: 0,
+  roll: 0,
+  breathe: 0
+};
+
+const keys = Object.create(null);
+let locked = false;
+
+document.addEventListener('keydown', (e) => {
+  keys[e.code] = true;
+  if (e.code === 'KeyE') tryInteract();
+  if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'Space'].indexOf(e.code) >= 0) e.preventDefault();
+});
+document.addEventListener('keyup', (e) => { keys[e.code] = false; });
+
+document.addEventListener('mousemove', (e) => {
+  if (!locked) return;
+  const s = 0.0021;
+  player.yaw -= e.movementX * s;
+  player.pitch -= e.movementY * s;
+  player.pitch = clamp(player.pitch, -1.30, 1.30);
+});
+
+document.addEventListener('pointerlockchange', () => {
+  locked = document.pointerLockElement === canvas;
+});
+
+/* ---- collision ---- */
+const COLLIDERS = [
+  // bed
+  { minX: -3.0, maxX: -1.45, minZ: -2.30, maxZ: -0.15 },
+  // wardrobe
+  { minX: 2.30, maxX: 3.0, minZ: 0.78, maxZ: 2.22 },
+  // desk
+  { minX: 2.36, maxX: 3.0, minZ: -1.90, maxZ: -0.50 },
+  // nightstand
+  { minX: -2.82, maxX: -2.36, minZ: 0.48, maxZ: 0.96 },
+  // chair
+  { minX: 1.36, maxX: 1.90, minZ: -0.90, maxZ: -0.34 }
+];
+const PLAYER_R = 0.30;
+
+function resolveCollisions(p) {
+  // room bounds
+  p.x = clamp(p.x, -HX + PLAYER_R + 0.02, HX - PLAYER_R - 0.02);
+  p.z = clamp(p.z, -HZ + PLAYER_R + 0.02, HZ - PLAYER_R - 0.02);
+
+  for (let i = 0; i < COLLIDERS.length; i++) {
+    const c = COLLIDERS[i];
+    const cx = clamp(p.x, c.minX, c.maxX);
+    const cz = clamp(p.z, c.minZ, c.maxZ);
+    const dx = p.x - cx;
+    const dz = p.z - cz;
+    const d2 = dx * dx + dz * dz;
+    if (d2 < PLAYER_R * PLAYER_R) {
+      if (d2 > 1e-8) {
+        const d = Math.sqrt(d2);
+        const push = (PLAYER_R - d) / d;
+        p.x += dx * push;
+        p.z += dz * push;
+      } else {
+        // inside: push out along the shallowest axis
+        const left = Math.abs(p.x - c.minX);
+        const right = Math.abs(c.maxX - p.x);
+        const front = Math.abs(p.z - c.minZ);
+        const back = Math.abs(c.maxZ - p.z);
+        const m = Math.min(left, right, front, back);
+        if (m === left) p.x = c.minX - PLAYER_R;
+        else if (m === right) p.x = c.maxX + PLAYER_R;
+        else if (m === front) p.z = c.minZ - PLAYER_R;
+        else p.z = c.maxZ + PLAYER_R;
+      }
+    }
+  }
+}
+
+/* ============================================================================
+   14. INTERACTION
+   ========================================================================= */
+
+const raycaster = new THREE.Raycaster();
+raycaster.far = 2.4;
+const centerNDC = new THREE.Vector2(0, 0);
+
+const interactables = [];
+scene.traverse((o) => {
+  if (o.userData && o.userData.interact) interactables.push(o);
+});
+
+const promptEl = document.getElementById('prompt');
+const captionEl = document.getElementById('caption');
+let captionTimer = null;
+
+function showCaption(text, dur) {
+  captionEl.textContent = text;
+  captionEl.classList.add('on');
+  if (captionTimer) clearTimeout(captionTimer);
+  captionTimer = setTimeout(() => {
+    captionEl.classList.remove('on');
+  }, dur || 4200);
+}
+
+let currentTarget = null;
+
+function updateInteraction() {
+  raycaster.setFromCamera(centerNDC, camera);
+  const hits = raycaster.intersectObjects(interactables, true);
+  let found = null;
+  for (let i = 0; i < hits.length; i++) {
+    let o = hits[i].object;
+    while (o && !o.userData.interact) o = o.parent;
+    if (o && o.userData.interact) { found = o; break; }
+  }
+  currentTarget = found;
+  if (found) {
+    const t = found.userData.interact;
+    let label = '[E] interact';
+    if (t === 'lamp') label = '[E] switch lamp';
+    else if (t === 'wardrobe') label = '[E] open wardrobe';
+    else if (t === 'door') label = '[E] try the door';
+    else if (t === 'mirror') label = '[E] look closer';
+    else if (t === 'book') label = '[E] read';
+    else if (t === 'relic') label = '[E] take';
+    else if (t === 'deskDrawer') label = '[E] open drawer';
+    promptEl.textContent = label;
+    promptEl.classList.add('on');
+  } else {
+    promptEl.classList.remove('on');
+  }
+}
+
+let lampOn = true;
+
+function tryInteract() {
+  if (!locked || !currentTarget) return;
+  const t = currentTarget.userData.interact;
+
+  if (t === 'lamp') {
+    lampOn = !lampOn;
+    Audio.lampClick();
+    if (!lampOn) {
+      window.__lampLight.intensity = 0;
+      MAT.bulb.emissiveIntensity = 0.0;
+      Audio.setLampBuzz(false);
+    } else {
+      window.__lampLight.intensity = window.__lampBaseIntensity;
+      MAT.bulb.emissiveIntensity = 1.0;
+      Audio.setLampBuzz(true);
+    }
+    showCaption(lampOn ? 'The bulb still works.' : 'Darkness, again.');
+  } else if (t === 'wardrobe') {
+    const rp = window.__wardrobeRightPivot;
+    const opening = rp.rotation.y < 0.35;
+    rp.rotation.y = opening ? 0.95 : 0.20;
+    Audio.woodCreak(0.35, -0.2, 0.16);
+    showCaption(opening ? 'The door swings wide. It smells of old cloth.' : 'You close it. Almost.');
+  } else if (t === 'door') {
+    Audio.doorRattle();
+    window.__doorHandleGroup.rotation.z = 0.22;
+    setTimeout(() => { window.__doorHandleGroup.rotation.z = 0; }, 380);
+    showCaption('Locked. From the other side.');
+  } else if (t === 'mirror') {
+    Audio.whisper();
+    showCaption('The glass is cold. Your reflection is a moment slow.');
+    Events.triggerCooldown('mirror', 60);
+  } else if (t === 'book') {
+    Audio.pageTurn();
+    showCaption('Every page has been torn out. Only the spine remains.');
+  } else if (t === 'relic') {
+    Audio.whisper();
+    window.__relic.rotation.y += 0.6;
+    showCaption('A small carved thing. Warm. It should not be warm.');
+  } else if (t === 'deskDrawer') {
+    Audio.woodCreak(0.2, 0.1, 0.2);
+    showCaption('Empty. Except for dust and a single hair.');
+  }
+}
+
+/* ============================================================================
+   15. AUDIO (Web Audio API — fully procedural)
+   ========================================================================= */
+
+const Audio = (function () {
+  let ctx = null;
+  let master = null;
+  let ambBus = null;
+  let lampBuzzGain = null;
+  let lampBuzzOsc = null;
+  let lampBuzzOsc2 = null;
+  let windGain = null;
+  let droneGain = null;
+  let windSource = null;
+  let noiseBuffer = null;
+  let started = false;
+  let silenceUntil = 0;
+
+  function makeNoise(seconds) {
+    const len = Math.floor(ctx.sampleRate * seconds);
+    const buf = ctx.createBuffer(1, len, ctx.sampleRate);
+    const d = buf.getChannelData(0);
+    let last = 0;
+    for (let i = 0; i < len; i++) {
+      const w = Math.random() * 2 - 1;
+      last = (last + 0.02 * w) / 1.02;
+      d[i] = w * 0.6 + last * 3.2;
+    }
+    return buf;
+  }
+
+  function init() {
+    if (started) return;
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return;
+    try {
+      ctx = new AC();
+    } catch (e) {
+      return;
+    }
+    started = true;
+
+    master = ctx.createGain();
+    master.gain.value = 0.0001;
+    master.connect(ctx.destination);
+    master.gain.exponentialRampToValueAtTime(0.85, ctx.currentTime + 3.0);
+
+    ambBus = ctx.createGain();
+    ambBus.gain.value = 1.0;
+    ambBus.connect(master);
+
+    noiseBuffer = makeNoise(6);
+
+    // ---- low room drone ----
+    droneGain = ctx.createGain();
+    droneGain.gain.value = 0.055;
+    const dFilt = ctx.createBiquadFilter();
+    dFilt.type = 'lowpass';
+    dFilt.frequency.value = 160;
+    dFilt.Q.value = 0.7;
+    droneGain.connect(dFilt);
+    dFilt.connect(ambBus);
+
+    const o1 = ctx.createOscillator();
+    o1.type = 'sine';
+    o1.frequency.value = 41.5;
+    const o2 = ctx.createOscillator();
+    o2.type = 'sine';
+    o2.frequency.value = 62.3;
+    const o3 = ctx.createOscillator();
+    o3.type = 'triangle';
+    o3.frequency.value = 88.1;
+
+    const og2 = ctx.createGain(); og2.gain.value = 0.42;
+    const og3 = ctx.createGain(); og3.gain.value = 0.10;
+
+    o1.connect(droneGain);
+    o2.connect(og2); og2.connect(droneGain);
+    o3.connect(og3); og3.connect(droneGain);
+
+    o1.start(); o2.start(); o3.start();
+
+    // slow amplitude drift
+    const lfo = ctx.createOscillator();
+    lfo.type = 'sine';
+    lfo.frequency.value = 0.037;
+    const lfoG = ctx.createGain();
+    lfoG.gain.value = 0.020;
+    lfo.connect(lfoG);
+    lfoG.connect(droneGain.gain);
+    lfo.start();
+
+    // ---- distant wind ----
+    windGain = ctx.createGain();
+    windGain.gain.value = 0.0;
+    windGain.connect(ambBus);
+
+    const wFilt = ctx.createBiquadFilter();
+    wFilt.type = 'bandpass';
+    wFilt.frequency.value = 420;
+    wFilt.Q.value = 0.65;
+    wFilt.connect(windGain);
+
+    windSource = ctx.createBufferSource();
+    windSource.buffer = noiseBuffer;
+    windSource.loop = true;
+    windSource.connect(wFilt);
+    windSource.start();
+
+    const wLfo = ctx.createOscillator();
+    wLfo.type = 'sine';
+    wLfo.frequency.value = 0.058;
+    const wLfoG = ctx.createGain();
+    wLfoG.gain.value = 0.030;
+    wLfo.connect(wLfoG);
+    wLfoG.connect(windGain.gain);
+    wLfo.start();
+
+    windGain.gain.value = 0.038;
+
+    // ---- lamp buzz (electrical hum) ----
+    lampBuzzGain = ctx.createGain();
+    lampBuzzGain.gain.value = 0.0;
+    const bFilt = ctx.createBiquadFilter();
+    bFilt.type = 'bandpass';
+    bFilt.frequency.value = 820;
+    bFilt.Q.value = 3.2;
+    bFilt.connect(lampBuzzGain);
+    lampBuzzGain.connect(master);
+
+    lampBuzzOsc = ctx.createOscillator();
+    lampBuzzOsc.type = 'sawtooth';
+    lampBuzzOsc.frequency.value = 120;
+    lampBuzzOsc.connect(bFilt);
+    lampBuzzOsc.start();
+
+    lampBuzzOsc2 = ctx.createOscillator();
+    lampBuzzOsc2.type = 'square';
+    lampBuzzOsc2.frequency.value = 60;
+    const g2 = ctx.createGain();
+    g2.gain.value = 0.35;
+    lampBuzzOsc2.connect(g2);
+    g2.connect(bFilt);
+    lampBuzzOsc2.start();
+
+    setLampBuzz(true);
+  }
+
+  function setLampBuzz(on) {
+    if (!ctx || !lampBuzzGain) return;
+    const t = ctx.currentTime;
+    lampBuzzGain.gain.cancelScheduledValues(t);
+    lampBuzzGain.gain.linearRampToValueAtTime(on ? 0.011 : 0.0, t + 0.25);
+  }
+
+  function pannerNode(x, y, z) {
+    const p = ctx.createPanner();
+    p.panningModel = 'HRTF';
+    p.distanceModel = 'inverse';
+    p.refDistance = 1.0;
+    p.maxDistance = 40;
+    p.rolloffFactor = 1.5;
+    if (p.positionX) {
+      p.positionX.value = x;
+      p.positionY.value = y;
+      p.positionZ.value = z;
+    } else {
+      p.setPosition(x, y, z);
+    }
+    return p;
+  }
+
+  function listenerFromCamera() {
+    if (!ctx) return;
+    const l = ctx.listener;
+    const fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+    const up = new THREE.Vector3(0, 1, 0).applyQuaternion(camera.quaternion);
+    const t = ctx.currentTime;
+    if (l.positionX) {
+      l.positionX.setTargetAtTime(camera.position.x, t, 0.02);
+      l.positionY.setTargetAtTime(camera.position.y, t, 0.02);
+      l.positionZ.setTargetAtTime(camera.position.z, t, 0.02);
+      l.forwardX.setTargetAtTime(fwd.x, t, 0.02);
+      l.forwardY.setTargetAtTime(fwd.y, t, 0.02);
+      l.forwardZ.setTargetAtTime(fwd.z, t, 0.02);
+      l.upX.setTargetAtTime(up.x, t, 0.02);
+      l.upY.setTargetAtTime(up.y, t, 0.02);
+      l.upZ.setTargetAtTime(up.z, t, 0.02);
+    } else {
+      l.setPosition(camera.position.x, camera.position.y, camera.position.z);
+      l.setOrientation(fwd.x, fwd.y, fwd.z, up.x, up.y, up.z);
+    }
+  }
+
+  function envGain(attack, hold, release, peak) {
+    const g = ctx.createGain();
+    const t = ctx.currentTime;
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(peak, t + attack);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + attack + hold + release);
+    return g;
+  }
+
+  function woodCreak(vol, panX, len) {
+    if (!ctx) return;
+    len = len || 0.5;
+    const t = ctx.currentTime;
+    const src = ctx.createBufferSource();
+    src.buffer = noiseBuffer;
+    src.loop = true;
+
+    const filt = ctx.createBiquadFilter();
+    filt.type = 'bandpass';
+    filt.Q.value = 14;
+    filt.frequency.setValueAtTime(220 + Math.random() * 260, t);
+    filt.frequency.linearRampToValueAtTime(120 + Math.random() * 180, t + len);
+
+    const g = envGain(0.02, len * 0.5, len * 0.6, vol);
+
+    const p = pannerNode(
+      camera.position.x + (panX || 0) * 2.0,
+      0.6,
+      camera.position.z + (Math.random() - 0.5) * 3.0
+    );
+
+    src.connect(filt);
+    filt.connect(g);
+    g.connect(p);
+    p.connect(master);
+    src.start(t);
+    src.stop(t + len + 1.2);
+  }
+
+  function knock(vol, x, y, z) {
+    if (!ctx) return;
+    const t = ctx.currentTime;
+    const o = ctx.createOscillator();
+    o.type = 'sine';
+    o.frequency.setValueAtTime(96, t);
+    o.frequency.exponentialRampToValueAtTime(42, t + 0.18);
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(vol, t + 0.006);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.34);
+
+    const n = ctx.createBufferSource();
+    n.buffer = noiseBuffer;
+    const nf = ctx.createBiquadFilter();
+    nf.type = 'bandpass';
+    nf.frequency.value = 1800;
+    nf.Q.value = 1.2;
+    const ng = ctx.createGain();
+    ng.gain.setValueAtTime(vol * 0.5, t);
+    ng.gain.exponentialRampToValueAtTime(0.0001, t + 0.07);
+    n.connect(nf); nf.connect(ng);
+
+    const p = pannerNode(x || 0, y || 1.0, z || 0);
+    o.connect(g); g.connect(p);
+    ng.connect(p);
+    p.connect(master);
+
+    o.start(t); o.stop(t + 0.5);
+    n.start(t); n.stop(t + 0.2);
+  }
+
+  function distantRumble(vol) {
+    if (!ctx) return;
+    const t = ctx.currentTime;
+    const src = ctx.createBufferSource();
+    src.buffer = noiseBuffer;
+    src.loop = true;
+    const filt = ctx.createBiquadFilter();
+    filt.type = 'lowpass';
+    filt.frequency.setValueAtTime(90, t);
+    filt.frequency.linearRampToValueAtTime(52, t + 2.4);
+    filt.Q.value = 1.4;
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(vol, t + 0.8);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 3.6);
+    src.connect(filt); filt.connect(g); g.connect(master);
+    src.start(t); src.stop(t + 4.2);
+  }
+
+  function whisper() {
+    if (!ctx) return;
+    const t = ctx.currentTime;
+    const src = ctx.createBufferSource();
+    src.buffer = noiseBuffer;
+    src.loop = true;
+    src.playbackRate.value = 0.7 + Math.random() * 0.5;
+
+    const filt = ctx.createBiquadFilter();
+    filt.type = 'bandpass';
+    filt.Q.value = 6;
+    filt.frequency.setValueAtTime(900, t);
+    filt.frequency.linearRampToValueAtTime(1700, t + 1.4);
+    filt.frequency.linearRampToValueAtTime(640, t + 2.6);
+
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.linearRampToValueAtTime(0.028, t + 0.5);
+    g.gain.linearRampToValueAtTime(0.0001, t + 2.8);
+
+    const p = pannerNode(
+      camera.position.x + (Math.random() - 0.5) * 3.5,
+      1.2,
+      camera.position.z + (Math.random() - 0.5) * 3.5
+    );
+
+    src.connect(filt); filt.connect(g); g.connect(p); p.connect(master);
+    src.start(t); src.stop(t + 3.2);
+  }
+
+  function doorRattle() {
+    if (!ctx) return;
+    const t = ctx.currentTime;
+    for (let i = 0; i < 3; i++) {
+      const o = ctx.createOscillator();
+      o.type = 'square';
+      o.frequency.value = 240 + Math.random() * 120;
+      const g = ctx.createGain();
+      const tt = t + i * 0.075;
+      g.gain.setValueAtTime(0.0001, tt);
+      g.gain.exponentialRampToValueAtTime(0.030, tt + 0.004);
+      g.gain.exponentialRampToValueAtTime(0.0001, tt + 0.05);
+      const filt = ctx.createBiquadFilter();
+      filt.type = 'bandpass';
+      filt.frequency.value = 1400;
+      filt.Q.value = 2.0;
+      const p = pannerNode(DOOR.x, 1.0, HZ - 0.2);
+      o.connect(filt); filt.connect(g); g.connect(p); p.connect(master);
+      o.start(tt); o.stop(tt + 0.1);
+    }
+    knock(0.05, DOOR.x, 0.9, HZ - 0.3);
+  }
+
+  function pageTurn() {
+    if (!ctx) return;
+    const t = ctx.currentTime;
+    const src = ctx.createBufferSource();
+    src.buffer = noiseBuffer;
+    src.loop = true;
+    const filt = ctx.createBiquadFilter();
+    filt.type = 'highpass';
+    filt.frequency.value = 2200;
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.linearRampToValueAtTime(0.020, t + 0.05);
+    g.gain.linearRampToValueAtTime(0.0001, t + 0.30);
+    const p = pannerNode(camera.position.x, 1.0, camera.position.z);
+    src.connect(filt); filt.connect(g); g.connect(p); p.connect(master);
+    src.start(t); src.stop(t + 0.5);
+  }
+
+  function lampClick() {
+    if (!ctx) return;
+    const t = ctx.currentTime;
+    const o = ctx.createOscillator();
+    o.type = 'square';
+    o.frequency.value = 1600;
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.028, t + 0.002);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.04);
+    const p = pannerNode(camera.position.x, 1.0, camera.position.z);
+    o.connect(g); g.connect(p); p.connect(master);
+    o.start(t); o.stop(t + 0.08);
+  }
+
+  function windGust(amount, dur) {
+    if (!ctx || !windGain) return;
+    const t = ctx.currentTime;
+    windGain.gain.cancelScheduledValues(t);
+    windGain.gain.setValueAtTime(windGain.gain.value, t);
+    windGain.gain.linearRampToValueAtTime(0.038 + amount, t + dur * 0.4);
+    windGain.gain.linearRampToValueAtTime(0.038, t + dur);
+  }
+
+  function setSilence(on, dur) {
+    if (!ctx || !ambBus) return;
+    const t = ctx.currentTime;
+    ambBus.gain.cancelScheduledValues(t);
+    ambBus.gain.setValueAtTime(ambBus.gain.value, t);
+    if (on) {
+      ambBus.gain.linearRampToValueAtTime(0.0001, t + 1.6);
+    } else {
+      ambBus.gain.linearRampToValueAtTime(1.0, t + (dur || 3.0));
+    }
+  }
+
+  function resume() {
+    if (ctx && ctx.state === 'suspended') ctx.resume();
+  }
+
+  return {
+    init: init,
+    resume: resume,
+    setLampBuzz: setLampBuzz,
+    woodCreak: woodCreak,
+    knock: knock,
+    distantRumble: distantRumble,
+    whisper: whisper,
+    doorRattle: doorRattle,
+    pageTurn: pageTurn,
+    lampClick: lampClick,
+    windGust: windGust,
+    setSilence: setSilence,
+    listenerFromCamera: listenerFromCamera,
+    get ready() { return started; }
+  };
+})();
+
+/* ============================================================================
+   16. HORROR EVENT SYSTEM
+   ========================================================================= */
+
+const Events = (function () {
+  let nextEvent = 26 + Math.random() * 46;
+  let timer = 0;
+  const cooldowns = Object.create(null);
+  let silenceActive = false;
+
+  // lamp flicker state
+  let flickerT = 0;
+  let flickerAmp = 0;
+  let flickerFreq = 24;
+
+  // window shadow state
+  let shadowT = -1;
+  let shadowDur = 2.0;
+
+  // desk object original transforms
+  const deskSnapshot = [];
+  deskObjects.forEach((o, i) => {
+    deskSnapshot.push({
+      obj: o,
+      pos: o.position.clone(),
+      rot: o.rotation.clone()
+    });
+  });
+
+  function available(name, cd) {
+    const now = performance.now() / 1000;
+    if (cooldowns[name] && now < cooldowns[name]) return false;
+    cooldowns[name] = now + cd;
+    return true;
+  }
+
+  function triggerCooldown(name, cd) {
+    cooldowns[name] = performance.now() / 1000 + cd;
+  }
+
+  function pick() {
+    const roll = Math.random();
+    // weighted pool — quiet, ambiguous events dominate
+    if (roll < 0.15) return 'creak';
+    if (roll < 0.26) return 'distantRumble';
+    if (roll < 0.37) return 'wind';
+    if (roll < 0.46) return 'lampFlicker';
+    if (roll < 0.54) return 'wardrobeMove';
+    if (roll < 0.62) return 'objectShift';
+    if (roll < 0.69) return 'behindSound';
+    if (roll < 0.75) return 'silence';
+    if (roll < 0.81) return 'moonShift';
+    if (roll < 0.87) return 'windowShadow';
+    if (roll < 0.93) return 'doorHandle';
+    return 'knock';
+  }
+
+  function run(name) {
+    switch (name) {
+      case 'creak': {
+        if (!available('creak', 24)) return;
+        Audio.woodCreak(0.055 + Math.random() * 0.05, (Math.random() - 0.5) * 1.6, 0.6 + Math.random() * 0.9);
+        break;
+      }
+      case 'distantRumble': {
+        if (!available('rumble', 48)) return;
+        Audio.distantRumble(0.030 + Math.random() * 0.030);
+        break;
+      }
+      case 'wind': {
+        if (!available('wind', 38)) return;
+        Audio.windGust(0.045 + Math.random() * 0.05, 5 + Math.random() * 7);
+        break;
+      }
+      case 'lampFlicker': {
+        if (!available('flicker', 30)) return;
+        flickerT = 0.35 + Math.random() * 1.5;
+        flickerAmp = 0.35 + Math.random() * 0.6;
+        flickerFreq = 14 + Math.random() * 40;
+        break;
+      }
+      case 'wardrobeMove': {
+        if (!available('wardrobe', 52)) return;
+        const rp = window.__wardrobeRightPivot;
+        if (!rp) return;
+        const delta = (Math.random() < 0.6 ? 1 : -1) * (0.012 + Math.random() * 0.026);
+        const from = rp.rotation.y;
+        const to = clamp(from + delta, 0.05, 1.05);
+        const t0 = performance.now();
+        const dur = 900 + Math.random() * 1400;
+        const tick = () => {
+          const k = clamp((performance.now() - t0) / dur, 0, 1);
+          const e = k * k * (3 - 2 * k);
+          rp.rotation.y = lerp(from, to, e);
+          if (k < 1) requestAnimationFrame(tick);
+          else if (Math.random() < 0.4) Audio.woodCreak(0.04, 0.4, 1.1);
+        };
+        tick();
+        if (Math.random() < 0.5) Audio.woodCreak(0.035, 0.3, 0.8);
+        break;
+      }
+      case 'objectShift': {
+        if (!available('object', 40)) return;
+        const idx = Math.floor(Math.random() * deskSnapshot.length);
+        const s = deskSnapshot[idx];
+        const o = s.obj;
+        const t0 = performance.now();
+        const dur = 1200;
+        const ox = o.position.x, oz = o.position.z;
+        const oy = o.rotation.y;
+        const dx = (Math.random() - 0.5) * 0.020;
+        const dz = (Math.random() - 0.5) * 0.020;
+        const dy = (Math.random() - 0.5) * 0.09;
+        const tick = () => {
+          const k = clamp((performance.now() - t0) / dur, 0, 1);
+          const e = k * k * (3 - 2 * k);
+          o.position.x = ox + dx * e;
+          o.position.z = oz + dz * e;
+          o.rotation.y = oy + dy * e;
+          if (k < 1) requestAnimationFrame(tick);
+        };
+        tick();
+        break;
+      }
+      case 'behindSound': {
+        if (!available('behind', 44)) return;
+        const fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+        const bx = camera.position.x - fwd.x * 2.6 + (Math.random() - 0.5) * 1.2;
+        const bz = camera.position.z - fwd.z * 2.6 + (Math.random() - 0.5) * 1.2;
+        Audio.knock(0.022 + Math.random() * 0.02, bx, 0.7 + Math.random() * 0.9, bz);
+        break;
+      }
+      case 'silence': {
+        if (!available('silence', 70)) return;
+        if (silenceActive) return;
+        silenceActive = true;
+        Audio.setSilence(true);
+        const dur = 6000 + Math.random() * 9000;
+        setTimeout(() => {
+          Audio.setSilence(false, 4.5);
+          silenceActive = false;
+        }, dur);
+        break;
+      }
+      case 'moonShift': {
+        if (!available('moon', 42)) return;
+        const m = window.__moon;
+        const base = window.__moonBase;
+        const t0 = performance.now();
+        const dur = 2600;
+        const target = base * (0.55 + Math.random() * 0.9);
+        const tick = () => {
+          const k = clamp((performance.now() - t0) / dur, 0, 1);
+          const e = k * k * (3 - 2 * k);
+          m.intensity = lerp(base, target, e);
+          if (k < 1) requestAnimationFrame(tick);
+          else {
+            setTimeout(() => { m.intensity = base; }, 800 + Math.random() * 2600);
+          }
+        };
+        tick();
+        break;
+      }
+      case 'windowShadow': {
+        if (!available('windowShadow', 62)) return;
+        shadowT = 0;
+        shadowDur = 1.4 + Math.random() * 1.2;
+        break;
+      }
+      case 'doorHandle': {
+        if (!available('doorHandle', 56)) return;
+        const hg = window.__doorHandleGroup;
+        if (!hg) return;
+        const t0 = performance.now();
+        const dur = 1400;
+        const tick = () => {
+          const k = clamp((performance.now() - t0) / dur, 0, 1);
+          hg.rotation.z = Math.sin(k * Math.PI) * 0.055;
+          if (k < 1) requestAnimationFrame(tick);
+          else hg.rotation.z = 0;
+        };
+        tick();
+        Audio.woodCreak(0.020, 0.0, 0.7);
+        break;
+      }
+      case 'knock': {
+        if (!available('knock', 58)) return;
+        const fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+        Audio.knock(0.028, camera.position.x + fwd.x * 4, 1.0, camera.position.z + fwd.z * 4);
+        break;
+      }
+    }
+  }
+
+  function update(dt, time) {
+    // lamp flicker
+    if (window.__lampLight && lampOn) {
+      if (flickerT > 0) {
+        flickerT -= dt;
+        const n = Math.sin(time * flickerFreq) * 0.5 + Math.sin(time * flickerFreq * 2.37) * 0.5;
+        const f = 1.0 - flickerAmp * (0.5 + 0.5 * n);
+        window.__lampLight.intensity = window.__lampBaseIntensity * clamp(f, 0.05, 1.0);
+        MAT.bulb.emissiveIntensity = clamp(f, 0.05, 1.0);
+        Audio.setLampBuzz(f > 0.45);
+      } else {
+        const base = window.__lampBaseIntensity;
+        const cur = window.__lampLight.intensity;
+        window.__lampLight.intensity = lerp(cur, base, 1 - Math.exp(-dt * 2.2));
+        MAT.bulb.emissiveIntensity = lerp(MAT.bulb.emissiveIntensity, 1.0, 1 - Math.exp(-dt * 2.2));
+      }
+    }
+
+    // window shadow passer
+    if (shadowT >= 0) {
+      shadowT += dt;
+      const k = shadowT / shadowDur;
+      if (k >= 1) {
+        shadowT = -1;
+        window.__passer.material.opacity = 0;
+      } else {
+        const x = lerp(2.2, -2.4, k);
+        window.__passer.position.x = x;
+        window.__passer.position.z = -5.4 - Math.sin(k * Math.PI) * 0.5;
+        window.__passer.material.opacity = Math.sin(k * Math.PI) * 0.34;
+      }
+    }
+
+    // door under-glow — very rare, very faint
+    const gl = window.__doorGlow;
+    if (gl) {
+      const target = (Math.sin(time * 0.13) > 0.995) ? 0.16 : 0.0;
+      gl.opacity = lerp(gl.opacity, target, 1 - Math.exp(-dt * 1.5));
+    }
+
+    // event scheduling
+    timer += dt;
+    if (timer >= nextEvent) {
+      timer = 0;
+      nextEvent = 30 + Math.random() * 70;
+      run(pick());
+    }
+  }
+
+  return { update: update, triggerCooldown: triggerCooldown };
+})();
+
+/* ============================================================================
+   17. MOVEMENT / CAMERA
+   ========================================================================= */
+
+const tmpFwd = new THREE.Vector3();
+const tmpRight = new THREE.Vector3();
+const wish = new THREE.Vector3();
+const prevPos = new THREE.Vector3();
+
+function updatePlayer(dt) {
+  const speed = keys['ShiftLeft'] || keys['ShiftRight'] ? 2.45 : 1.32;
+
+  tmpFwd.set(-Math.sin(player.yaw), 0, -Math.cos(player.yaw));
+  tmpRight.set(Math.cos(player.yaw), 0, -Math.sin(player.yaw));
+
+  let ix = 0, iz = 0;
+  if (keys['KeyW'] || keys['ArrowUp']) iz += 1;
+  if (keys['KeyS'] || keys['ArrowDown']) iz -= 1;
+  if (keys['KeyD'] || keys['ArrowRight']) ix += 1;
+  if (keys['KeyA'] || keys['ArrowLeft']) ix -= 1;
+
+  wish.set(0, 0, 0);
+  if (ix !== 0 || iz !== 0) {
+    wish.addScaledVector(tmpFwd, iz);
+    wish.addScaledVector(tmpRight, ix);
+    wish.normalize().multiplyScalar(speed);
+  }
+
+  const accel = wish.lengthSq() > 0 ? 9.0 : 11.0;
+  const t = 1 - Math.exp(-accel * dt);
+  player.vel.x = lerp(player.vel.x, wish.x, t);
+  player.vel.z = lerp(player.vel.z, wish.z, t);
+
+  prevPos.copy(player.pos);
+  player.pos.x += player.vel.x * dt;
+  player.pos.z += player.vel.z * dt;
+  resolveCollisions(player.pos);
+
+  // head bob driven by actual displacement
+  const dx = player.pos.x - prevPos.x;
+  const dz = player.pos.z - prevPos.z;
+  const moved = Math.sqrt(dx * dx + dz * dz);
+  const speedFrac = clamp(moved / (speed * dt + 1e-5), 0, 1);
+
+  player.bobT += moved * 12.5;
+  const bobTarget = Math.sin(player.bobT * 2.0) * 0.016 * speedFrac;
+  const bobXTarget = Math.cos(player.bobT) * 0.011 * speedFrac;
+  player.bobY = lerp(player.bobY, bobTarget, 1 - Math.exp(-dt * 14));
+  player.bobX = lerp(player.bobX, bobXTarget, 1 - Math.exp(-dt * 14));
+  player.roll = lerp(player.roll, Math.cos(player.bobT) * 0.006 * speedFrac, 1 - Math.exp(-dt * 8));
+
+  player.breathe = Math.sin(performance.now() * 0.00105) * 0.0072;
+
+  camera.position.set(
+    player.pos.x + player.bobX * 0.4,
+    player.eyeHeight + player.bobY + player.breathe,
+    player.pos.z
+  );
+  camera.rotation.set(player.pitch, player.yaw, player.roll, 'YXZ');
+}
+
+/* ============================================================================
+   18. STARTUP
+   ========================================================================= */
+
+const overlay = document.getElementById('overlay');
+const enterBtn = document.getElementById('enter');
+const bootEl = document.getElementById('boot');
+
+let started = false;
+
+function startExperience() {
+  if (started) return;
+  started = true;
+
+  Audio.init();
+  Audio.resume();
+
+  overlay.classList.add('hidden');
+  setTimeout(() => { overlay.style.display = 'none'; }, 1800);
+
+  canvas.requestPointerLock();
+
+  // opening beat: a distant creak so the room is not silent on entry
+  setTimeout(() => { Audio.woodCreak(0.045, -0.5, 1.1); }, 1400);
+}
+
+enterBtn.addEventListener('click', startExperience);
+
+canvas.addEventListener('click', () => {
+  if (started && !locked) canvas.requestPointerLock();
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.code === 'Escape' && locked) document.exitPointerLock();
+});
+
+// fade the boot screen out once everything is ready
+requestAnimationFrame(() => {
+  requestAnimationFrame(() => {
+    bootEl.classList.add('hidden');
+    setTimeout(() => { bootEl.style.display = 'none'; }, 1200);
+  });
+});
+
+/* ============================================================================
+   19. RESIZE
+   ========================================================================= */
+
+function onResize() {
+  const w = window.innerWidth, h = window.innerHeight;
+  renderer.setSize(w, h, false);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+  POST.resize(w, h);
+}
+window.addEventListener('resize', onResize);
+onResize();
+
+/* ============================================================================
+   20. MAIN LOOP
+   ========================================================================= */
+
+const clock = new THREE.Clock();
+let elapsed = 0;
+let interactTick = 0;
+
+function animate() {
+  requestAnimationFrame(animate);
+
+  const dt = Math.min(clock.getDelta(), 0.05);
+  elapsed += dt;
+
+  if (started) {
+    updatePlayer(dt);
+    Audio.listenerFromCamera();
+    Events.update(dt, elapsed);
+
+    interactTick += dt;
+    if (interactTick > 0.08) {
+      interactTick = 0;
+      updateInteraction();
+    }
+  } else {
+    // slow, aimless drift of the camera behind the title screen
+    camera.position.set(0.35, 1.63, 1.75);
+    camera.rotation.set(-0.06, -0.62 + Math.sin(elapsed * 0.08) * 0.02, 0, 'YXZ');
+  }
+
+  if (mirrorMesh) mirrorMesh.material.uniforms.uTime.value = elapsed;
+
+  POST.render(scene, camera, elapsed);
+}
+
+animate();
+</script>
 </body>
 </html>
