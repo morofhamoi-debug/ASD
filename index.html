@@ -69,14 +69,6 @@
     text-align: center; max-width: 60vw; line-height: 1.6;
   }
   #caption.on { opacity: 0.9; }
-
-  #boot {
-    position: fixed; inset: 0; background: #000; z-index: 30;
-    display: flex; align-items: center; justify-content: center;
-    color: #3a352f; font-size: 10px; letter-spacing: 0.4em;
-    transition: opacity 1s ease;
-  }
-  #boot.hidden { opacity: 0; pointer-events: none; }
 </style>
 </head>
 <body>
@@ -90,8 +82,6 @@
   <p class="sub">somewhere in the house</p>
   <button id="enter">Click to enter</button>
 </div>
-
-<div id="boot">loading</div>
 
 <script type="importmap">
 {
@@ -3415,7 +3405,6 @@ function updatePlayer(dt) {
 
 const overlay = document.getElementById('overlay');
 const enterBtn = document.getElementById('enter');
-const bootEl = document.getElementById('boot');
 
 let started = false;
 
@@ -3443,14 +3432,6 @@ canvas.addEventListener('click', () => {
 
 document.addEventListener('keydown', (e) => {
   if (e.code === 'Escape' && locked) document.exitPointerLock();
-});
-
-// fade the boot screen out once everything is ready
-requestAnimationFrame(() => {
-  requestAnimationFrame(() => {
-    bootEl.classList.add('hidden');
-    setTimeout(() => { bootEl.style.display = 'none'; }, 1200);
-  });
 });
 
 /* ============================================================================
