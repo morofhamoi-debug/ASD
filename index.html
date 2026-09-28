@@ -3,6 +3,9 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <title>THE ROOM</title>
 <style>
   html, body {
@@ -20,6 +23,9 @@
     align-items: center; justify-content: center;
     background: #000;
     transition: opacity 1.6s ease;
+    padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px)
+             env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
+    box-sizing: border-box;
   }
   #overlay.hidden { opacity: 0; pointer-events: none; }
 
@@ -43,10 +49,36 @@
     background: transparent;
     font-family: inherit;
     cursor: pointer;
-    transition: color .8s ease, border-color .8s ease, background .8s ease;
+    transition: color .8s ease, border-color .8s ease, background .8s ease, transform .12s ease;
     text-indent: 0.42em;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
   }
   #enter:hover { color: #cbc2b6; border-color: #494137; background: rgba(255,255,255,0.015); }
+  #enter:active { transform: scale(0.97); color: #cbc2b6; border-color: #494137; }
+
+  /* Bigger, finger-friendly button on phones */
+  body.mobile #enter {
+    font-size: 12px;
+    letter-spacing: 0.40em;
+    padding: 18px 44px;
+    min-width: 208px;
+    color: #a89e92;
+    border-color: #3a332c;
+    margin-top: 46px;
+  }
+
+  #enter-hint {
+    margin: 22px 0 0 0;
+    font-size: 9px;
+    letter-spacing: 0.26em;
+    text-transform: uppercase;
+    color: #37332d;
+    text-align: center;
+    line-height: 2.1;
+    text-indent: 0.26em;
+    max-width: 82vw;
+  }
 
   #prompt {
     position: fixed; left: 50%; bottom: 13%;
@@ -92,7 +124,11 @@
     -webkit-touch-callout: none;
   }
   body.mobile #prompt { display: none !important; }
-  body.mobile #caption { bottom: 27%; }
+  body.mobile #caption {
+    bottom: 30%;
+    max-width: 78vw;
+    font-size: 13px;
+  }
 
   #mobile-ui {
     position: fixed; inset: 0;
@@ -181,8 +217,8 @@
     right: calc(24px + env(safe-area-inset-right, 0px));
     top: 50%;
     transform: translateY(-50%);
-    width: 78px; height: 78px;
-    font-size: 24px;
+    width: 82px; height: 82px;
+    font-size: 26px;
     letter-spacing: 0.02em;
     color: rgba(200,186,160,0.85);
     border-color: rgba(200,186,160,0.22);
@@ -199,7 +235,7 @@
   #sprint-btn {
     right: calc(30px + env(safe-area-inset-right, 0px));
     bottom: calc(26px + env(safe-area-inset-bottom, 0px));
-    width: 60px; height: 60px;
+    width: 62px; height: 62px;
     opacity: 0.6;
   }
   #sprint-btn.on {
@@ -214,59 +250,15 @@
   #fs-btn {
     top: calc(14px + env(safe-area-inset-top, 0px));
     right: calc(14px + env(safe-area-inset-right, 0px));
-    width: 38px; height: 38px;
+    width: 42px; height: 42px;
     opacity: 0.42;
     color: rgba(180,168,144,0.85);
   }
   #fs-btn:active { opacity: 0.85; }
 
-  #rotate-overlay {
-    position: fixed; inset: 0; z-index: 40;
-    background: #000;
-    display: none;
-    flex-direction: column;
-    align-items: center; justify-content: center;
-    color: #7b7368;
-    font-family: "Georgia", "Times New Roman", serif;
-    font-size: 11px;
-    letter-spacing: 0.55em;
-    text-transform: uppercase;
-    text-indent: 0.55em;
-    pointer-events: auto;
-  }
-  body.mobile.portrait #rotate-overlay { display: flex; }
-
-  .rot-icon {
-    width: 40px; height: 66px;
-    border: 1.5px solid #494137;
-    border-radius: 6px;
-    margin-bottom: 28px;
-    position: relative;
-    opacity: 0.85;
-  }
-  .rot-icon::after {
-    content: '';
-    position: absolute;
-    bottom: 5px; left: 50%;
-    transform: translateX(-50%);
-    width: 14px; height: 1.5px;
-    background: #494137;
-  }
-  .rot-icon::before {
-    content: '';
-    position: absolute;
-    top: 5px; left: 50%;
-    transform: translateX(-50%);
-    width: 10px; height: 1.5px;
-    background: #494137;
-  }
-
-  /* Prompt flicker for rotate overlay */
-  @keyframes rotfade {
-    0%, 100% { opacity: 0.55; }
-    50% { opacity: 1.0; }
-  }
-  .rot-text { animation: rotfade 2.8s ease-in-out infinite; }
+  /* Portrait play is allowed — the rotate overlay stays hidden so it
+     never blocks input. (Kept in the DOM, unused.) */
+  #rotate-overlay { display: none !important; }
 </style>
 </head>
 <body>
@@ -278,7 +270,8 @@
 <div id="overlay">
   <h1>The Room</h1>
   <p class="sub">somewhere in the house</p>
-  <button id="enter">Click to enter</button>
+  <button id="enter">Click to Enter</button>
+  <p id="enter-hint"></p>
 </div>
 
 <!-- ============================================================
@@ -310,11 +303,6 @@
   </button>
 </div>
 
-<div id="rotate-overlay">
-  <div class="rot-icon"></div>
-  <div class="rot-text">Rotate your device</div>
-</div>
-
 <script type="importmap">
 {
   "imports": {
@@ -331,9 +319,10 @@ import * as THREE from 'three';
    ========================================================================= */
 
 const IS_TOUCH = (navigator.maxTouchPoints > 0) || ('ontouchstart' in window);
+const COARSE = window.matchMedia ? window.matchMedia("(pointer: coarse)").matches : false;
 const IS_MOBILE = IS_TOUCH && (
   /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
-  || (window.matchMedia && window.matchMedia("(pointer: coarse)").matches)
+  || COARSE
 );
 
 if (IS_MOBILE) {
@@ -391,7 +380,8 @@ function makeFbm(seed, oct) {
 
 function newCanvas(w, h) {
   const cv = document.createElement('canvas');
-  cv.width = w; cv.height = h;
+  cv.width = Math.max(2, Math.round(w));
+  cv.height = Math.max(2, Math.round(h));
   return cv;
 }
 
@@ -432,7 +422,7 @@ function texFromCanvas(cv, repeatX, repeatY, srgb) {
   const t = new THREE.CanvasTexture(cv);
   t.wrapS = t.wrapT = THREE.RepeatWrapping;
   t.repeat.set(repeatX || 1, repeatY || 1);
-  t.anisotropy = 8;
+  t.anisotropy = IS_MOBILE ? 2 : 8;
   if (srgb !== false) t.colorSpace = THREE.SRGBColorSpace;
   return t;
 }
@@ -1140,18 +1130,23 @@ const DOOR = { x: -1.50, w: 0.95, h: 2.10 };
    4. TEXTURES & MATERIALS
    ========================================================================= */
 
+/* Texture resolution scale — phones get half-size maps so the procedural
+   generation and the GPU upload stay fast. */
+const TEXQ = IS_MOBILE ? 0.5 : 1;
+const Q = (n) => Math.max(32, Math.round(n * TEXQ));
+
 const TEX = {};
 
-TEX.wallA = makeWallTexture(1024, 512, 1337);
-TEX.wallB = makeWallTexture(1024, 512, 4242);
-TEX.wallC = makeWallTexture(1024, 512, 9182);
-TEX.wallD = makeWallTexture(1024, 512, 5150);
-TEX.ceiling = makeCeilingTexture(1024, 1024, 2718);
+TEX.wallA = makeWallTexture(Q(1024), Q(512), 1337);
+TEX.wallB = makeWallTexture(Q(1024), Q(512), 4242);
+TEX.wallC = makeWallTexture(Q(1024), Q(512), 9182);
+TEX.wallD = makeWallTexture(Q(1024), Q(512), 5150);
+TEX.ceiling = makeCeilingTexture(Q(1024), Q(1024), 2718);
 
 TEX.plank = [
-  makePlankTexture(128, 512, 111),
-  makePlankTexture(128, 512, 222),
-  makePlankTexture(128, 512, 333)
+  makePlankTexture(Q(128), Q(512), 111),
+  makePlankTexture(Q(128), Q(512), 222),
+  makePlankTexture(Q(128), Q(512), 333)
 ];
 TEX.plankNormal = [
   texFromCanvas(normalFromCanvas(TEX.plank[0], 1.6), 1, 1, false),
@@ -1159,21 +1154,21 @@ TEX.plankNormal = [
   texFromCanvas(normalFromCanvas(TEX.plank[2], 1.6), 1, 1, false)
 ];
 
-TEX.woodDark = makeWoodTexture(512, 512, 808, 22, 15);
-TEX.woodMid = makeWoodTexture(512, 512, 909, 26, 22);
-TEX.woodLight = makeWoodTexture(512, 512, 1010, 30, 27);
+TEX.woodDark = makeWoodTexture(Q(512), Q(512), 808, 22, 15);
+TEX.woodMid = makeWoodTexture(Q(512), Q(512), 909, 26, 22);
+TEX.woodLight = makeWoodTexture(Q(512), Q(512), 1010, 30, 27);
 TEX.woodDarkN = texFromCanvas(normalFromCanvas(TEX.woodDark, 1.2), 1, 1, false);
 TEX.woodMidN = texFromCanvas(normalFromCanvas(TEX.woodMid, 1.2), 1, 1, false);
 
-TEX.fabricSheet = makeFabricTexture(256, 256, 300, 42, 8, 52);
-TEX.fabricBlanket = makeFabricTexture(256, 256, 301, 96, 12, 20);
-TEX.fabricPillow = makeFabricTexture(256, 256, 302, 40, 7, 58);
+TEX.fabricSheet = makeFabricTexture(Q(256), Q(256), 300, 42, 8, 52);
+TEX.fabricBlanket = makeFabricTexture(Q(256), Q(256), 301, 96, 12, 20);
+TEX.fabricPillow = makeFabricTexture(Q(256), Q(256), 302, 40, 7, 58);
 TEX.fabricSheetN = texFromCanvas(normalFromCanvas(TEX.fabricSheet, 2.2), 1, 1, false);
 TEX.fabricBlanketN = texFromCanvas(normalFromCanvas(TEX.fabricBlanket, 2.6), 1, 1, false);
 
 TEX.paper = makePaperTexture(55);
-TEX.floorGrunge = makeFloorGrunge(1024, 1024, 77);
-TEX.dust = makeDustMap(256, 31);
+TEX.floorGrunge = makeFloorGrunge(Q(1024), Q(1024), 77);
+TEX.dust = makeDustMap(Q(256), 31);
 TEX.clockFace = makeClockFace(128, 12);
 
 function matWall(cv, seed) {
@@ -2154,7 +2149,7 @@ const deskObjects = [];
   window.__lampLight = new THREE.PointLight(0xffa257, 7.0, 9.0, 2.0);
   window.__lampLight.position.copy(lampLightWorld);
   window.__lampLight.castShadow = true;
-  window.__lampLight.shadow.mapSize.set(1024, 1024);
+  window.__lampLight.shadow.mapSize.set(IS_MOBILE ? 512 : 1024, IS_MOBILE ? 512 : 1024);
   window.__lampLight.shadow.bias = -0.0016;
   window.__lampLight.shadow.normalBias = 0.02;
   window.__lampLight.shadow.camera.near = 0.06;
@@ -2326,7 +2321,7 @@ moon.target.position.set(0.2, 0.55, 0.7);
 scene.add(moon);
 scene.add(moon.target);
 moon.castShadow = true;
-moon.shadow.mapSize.set(2048, 2048);
+moon.shadow.mapSize.set(IS_MOBILE ? 1024 : 2048, IS_MOBILE ? 1024 : 2048);
 moon.shadow.camera.left = -4.4;
 moon.shadow.camera.right = 4.4;
 moon.shadow.camera.top = 4.4;
@@ -2339,14 +2334,6 @@ moon.shadow.radius = 2.0;
 
 window.__moon = moon;
 window.__moonBase = 1.45;
-
-/* Mobile quality adjustment for shadows (applied before first render) */
-if (IS_MOBILE) {
-  moon.shadow.mapSize.set(1024, 1024);
-  if (window.__lampLight) {
-    window.__lampLight.shadow.mapSize.set(512, 512);
-  }
-}
 
 /* ============================================================================
    11. PLANAR MIRROR (approximate real reflection, dirtied)
@@ -2489,9 +2476,10 @@ function Mirror(geometry, options) {
     textureMatrixLocal.multiply(virtualCamera.matrixWorldInverse);
     textureMatrixLocal.multiply(scope.matrixWorld);
 
-    // throttle updates
+    // throttle updates (heavier throttle on mobile)
     frameCount++;
-    if (frameCount % 2 !== 0) return;
+    const every = IS_MOBILE ? 4 : 2;
+    if (frameCount % every !== 0) return;
 
     scope.visible = false;
 
@@ -2698,8 +2686,9 @@ const POST = (function () {
 
     rtScene.setSize(W, H);
 
-    const bw = Math.max(2, Math.floor(W / 4));
-    const bh = Math.max(2, Math.floor(H / 4));
+    const div = IS_MOBILE ? 5 : 4;
+    const bw = Math.max(2, Math.floor(W / div));
+    const bh = Math.max(2, Math.floor(H / div));
     rtBright.setSize(bw, bh);
     rtBlurA.setSize(bw, bh);
     rtBlurB.setSize(bw, bh);
@@ -2883,21 +2872,19 @@ function updateInteraction() {
     else if (t === 'deskDrawer') label = '[E] open drawer';
     promptEl.textContent = label;
     promptEl.classList.add('on');
-    if (IS_MOBILE && interactBtn) interactBtn.classList.add('on');
+    if (interactBtn) interactBtn.classList.add('on');
   } else {
     promptEl.classList.remove('on');
-    if (IS_MOBILE && interactBtn) interactBtn.classList.remove('on');
+    if (interactBtn) interactBtn.classList.remove('on');
   }
 }
 
 let lampOn = true;
 
 function tryInteract() {
-  if (IS_MOBILE) {
-    if (!currentTarget) return;
-  } else {
-    if (!locked || !currentTarget) return;
-  }
+  if (!currentTarget) return;
+  if (!IS_MOBILE && !locked) return;
+
   const t = currentTarget.userData.interact;
 
   if (t === 'lamp') {
@@ -2957,7 +2944,6 @@ const Audio = (function () {
   let windSource = null;
   let noiseBuffer = null;
   let started = false;
-  let silenceUntil = 0;
 
   function makeNoise(seconds) {
     const len = Math.floor(ctx.sampleRate * seconds);
@@ -3375,7 +3361,7 @@ const Events = (function () {
 
   // desk object original transforms
   const deskSnapshot = [];
-  deskObjects.forEach((o, i) => {
+  deskObjects.forEach((o) => {
     deskSnapshot.push({
       obj: o,
       pos: o.position.clone(),
@@ -3667,6 +3653,7 @@ function updatePlayer(dt) {
 
 const overlay = document.getElementById('overlay');
 const enterBtn = document.getElementById('enter');
+const enterHint = document.getElementById('enter-hint');
 
 let started = false;
 
@@ -3680,8 +3667,13 @@ const interactBtn = document.getElementById('interact-btn');
 const sprintBtn = document.getElementById('sprint-btn');
 const fsBtn = document.getElementById('fs-btn');
 
-if (IS_MOBILE && enterBtn) {
-  enterBtn.textContent = 'Touch to enter';
+/* ---------- Entry-button wording: phone → Start, desktop → Click to Enter ---------- */
+if (IS_MOBILE) {
+  if (enterBtn) enterBtn.textContent = 'Start';
+  if (enterHint) enterHint.textContent = 'stick to move · drag to look · E to interact';
+} else {
+  if (enterBtn) enterBtn.textContent = 'Click to Enter';
+  if (enterHint) enterHint.textContent = '';
 }
 
 /* Fullscreen toggle (safe across browsers) */
@@ -3697,7 +3689,10 @@ function toggleFullscreen() {
     } else {
       const req = el.requestFullscreen || el.webkitRequestFullscreen ||
                   el.mozRequestFullScreen || el.msRequestFullscreen;
-      if (req) req.call(el);
+      if (req) {
+        const p = req.call(el);
+        if (p && p.catch) p.catch(() => {});
+      }
     }
   } catch (e) { /* graceful fallback */ }
 }
@@ -3728,10 +3723,10 @@ function joystickApply(clientX, clientY) {
   }
   const nx = dx / JOYSTICK_MAX_R;
   const ny = dy / JOYSTICK_MAX_R;
-  keys['KeyW'] = ny < -0.28;
-  keys['KeyS'] = ny >  0.28;
-  keys['KeyA'] = nx < -0.28;
-  keys['KeyD'] = nx >  0.28;
+  keys['KeyW'] = ny < -0.26;
+  keys['KeyS'] = ny >  0.26;
+  keys['KeyA'] = nx < -0.26;
+  keys['KeyD'] = nx >  0.26;
 }
 
 function joystickReset() {
@@ -3781,13 +3776,12 @@ if (IS_MOBILE && joystickBase) {
   joystickBase.addEventListener('touchcancel', endJoystick, { passive: false });
 }
 
-/* ---------- Camera Look (canvas, right side feel) ---------- */
+/* ---------- Camera Look (canvas — drag anywhere that isn't a control) ---------- */
 const lookTouches = new Map();
-const LOOK_SENS = IS_MOBILE ? 0.0052 : 0.0021;
+const LOOK_SENS = IS_MOBILE ? 0.0055 : 0.0021;
 
 canvas.addEventListener('touchstart', (e) => {
-  if (!started) return;
-  if (!IS_MOBILE) return;
+  if (!started || !IS_MOBILE) return;
   for (let i = 0; i < e.changedTouches.length; i++) {
     const t = e.changedTouches[i];
     lookTouches.set(t.identifier, { x: t.clientX, y: t.clientY });
@@ -3796,8 +3790,7 @@ canvas.addEventListener('touchstart', (e) => {
 }, { passive: false });
 
 canvas.addEventListener('touchmove', (e) => {
-  if (!started) return;
-  if (!IS_MOBILE) return;
+  if (!started || !IS_MOBILE) return;
   for (let i = 0; i < e.changedTouches.length; i++) {
     const t = e.changedTouches[i];
     const p = lookTouches.get(t.identifier);
@@ -3853,17 +3846,12 @@ if (sprintBtn) {
   sprintBtn.addEventListener('mouseleave', sprintOff);
 }
 
-/* ---------- Orientation ---------- */
+/* ---------- Orientation (portrait is allowed; nothing blocks input) ---------- */
 function checkOrientation() {
   if (!IS_MOBILE) return;
   const isPortrait = window.innerHeight > window.innerWidth;
   document.body.classList.toggle('portrait', isPortrait);
 }
-window.addEventListener('orientationchange', () => {
-  setTimeout(checkOrientation, 60);
-});
-window.addEventListener('resize', checkOrientation);
-checkOrientation();
 
 /* ---------- Start Experience ---------- */
 function startExperience() {
@@ -3882,7 +3870,7 @@ function startExperience() {
   setTimeout(() => { overlay.style.display = 'none'; }, 1800);
 
   if (IS_MOBILE) {
-    // Best-effort fullscreen request on mobile
+    // Best-effort fullscreen request on mobile (must happen inside a gesture)
     try { toggleFullscreen(); } catch (e) {}
   } else {
     // Desktop: request pointer lock
@@ -3936,6 +3924,11 @@ if (IS_MOBILE) {
     }
   }, { passive: false });
 }
+
+/* Keep the audio context alive when the tab / app comes back */
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden && started) Audio.resume();
+});
 
 /* ============================================================================
    20. MAIN LOOP
