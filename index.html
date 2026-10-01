@@ -1,597 +1,2946 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Live Preview Studio — iPhone 16 Pro Max</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#000">
+<title>NovaOS</title>
 <style>
-  :root{
-    --bg:#080b11;
-    --panel:#0d1117;
-    --panel-2:#141b26;
-    --border:#1e2734;
-    --text:#e6edf3;
-    --muted:#7d8aa3;
-    --accent:#4f8cff;
-    color-scheme: dark;
-  }
-  *{box-sizing:border-box}
-  html,body{height:100%}
-  body{
-    margin:0;background:var(--bg);color:var(--text);
-    font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
-    display:flex;flex-direction:column;overflow:hidden;
-  }
-
-  /* ---------- TOP BAR ---------- */
-  .topbar{
-    flex:0 0 auto;height:56px;display:flex;align-items:center;gap:10px;
-    padding:0 14px;overflow-x:auto;overflow-y:hidden;
-    background:linear-gradient(180deg,#0e1420,#0a0f19);
-    border-bottom:1px solid var(--border);
-  }
-  .brand{
-    display:flex;align-items:center;gap:8px;font-weight:700;font-size:14px;
-    white-space:nowrap;letter-spacing:-.01em;
-  }
-  .brand .bolt{
-    width:24px;height:24px;border-radius:7px;display:grid;place-items:center;
-    background:linear-gradient(135deg,#4f8cff,#a855f7);font-size:13px;
-  }
-  .sep{width:1px;height:24px;background:var(--border);flex:0 0 auto}
-  .field{display:flex;align-items:center;gap:7px;white-space:nowrap}
-  .field > span{font-size:12px;color:var(--muted)}
-
-  .control{
-    appearance:none;-webkit-appearance:none;
-    background:var(--panel-2);color:var(--text);
-    border:1px solid var(--border);border-radius:9px;
-    padding:7px 11px;font-size:13px;font-family:inherit;
-    cursor:pointer;outline:none;transition:.15s border-color,.15s background;
-  }
-  .control:hover{border-color:#31405a;background:#182130}
-  .control:active{transform:translateY(1px)}
-  select.control{min-width:190px}
-
-  .icon-btn{width:34px;height:34px;padding:0;display:grid;place-items:center;font-size:15px}
-
-  .zoom-group{
-    display:flex;align-items:center;gap:2px;background:var(--panel-2);
-    border:1px solid var(--border);border-radius:9px;padding:2px;
-  }
-  .zoom-group button{
-    width:28px;height:28px;border:0;border-radius:7px;background:transparent;
-    color:var(--text);font-size:15px;cursor:pointer;line-height:1;
-  }
-  .zoom-group button:hover{background:#1d2735}
-  .zoom-val{min-width:46px;text-align:center;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
-
-  .check{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);cursor:pointer;white-space:nowrap}
-  .check input{accent-color:var(--accent);cursor:pointer}
-  .spacer{flex:1 1 auto;min-width:8px}
-
-  /* ---------- LAYOUT ---------- */
-  main{flex:1;display:flex;min-height:0}
-  .pane{display:flex;flex-direction:column;min-width:0;min-height:0}
-  .editor-pane{width:42%;flex:0 0 auto;background:var(--panel)}
-  .preview-pane{flex:1 1 auto;background:#05070b}
-
-  .splitter{
-    flex:0 0 6px;cursor:col-resize;background:transparent;position:relative;z-index:5;
-  }
-  .splitter::after{
-    content:"";position:absolute;inset:0 2px;background:var(--border);border-radius:2px;transition:.15s;
-  }
-  .splitter:hover::after{background:var(--accent)}
-
-  .pane-head{
-    flex:0 0 auto;height:38px;display:flex;align-items:center;gap:10px;
-    padding:0 14px;font-size:12px;color:var(--muted);
-    background:#0b101a;border-bottom:1px solid var(--border);
-    user-select:none;
-  }
-  .pane-head .hint{margin-left:auto;font-size:11px;opacity:.65}
-  .dims{
-    margin-left:auto;font-variant-numeric:tabular-nums;font-size:11px;
-    background:var(--panel-2);border:1px solid var(--border);border-radius:20px;padding:3px 10px;
-  }
-  .live-dot{
-    width:7px;height:7px;border-radius:50%;background:#22c55e;
-    box-shadow:0 0 0 0 rgba(34,197,94,.6);animation:pulse 2s infinite;
-  }
-  @keyframes pulse{
-    0%{box-shadow:0 0 0 0 rgba(34,197,94,.5)}
-    70%{box-shadow:0 0 0 7px rgba(34,197,94,0)}
-    100%{box-shadow:0 0 0 0 rgba(34,197,94,0)}
-  }
-
-  /* ---------- EDITOR ---------- */
-  .editor-body{flex:1;display:flex;min-height:0;background:#0d1117}
-  .gutter{
-    flex:0 0 54px;overflow:hidden;padding:12px 10px 60px 0;text-align:right;
-    font:13px/21px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
-    color:#3d4a63;background:#0b1017;border-right:1px solid #161d28;
-    user-select:none;white-space:pre;
-  }
-  #code{
-    flex:1;min-width:0;padding:12px 16px 60px 12px;border:0;outline:0;resize:none;
-    background:#0d1117;color:#dbe4f0;
-    font:13px/21px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
-    white-space:pre;overflow:auto;tab-size:2;
-  }
-  #code::selection{background:#2a4a7f}
-
-  /* ---------- PREVIEW STAGE ---------- */
-  .stage{
-    flex:1;min-height:0;overflow:auto;padding:28px;
-    display:flex;align-items:center;justify-content:center;
-    background:radial-gradient(120% 90% at 50% 0%,#101a2b 0%,#05070b 65%);
-  }
-  .device-wrap{
-    flex:0 0 auto;display:flex;align-items:center;justify-content:center;
-  }
-  .device{
-    position:relative;display:flex;flex-direction:column;
-    background:#0b0d12;border-radius:12px;overflow:hidden;
-    transform-origin:center center;
-    box-shadow:0 30px 70px -20px rgba(0,0,0,.85), 0 0 0 1px #263042;
-  }
-  .device iframe{border:0;display:block;background:#fff;flex:0 0 auto}
-
-  /* browser chrome (не для телефонов) */
-  .chrome{
-    display:none;flex:0 0 36px;height:36px;align-items:center;gap:6px;
-    padding:0 12px;background:#161c26;border-bottom:1px solid #222b3a;
-  }
-  .device:not(.phone):not(.fluid) .chrome{display:flex}
-  .cdot{width:10px;height:10px;border-radius:50%;flex:0 0 auto}
-  .cdot.r{background:#ff5f57}.cdot.y{background:#febc2e}.cdot.g{background:#28c840}
-  .curl{
-    flex:1;height:20px;margin-left:10px;border-radius:6px;background:#0a0e15;
-    display:flex;align-items:center;justify-content:center;
-    font-size:11px;color:#5d6a82;font-family:ui-monospace,monospace;
-  }
-
-  /* телефон */
-  .device.phone{
-    box-sizing:content-box;padding:12px;border-radius:54px;
-    background:linear-gradient(160deg,#39414f,#0c0f15 35%,#1a212c 75%,#0c0f15);
-    box-shadow:
-      0 40px 90px -25px rgba(0,0,0,.95),
-      0 0 0 1px #3b4658,
-      inset 0 0 0 1px rgba(255,255,255,.07);
-    overflow:visible;
-  }
-  .device.phone iframe{border-radius:42px}
-
-  .notch{
-    display:none;position:absolute;top:16px;left:50%;transform:translateX(-50%);
-    width:108px;height:30px;border-radius:16px;background:#000;z-index:10;
-    box-shadow:inset 0 0 0 1px rgba(255,255,255,.06);
-  }
-  .device.phone .notch{display:block}
-  .home-bar{
-    display:none;position:absolute;bottom:18px;left:50%;transform:translateX(-50%);
-    width:120px;height:5px;border-radius:3px;background:rgba(255,255,255,.35);z-index:10;
-  }
-  .device.phone .home-bar{display:block}
-
-  /* fluid */
-  .device.fluid{
-    width:100%!important;height:100%!important;border-radius:0;
-    box-shadow:none;background:transparent;transform:none!important;
-  }
-  .device.fluid .chrome{display:none}
-
-  ::-webkit-scrollbar{width:11px;height:11px}
-  ::-webkit-scrollbar-track{background:transparent}
-  ::-webkit-scrollbar-thumb{background:#222d3d;border-radius:6px;border:3px solid transparent;background-clip:content-box}
-  ::-webkit-scrollbar-thumb:hover{background:#33415a;background-clip:content-box}
+:root{--accent:#0a84ff;--green:#30d158;--red:#ff453a;--orange:#ff9f0a;--yellow:#ffd60a;--purple:#bf5af2;--pink:#ff375f;--teal:#64d2ff;--dur:.32s;--ease:cubic-bezier(.32,.72,0,1);--st:env(safe-area-inset-top,0px);--sb:env(safe-area-inset-bottom,0px)}
+[data-theme="light"]{--bg:#f2f2f7;--sf:#fff;--sf2:#e5e5ea;--sf3:#d1d1d6;--tx:#000;--tx2:#8e8e93;--tx3:#c7c7cc;--bd:rgba(0,0,0,.08);--hb:rgba(242,242,247,.78)}
+[data-theme="dark"]{--bg:#000;--sf:#1c1c1e;--sf2:#2c2c2e;--sf3:#3a3a3c;--tx:#fff;--tx2:#8e8e93;--tx3:#48484a;--bd:rgba(255,255,255,.08);--hb:rgba(28,28,30,.78)}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden;position:fixed;inset:0;background:#050507;font-family:-apple-system,'SF Pro Display','Inter',sans-serif;-webkit-font-smoothing:antialiased;user-select:none;-webkit-user-select:none}
+body{display:flex;align-items:center;justify-content:center;color:var(--tx)}
+button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;touch-action:manipulation}
+input,textarea{font:inherit;color:inherit;background:none;border:none;outline:none;-webkit-user-select:text;user-select:text}
+svg{display:block;flex-shrink:0}
+[hidden]{display:none!important}
+@media(prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+#phone{position:relative;width:100vw;height:100vh;max-width:430px;max-height:932px;overflow:hidden;background:#000;isolation:isolate}
+@media(min-width:480px) and (min-height:950px){#phone{border-radius:58px;box-shadow:0 0 0 2px #1c1c1e,0 0 0 13px #0a0a0a,0 0 0 15px #2a2a2e,0 60px 120px -20px rgba(0,0,0,.9)}}
+#brightness{position:absolute;inset:0;z-index:9990;pointer-events:none;background:#000;opacity:0;transition:opacity .2s}
+#wall{position:absolute;inset:0;z-index:0;transition:background .4s}
+.status-bar{position:absolute;top:0;left:0;right:0;height:54px;z-index:9000;display:flex;align-items:center;justify-content:space-between;padding:var(--st) 32px 0 34px;color:#fff;font-size:16px;font-weight:600;pointer-events:none;transition:color .25s}
+.status-bar.dark{color:#000}
+.status-bar .time{min-width:56px;letter-spacing:.2px;font-feature-settings:"tnum"}
+.status-bar .icons{display:flex;align-items:center;gap:5px}
+.status-bar .icons svg{height:12px;width:auto}
+.home-bar{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);width:134px;height:5px;border-radius:3px;background:rgba(255,255,255,.95);z-index:9995;pointer-events:none;transition:background .25s,opacity .2s;margin-bottom:var(--sb)}
+.home-bar.dark{background:rgba(0,0,0,.75)}
+.island{position:absolute;top:11px;left:50%;transform:translateX(-50%);width:122px;height:37px;background:#000;border-radius:22px;z-index:9999;transition:all .5s var(--ease);overflow:hidden;pointer-events:none;display:flex;align-items:center;justify-content:space-between;padding:0 14px;color:#fff;font-size:12px;font-weight:600;margin-top:var(--st)}
+.island .dot{width:8px;height:8px;border-radius:50%;background:#1a1a1f}
+.island .cam{width:9px;height:9px;border-radius:50%;background:#050508;box-shadow:inset 0 0 0 1px #222}
+.island.expanded{width:92%;height:66px;border-radius:36px;padding:0 22px}
+@media(max-width:479px){.island{display:none}}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:10px 18px;border-radius:12px;font-size:15px;font-weight:600;transition:transform .12s,opacity .15s}
+.btn:active{transform:scale(.96);opacity:.85}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-danger{background:var(--red);color:#fff}
+.switch{position:relative;width:51px;height:31px;border-radius:16px;background:var(--sf3);transition:background .25s;flex-shrink:0;cursor:pointer}
+.switch::after{content:'';position:absolute;top:2px;left:2px;width:27px;height:27px;border-radius:50%;background:#fff;box-shadow:0 2px 4px rgba(0,0,0,.2);transition:transform .25s var(--ease)}
+.switch.on{background:var(--green)}
+.switch.on::after{transform:translateX(20px)}
+.list{background:var(--sf);border-radius:16px;overflow:hidden}
+.row{display:flex;align-items:center;gap:14px;padding:12px 16px;font-size:16px;border-bottom:1px solid var(--bd);cursor:pointer;transition:background .15s}
+.row:last-child{border-bottom:none}
+.row:active{background:var(--sf2)}
+.ico-box{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0}
+.ico-box svg{width:18px;height:18px}
+.grow{flex:1;min-width:0}
+.val{color:var(--tx2);font-size:15px}
+.chev{color:var(--tx3)}
+.grp-title{font-size:13px;color:var(--tx2);padding:24px 20px 6px;text-transform:uppercase;letter-spacing:.5px;font-weight:500}
+.modal-bd{position:fixed;inset:0;background:rgba(0,0,0,.4);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);z-index:10000;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity .25s}
+.modal-bd.open{opacity:1;pointer-events:auto}
+.modal{background:var(--sf);border-radius:14px;max-width:340px;width:100%;overflow:hidden;transform:scale(.92);transition:transform .25s var(--ease);box-shadow:0 20px 40px rgba(0,0,0,.4)}
+.modal-bd.open .modal{transform:scale(1)}
+.modal-body{padding:20px 20px 8px}
+.modal-title{font-size:17px;font-weight:600;text-align:center;margin-bottom:8px}
+.modal-msg{font-size:13px;color:var(--tx2);text-align:center;line-height:1.4}
+.modal-actions{display:flex;border-top:1px solid var(--bd);margin-top:18px}
+.modal-actions button{flex:1;padding:14px;font-size:17px;color:var(--accent);border-right:1px solid var(--bd)}
+.modal-actions button:last-child{border-right:none}
+.modal-actions button.danger{color:var(--red)}
+.modal-actions button.primary{font-weight:600}
+#toasts{position:absolute;top:60px;left:0;right:0;z-index:10050;display:flex;flex-direction:column;align-items:center;gap:8px;pointer-events:none;padding:0 20px}
+.toast{background:rgba(30,30,35,.92);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);color:#fff;padding:10px 18px;border-radius:20px;font-size:14px;font-weight:500;box-shadow:0 6px 20px rgba(0,0,0,.35);animation:toastIn .3s var(--ease);max-width:100%}
+@keyframes toastIn{from{opacity:0;transform:translateY(-12px) scale(.94)}to{opacity:1;transform:translateY(0) scale(1)}}
+.toast.out{animation:toastOut .25s forwards}
+@keyframes toastOut{to{opacity:0;transform:translateY(-12px) scale(.94)}}
+#lock{position:absolute;inset:0;z-index:8000;color:#fff;display:flex;flex-direction:column;transition:transform .55s var(--ease),opacity .4s;overflow:hidden;padding-top:calc(var(--st) + 60px)}
+#lock::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at top,rgba(255,255,255,.12),transparent 60%);pointer-events:none}
+#lock>*{position:relative;z-index:1}
+#lock.unlocked{transform:translateY(-100%);opacity:0;pointer-events:none}
+.lock-time{text-align:center;font-size:88px;font-weight:200;letter-spacing:-4px;line-height:1;font-feature-settings:"tnum";text-shadow:0 2px 20px rgba(0,0,0,.3)}
+.lock-date{text-align:center;font-size:20px;font-weight:500;opacity:.9;margin-top:6px;text-shadow:0 1px 10px rgba(0,0,0,.4)}
+.lock-w{display:flex;gap:10px;padding:0 24px;margin-top:30px}
+.lock-widget{flex:1;background:rgba(255,255,255,.14);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:14px}
+.lock-widget .lwh{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:600;opacity:.75;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.lock-widget .lwb{font-size:24px;font-weight:500}
+.lock-widget .lws{font-size:12px;opacity:.75;margin-top:2px}
+.lock-actions{position:absolute;left:0;right:0;bottom:calc(var(--sb) + 70px);display:flex;justify-content:space-between;padding:0 40px;z-index:2}
+.lock-action{width:50px;height:50px;border-radius:50%;background:rgba(255,255,255,.18);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);display:flex;align-items:center;justify-content:center;color:#fff;transition:background .15s,transform .1s}
+.lock-action:active{transform:scale(.92);background:rgba(255,255,255,.32)}
+.lock-action svg{width:22px;height:22px}
+.lock-action.on{background:#fff;color:#000}
+.lock-hint{position:absolute;left:0;right:0;bottom:calc(var(--sb) + 24px);text-align:center;font-size:13px;opacity:.65;font-weight:500;animation:bounceHint 2.2s infinite;z-index:2}
+@keyframes bounceHint{0%,100%{transform:translateY(0);opacity:.5}50%{transform:translateY(-6px);opacity:.9}}
+.pin-screen{position:absolute;inset:0;z-index:9000;background:rgba(0,0,0,.65);backdrop-filter:blur(30px);-webkit-backdrop-filter:blur(30px);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px;color:#fff;opacity:0;pointer-events:none;transition:opacity .25s}
+.pin-screen.open{opacity:1;pointer-events:auto}
+.pin-screen.shake{animation:shake .4s}
+@keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-10px)}40%,80%{transform:translateX(10px)}}
+.pin-title{font-size:18px;font-weight:500;margin-bottom:26px}
+.pin-dots{display:flex;gap:20px;margin-bottom:40px}
+.pin-dot{width:14px;height:14px;border-radius:50%;border:1.5px solid rgba(255,255,255,.7);transition:background .15s}
+.pin-dot.filled{background:#fff}
+.pin-pad{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;max-width:280px;width:100%}
+.pin-key{aspect-ratio:1;border-radius:50%;background:rgba(255,255,255,.16);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);font-size:30px;font-weight:300;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:background .12s,transform .1s;border:1px solid rgba(255,255,255,.06)}
+.pin-key:active{transform:scale(.9);background:rgba(255,255,255,.32)}
+.pin-key .letters{font-size:9px;letter-spacing:2px;font-weight:600;opacity:.7;margin-top:-2px}
+.pin-key.empty{visibility:hidden}
+.pin-key.del svg{width:26px;height:26px}
+#home{position:absolute;inset:0;z-index:1000;display:flex;flex-direction:column;padding-top:calc(var(--st) + 54px);padding-bottom:calc(var(--sb) + 14px);opacity:0;pointer-events:none;transition:opacity .4s;overflow:hidden}
+#home.visible{opacity:1;pointer-events:auto}
+.widgets-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:6px 18px 16px;flex-shrink:0}
+.widget{background:rgba(28,28,32,.55);backdrop-filter:blur(30px) saturate(180%);-webkit-backdrop-filter:blur(30px) saturate(180%);border:1px solid rgba(255,255,255,.08);border-radius:22px;padding:14px;color:#fff;aspect-ratio:1;display:flex;flex-direction:column;position:relative;overflow:hidden}
+.widget.weather{background:linear-gradient(160deg,rgba(10,132,255,.55),rgba(94,92,230,.55));cursor:pointer;transition:transform .15s}
+.widget.weather:active{transform:scale(.97)}
+.widget .wt-city{font-size:14px;font-weight:500;opacity:.9}
+.widget .wt-temp{font-size:42px;font-weight:200;letter-spacing:-2px;line-height:1;margin-top:6px}
+.widget .wt-desc{font-size:12px;opacity:.85;margin-top:auto}
+.widget .wt-icon{position:absolute;top:12px;right:14px;opacity:.85}
+.widget .wt-time{font-size:42px;font-weight:200;letter-spacing:-2px;line-height:1;font-feature-settings:"tnum"}
+.widget .wt-date{font-size:12px;opacity:.7;margin-top:auto;text-transform:uppercase;letter-spacing:.5px}
+#homePages{flex:1;display:flex;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+#homePages::-webkit-scrollbar{display:none}
+.page{flex:0 0 100%;width:100%;height:100%;scroll-snap-align:start;padding:0 14px;display:grid;grid-template-columns:repeat(4,1fr);grid-auto-rows:min-content;gap:20px 4px;align-content:start;padding-bottom:12px;overflow-y:auto;scrollbar-width:none}
+.page::-webkit-scrollbar{display:none}
+.app-icon{display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;transition:transform .2s var(--ease);padding:2px;position:relative}
+.app-icon:active{transform:scale(.9)}
+.app-icon .bg{width:60px;height:60px;border-radius:22.5%;display:flex;align-items:center;justify-content:center;color:#fff;box-shadow:0 4px 12px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.18);position:relative;overflow:hidden}
+.app-icon .bg::after{content:'';position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:linear-gradient(180deg,rgba(255,255,255,.14) 0%,transparent 45%)}
+.app-icon .bg svg{width:32px;height:32px;position:relative;z-index:1}
+.app-icon .name{font-size:11.5px;font-weight:500;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.6);max-width:74px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center;letter-spacing:.1px}
+.app-icon .badge{position:absolute;top:-4px;right:calc(50% - 32px);background:var(--red);color:#fff;font-size:11px;font-weight:700;min-width:20px;height:20px;padding:0 6px;border-radius:10px;display:flex;align-items:center;justify-content:center;border:2px solid rgba(0,0,0,.15)}
+.folder-bg{width:60px;height:60px;border-radius:22.5%;background:rgba(255,255,255,.18);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);display:grid;grid-template-columns:1fr 1fr;gap:2px;padding:4px}
+.folder-bg .mini{border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff}
+.folder-bg .mini svg{width:16px;height:16px}
+#pageDots{display:flex;justify-content:center;gap:7px;padding:4px 0 10px;flex-shrink:0}
+#pageDots .dot{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.4);transition:background .25s;cursor:pointer}
+#pageDots .dot.active{background:#fff}
+#dock{margin:0 12px;padding:10px 6px;background:rgba(255,255,255,.16);backdrop-filter:blur(30px) saturate(180%);-webkit-backdrop-filter:blur(30px) saturate(180%);border:1px solid rgba(255,255,255,.12);border-radius:32px;display:grid;grid-template-columns:repeat(4,1fr);gap:6px;flex-shrink:0}
+#dock .app-icon .name{display:none}
+#dock .app-icon .bg{width:56px;height:56px}
+#dock .app-icon .bg svg{width:30px;height:30px}
+#home.edit .app-icon{animation:jiggle .32s infinite}
+#home.edit .app-icon:nth-child(2n){animation-delay:.08s;animation-direction:reverse}
+@keyframes jiggle{0%,100%{transform:rotate(-1.2deg) scale(1)}50%{transform:rotate(1.2deg) scale(.98)}}
+#home.edit .app-icon .del{position:absolute;top:-2px;left:2px;width:22px;height:22px;border-radius:50%;background:#e0e0e0;color:#000;font-size:16px;font-weight:600;display:flex;align-items:center;justify-content:center;z-index:10;cursor:pointer;border:1px solid rgba(0,0,0,.1);line-height:1}
+#home.edit .app-icon .del::before{content:'−'}
+.app-window{position:absolute;inset:0;z-index:2000;background:var(--bg);color:var(--tx);display:flex;flex-direction:column;transform:scale(1.06);opacity:0;pointer-events:none;transition:transform .38s var(--ease),opacity .28s;overflow:hidden}
+.app-window.open{transform:scale(1);opacity:1;pointer-events:auto}
+.app-window.closing{transform:scale(1.06);opacity:0;pointer-events:none}
+.app-header{height:56px;flex-shrink:0;position:relative;display:flex;align-items:center;justify-content:center;padding-top:var(--st);background:var(--hb);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid var(--bd)}
+.app-header .title{font-size:17px;font-weight:600;letter-spacing:-.2px}
+.app-header .back{position:absolute;left:8px;top:var(--st);height:56px;display:flex;align-items:center;gap:2px;color:var(--accent);font-size:17px;padding:0 8px;border-radius:10px;transition:opacity .15s}
+.app-header .back:active{opacity:.5}
+.app-header .back svg{width:11px;height:18px}
+.app-header .action{position:absolute;right:8px;top:var(--st);height:56px;display:flex;align-items:center;color:var(--accent);font-size:17px;font-weight:600;padding:0 10px;border-radius:10px}
+.app-header .action:active{opacity:.5}
+.app-body{flex:1;overflow:auto;-webkit-overflow-scrolling:touch;position:relative}
+.app-body::-webkit-scrollbar{width:6px}
+.app-body::-webkit-scrollbar-thumb{background:var(--sf3);border-radius:3px}
+#cc,#nc{position:absolute;inset:0;z-index:7500;background:rgba(0,0,0,.42);backdrop-filter:blur(40px) saturate(180%);-webkit-backdrop-filter:blur(40px) saturate(180%);transform:translateY(-100%);transition:transform .42s var(--ease);padding:calc(var(--st) + 60px) 14px calc(var(--sb) + 20px);color:#fff;overflow-y:auto;scrollbar-width:none}
+#cc::-webkit-scrollbar,#nc::-webkit-scrollbar{display:none}
+#cc.open,#nc.open{transform:translateY(0)}
+#nc{z-index:7400}
+.cc-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.cc-card{background:rgba(120,120,128,.32);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-radius:22px;padding:14px;transition:background .2s,transform .1s;cursor:pointer;user-select:none}
+.cc-card:active{transform:scale(.96)}
+.cc-card.span2{grid-column:span 2;grid-row:span 2;padding:16px;display:flex;flex-direction:column;gap:12px}
+.cc-tog{width:42px;height:42px;border-radius:50%;background:rgba(120,120,128,.5);display:flex;align-items:center;justify-content:center;transition:background .2s,transform .1s;flex-shrink:0}
+.cc-tog svg{width:20px;height:20px}
+.cc-tog.on{background:var(--accent);color:#fff}
+.cc-tog.on.green{background:var(--green)}
+.cc-tog.on.orange{background:var(--orange)}
+.cc-tog.on.purple{background:var(--purple)}
+.cc-tog.on.yellow{background:var(--yellow);color:#000}
+.cc-row{display:flex;align-items:center;gap:12px}
+.cc-lbl{font-size:12px;font-weight:600}
+.cc-slider{height:150px;position:relative;background:rgba(120,120,128,.32);border-radius:22px;overflow:hidden;cursor:pointer;display:flex;align-items:flex-end;justify-content:center;padding:12px}
+.cc-slider .fill{position:absolute;left:8px;right:8px;bottom:8px;background:#fff;border-radius:16px;transition:height .05s linear}
+.cc-slider svg{position:relative;z-index:1;mix-blend-mode:difference;color:#fff}
+.nc-header{display:flex;justify-content:space-between;align-items:center;padding:0 6px 18px}
+.nc-header h2{font-size:30px;font-weight:700;letter-spacing:-.5px}
+.nc-clear{font-size:14px;color:rgba(255,255,255,.75);font-weight:500;padding:6px 14px;background:rgba(255,255,255,.14);border-radius:20px;transition:background .15s}
+.nc-clear:active{background:rgba(255,255,255,.25)}
+.nc-empty{text-align:center;padding:60px 20px;color:rgba(255,255,255,.5);font-size:15px}
+.nc-empty svg{width:56px;height:56px;opacity:.4;margin:0 auto 16px}
+.notif{background:rgba(120,120,128,.4);border-radius:20px;padding:14px 16px;margin-bottom:10px;display:flex;gap:12px;align-items:flex-start;animation:notifIn .35s var(--ease);cursor:pointer;transition:transform .12s}
+.notif:active{transform:scale(.98)}
+@keyframes notifIn{from{opacity:0;transform:translateY(-10px) scale(.95)}to{opacity:1;transform:translateY(0) scale(1)}}
+.notif .ico{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0}
+.notif .txt{flex:1;min-width:0}
+.notif .t{display:flex;justify-content:space-between;gap:8px;font-size:14px;font-weight:600;margin-bottom:2px}
+.notif .t .time{font-size:12px;font-weight:400;opacity:.7}
+.notif .m{font-size:13px;opacity:.9;line-height:1.35;word-break:break-word}
+#switcher{position:absolute;inset:0;z-index:7200;background:rgba(0,0,0,.65);backdrop-filter:blur(30px);-webkit-backdrop-filter:blur(30px);opacity:0;pointer-events:none;transition:opacity .3s;padding:calc(var(--st) + 40px) 0 calc(var(--sb) + 40px);display:flex;align-items:center}
+#switcher.open{opacity:1;pointer-events:auto}
+#switcherScroll{display:flex;gap:16px;overflow-x:auto;padding:0 40px;scroll-snap-type:x mandatory;scrollbar-width:none;width:100%}
+#switcherScroll::-webkit-scrollbar{display:none}
+.switch-card{flex:0 0 72%;scroll-snap-align:center;aspect-ratio:9/17;max-height:70vh;background:var(--bg);border-radius:32px;overflow:hidden;position:relative;box-shadow:0 20px 50px rgba(0,0,0,.5);transition:transform .3s,opacity .3s;cursor:pointer;border:1px solid rgba(255,255,255,.08)}
+.switch-card .head{position:absolute;top:0;left:0;right:0;padding:14px 18px;display:flex;align-items:center;gap:10px;color:#fff;font-size:14px;font-weight:600;z-index:2;background:linear-gradient(180deg,rgba(0,0,0,.4),transparent)}
+.switch-card .head .ico{width:26px;height:26px;border-radius:8px;display:flex;align-items:center;justify-content:center}
+.switch-card .head .ico svg{width:16px;height:16px}
+.switch-card .preview{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--tx2);background:var(--bg)}
+.switcher-empty{text-align:center;color:rgba(255,255,255,.5);width:100%;padding:0 40px}
+#spotlight{position:absolute;inset:0;z-index:7300;background:rgba(0,0,0,.5);backdrop-filter:blur(40px) saturate(180%);-webkit-backdrop-filter:blur(40px) saturate(180%);opacity:0;pointer-events:none;transition:opacity .3s;padding:calc(var(--st) + 90px) 20px calc(var(--sb) + 20px);color:#fff;overflow-y:auto}
+#spotlight.open{opacity:1;pointer-events:auto}
+.spot-search{background:rgba(120,120,128,.4);border-radius:14px;height:46px;padding:0 16px;display:flex;align-items:center;gap:10px;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px)}
+.spot-search svg{width:18px;height:18px;color:rgba(255,255,255,.7)}
+.spot-search input{flex:1;color:#fff;font-size:16px}
+.spot-search input::placeholder{color:rgba(255,255,255,.55)}
+#spotResults{margin-top:24px;display:grid;grid-template-columns:repeat(4,1fr);gap:22px 8px}
+#spotResults .app-icon .name{color:#fff}
+#appLib{position:absolute;inset:0;z-index:1100;background:rgba(0,0,0,.5);backdrop-filter:blur(40px) saturate(180%);-webkit-backdrop-filter:blur(40px) saturate(180%);transform:translateY(100%);transition:transform .42s var(--ease);padding:calc(var(--st) + 30px) 0 calc(var(--sb) + 20px);color:#fff;overflow-y:auto}
+#appLib.open{transform:translateY(0)}
+.al-search{margin:0 16px 18px;background:rgba(120,120,128,.4);border-radius:12px;height:40px;padding:0 14px;display:flex;align-items:center;gap:8px}
+.al-search svg{width:16px;height:16px;opacity:.7}
+.al-search input{flex:1;color:#fff;font-size:15px}
+.al-search input::placeholder{color:rgba(255,255,255,.5)}
+.al-cat{margin-bottom:24px}
+.al-cat h3{font-size:20px;font-weight:700;padding:0 20px 10px;letter-spacing:-.3px}
+.al-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:20px 8px;padding:0 14px}
+.calc{height:100%;background:#000;color:#fff;display:flex;flex-direction:column;padding-bottom:30px}
+.calc-display{flex:1;display:flex;align-items:flex-end;justify-content:flex-end;padding:20px 28px;font-size:80px;font-weight:200;letter-spacing:-3px;overflow:hidden;word-break:break-all;line-height:1;font-feature-settings:"tnum"}
+.calc-keys{display:grid;grid-template-columns:repeat(4,1fr);gap:13px;padding:0 14px}
+.calc-keys button{aspect-ratio:1;border-radius:50%;background:#333336;color:#fff;font-size:34px;font-weight:400;display:flex;align-items:center;justify-content:center;transition:filter .15s,transform .08s}
+.calc-keys button:active{filter:brightness(1.6);transform:scale(.95)}
+.calc-keys button.gray{background:#a5a5a5;color:#000}
+.calc-keys button.op{background:var(--orange)}
+.calc-keys button.zero{grid-column:span 2;aspect-ratio:auto;border-radius:44px;justify-content:flex-start;padding-left:32px}
+.calc-keys svg{width:32px;height:32px}
+.note-item{background:var(--sf);margin:8px 16px;border-radius:14px;padding:14px 16px;cursor:pointer;transition:background .15s;display:flex;flex-direction:column;gap:4px}
+.note-item:active{background:var(--sf2)}
+.note-item .ttl{font-size:16px;font-weight:600;display:flex;align-items:center;gap:6px}
+.note-item .prv{font-size:13.5px;color:var(--tx2);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.note-item .dt{font-size:12px;color:var(--tx2)}
+.notes-empty{text-align:center;padding:80px 20px;color:var(--tx2)}
+.notes-empty svg{width:56px;height:56px;opacity:.35;margin:0 auto 16px}
+.note-editor{display:flex;flex-direction:column;height:100%;padding:20px}
+.note-editor input.title{font-size:24px;font-weight:700;padding:8px 0;border-bottom:1px solid var(--bd)}
+.note-editor textarea{flex:1;font-size:16px;line-height:1.55;padding:14px 0;resize:none}
+.clock-app{height:100%;background:#000;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:30px}
+.clock-tabs{display:flex;gap:6px;margin-bottom:30px;background:rgba(120,120,128,.25);padding:4px;border-radius:12px}
+.clock-tabs button{padding:8px 16px;border-radius:9px;font-size:13px;font-weight:500;color:rgba(255,255,255,.7);transition:all .2s}
+.clock-tabs button.active{background:rgba(120,120,128,.6);color:#fff}
+.clock-big{font-size:76px;font-weight:100;letter-spacing:-3px;font-feature-settings:"tnum";line-height:1}
+.clock-date{font-size:15px;opacity:.55;margin-top:8px;text-transform:capitalize}
+.sw-time{font-size:64px;font-weight:200;letter-spacing:-2px;font-feature-settings:"tnum"}
+.sw-ctrl{display:flex;gap:50px;margin-top:40px}
+.sw-btn{width:80px;height:80px;border-radius:50%;background:rgba(120,120,128,.3);color:#fff;font-size:15px;font-weight:500;transition:background .15s,transform .1s}
+.sw-btn:active{transform:scale(.92)}
+.sw-btn.start{background:rgba(48,209,88,.35);color:#30d158}
+.sw-btn.stop{background:rgba(255,69,58,.35);color:#ff453a}
+.sw-btn.lap{background:rgba(120,120,128,.5)}
+.timer-disp{font-size:64px;font-weight:200;letter-spacing:-2px;font-feature-settings:"tnum"}
+.timer-inp{display:flex;gap:10px;margin-top:30px;align-items:center}
+.timer-inp input{width:70px;height:60px;background:rgba(120,120,128,.25);border-radius:14px;text-align:center;font-size:28px;font-weight:300;color:#fff}
+.timer-inp span{align-self:center;font-size:28px;opacity:.6}
+.msg-row{display:flex;gap:12px;padding:12px 16px;align-items:center;cursor:pointer;border-bottom:1px solid var(--bd);transition:background .15s}
+.msg-row:active{background:var(--sf2)}
+.msg-row .av{width:50px;height:50px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:600;font-size:20px;flex-shrink:0}
+.msg-row .info{flex:1;min-width:0}
+.msg-row .nm{font-size:16px;font-weight:600;display:flex;justify-content:space-between;gap:8px}
+.msg-row .nm .time{font-size:12px;font-weight:400;color:var(--tx2)}
+.msg-row .txt{font-size:14px;color:var(--tx2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+.chat-view{display:flex;flex-direction:column;height:100%;background:var(--bg)}
+.chat-body{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:8px}
+.bubble{max-width:75%;padding:9px 14px;border-radius:20px;font-size:16px;line-height:1.35;word-wrap:break-word}
+.bubble.sent{align-self:flex-end;background:var(--accent);color:#fff;border-bottom-right-radius:6px}
+.bubble.recv{align-self:flex-start;background:var(--sf2);color:var(--tx);border-bottom-left-radius:6px}
+.chat-input{display:flex;gap:8px;padding:8px 12px calc(8px + var(--sb));background:var(--sf);border-top:1px solid var(--bd)}
+.chat-input input{flex:1;background:var(--sf2);border-radius:20px;padding:10px 16px;font-size:16px}
+.chat-input .send{width:36px;height:36px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;transition:transform .12s,opacity .15s}
+.chat-input .send:disabled{opacity:.4}
+.chat-input .send:active{transform:scale(.9)}
+.dial-num{text-align:center;font-size:38px;font-weight:300;letter-spacing:1px;padding:24px 0;min-height:80px;font-feature-settings:"tnum"}
+.dial-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;max-width:290px;margin:0 auto;width:100%;padding:0 20px}
+.dial-key{aspect-ratio:1;border-radius:50%;background:var(--sf2);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;transition:background .15s,transform .08s}
+.dial-key:active{background:var(--sf3);transform:scale(.94)}
+.dial-key .n{font-size:32px;font-weight:400;line-height:1;color:var(--tx)}
+.dial-key .l{font-size:9px;letter-spacing:2px;font-weight:600;color:var(--tx2)}
+.dial-key.call{background:var(--green);color:#fff}
+.dial-key.call:active{background:#28b84d}
+.dial-key.call svg{width:32px;height:32px;color:#fff}
+.call-screen{position:absolute;inset:0;background:linear-gradient(180deg,#1a1a1f,#0a0a0c);z-index:200;display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:80px 30px 60px;color:#fff}
+.call-screen .who{text-align:center}
+.call-screen .who .nm{font-size:34px;font-weight:300}
+.call-screen .who .stat{font-size:16px;opacity:.6;margin-top:8px;font-feature-settings:"tnum"}
+.call-actions{display:flex;gap:50px;width:100%;justify-content:center}
+.call-btn{width:74px;height:74px;border-radius:50%;display:flex;align-items:center;justify-content:center;transition:transform .12s}
+.call-btn:active{transform:scale(.9)}
+.call-btn.end{background:var(--red);color:#fff}
+.call-btn.end svg{width:32px;height:32px;transform:rotate(135deg)}
+.call-btn.ans{background:var(--green);color:#fff}
+.settings-search{margin:8px 16px 0;background:var(--sf2);border-radius:10px;height:38px;padding:0 12px;display:flex;align-items:center;gap:8px;color:var(--tx2)}
+.settings-search svg{width:15px;height:15px}
+.settings-search input{flex:1;font-size:15px;color:var(--tx)}
+.app-ver{text-align:center;padding:30px 20px;color:var(--tx2);font-size:13px}
+.weather-app{height:100%;background:linear-gradient(180deg,#1d4a7a 0%,#2c5c94 40%,#4a7cb8 100%);color:#fff;padding:24px 20px 40px;overflow-y:auto}
+.w-loc{text-align:center;font-size:34px;font-weight:300;letter-spacing:-.5px}
+.w-temp{text-align:center;font-size:104px;font-weight:100;letter-spacing:-5px;line-height:1;margin-top:8px}
+.w-cond{text-align:center;font-size:21px;opacity:.9}
+.w-hl{text-align:center;font-size:20px;opacity:.85;margin-top:4px}
+.w-hourly{margin-top:26px;background:rgba(255,255,255,.14);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-radius:18px;padding:14px 8px;display:grid;grid-template-columns:repeat(6,1fr);gap:6px;text-align:center;font-size:13px}
+.w-hourly .hi{margin:8px 0}
+.w-hourly .ht{font-weight:600}
+.w-daily{margin-top:14px;background:rgba(255,255,255,.14);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-radius:18px;padding:8px 16px}
+.w-daily .row{display:grid;grid-template-columns:60px 30px 1fr 70px;align-items:center;gap:10px;padding:12px 0;font-size:15px;border-bottom:1px solid rgba(255,255,255,.12);cursor:default}
+.w-daily .row:last-child{border-bottom:none}
+.w-daily .tmin{opacity:.65;margin-right:6px}
+.w-daily .tmax{font-weight:600}
+.w-daily .bar{height:5px;border-radius:3px;background:linear-gradient(90deg,#64d2ff,#ffd60a,#ff9f0a)}
+.music-app{height:100%;background:linear-gradient(180deg,#2a1a3a 0%,#1a0f2a 100%);color:#fff;display:flex;flex-direction:column;align-items:center;padding:36px 30px calc(var(--sb) + 30px);overflow-y:auto}
+.music-cover{width:70%;max-width:240px;aspect-ratio:1;border-radius:16px;background:linear-gradient(135deg,#ff375f 0%,#bf5af2 50%,#5e5ce6 100%);box-shadow:0 30px 60px -20px rgba(0,0,0,.7),0 0 0 1px rgba(255,255,255,.06);position:relative;overflow:hidden;margin-bottom:24px;transition:transform .3s;flex-shrink:0}
+.music-cover.playing{animation:pulseCover 3s ease-in-out infinite}
+@keyframes pulseCover{0%,100%{transform:scale(1)}50%{transform:scale(1.02)}}
+.music-cover::after{content:'';position:absolute;inset:0;background:radial-gradient(circle at 30% 30%,rgba(255,255,255,.22),transparent 55%)}
+.music-title{font-size:22px;font-weight:600;text-align:center}
+.music-artist{font-size:16px;opacity:.6;margin-top:4px;text-align:center}
+.music-progress{width:100%;margin-top:24px}
+.music-progress .bar{height:5px;background:rgba(255,255,255,.18);border-radius:3px;overflow:hidden;position:relative}
+.music-progress .bar::after{content:'';position:absolute;left:0;top:0;bottom:0;width:0%;background:#fff;border-radius:3px;transition:width .3s linear}
+.music-progress .times{display:flex;justify-content:space-between;font-size:12px;opacity:.55;margin-top:6px;font-feature-settings:"tnum"}
+.music-controls{display:flex;align-items:center;justify-content:center;gap:36px;margin-top:22px;width:100%}
+.music-controls button{color:#fff;display:flex;align-items:center;justify-content:center;transition:transform .1s,opacity .15s}
+.music-controls button:active{transform:scale(.9);opacity:.6}
+.music-controls .play{width:66px;height:66px;background:rgba(255,255,255,.14);border-radius:50%}
+.music-controls svg{width:28px;height:28px}
+.music-controls .play svg{width:30px;height:30px}
+.music-playlist{width:100%;margin-top:20px}
+.music-playlist .tr{display:flex;align-items:center;gap:12px;padding:10px 6px;cursor:pointer;border-bottom:1px solid rgba(255,255,255,.08)}
+.music-playlist .tr.active{color:var(--accent)}
+.music-playlist .tr .n{flex:1;font-size:15px}
+.music-playlist .tr .d{font-size:12px;opacity:.5}
+.gallery-grid{padding:3px;display:grid;grid-template-columns:repeat(3,1fr);gap:3px}
+.gallery-item{aspect-ratio:1;border-radius:4px;cursor:pointer;position:relative;overflow:hidden;transition:transform .15s}
+.gallery-item:active{transform:scale(.96)}
+.gallery-item::after{content:'';position:absolute;inset:0;background:radial-gradient(circle at 30% 30%,rgba(255,255,255,.2),transparent 60%)}
+.gallery-viewer{position:fixed;inset:0;background:rgba(0,0,0,.95);z-index:10000;display:none;align-items:center;justify-content:center;padding:20px}
+.gallery-viewer.open{display:flex}
+.gallery-viewer img{max-width:100%;max-height:100%;border-radius:8px}
+.files-row{display:flex;align-items:center;gap:14px;padding:12px 20px;cursor:pointer;border-bottom:1px solid var(--bd);transition:background .15s}
+.files-row:active{background:var(--sf2)}
+.files-row .ic{color:var(--accent);flex-shrink:0}
+.files-row .ic svg{width:24px;height:24px}
+.files-row .nm{flex:1;font-size:16px}
+.files-row .sz{color:var(--tx2);font-size:13px}
+.cam-view{flex:1;background:#000;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
+.cam-view video{width:100%;height:100%;object-fit:cover}
+.cam-view .fallback{color:#444;text-align:center;padding:40px 20px}
+.cam-view .fallback svg{width:80px;height:80px;opacity:.3;margin:0 auto 16px}
+.cam-view .fallback p{font-size:14px;line-height:1.5;opacity:.7}
+.cam-ctrl{padding:24px 20px calc(24px + var(--sb));display:flex;align-items:center;justify-content:space-around;background:#000}
+.cam-shutter{width:74px;height:74px;border-radius:50%;border:5px solid #fff;background:rgba(255,255,255,.1);padding:4px}
+.cam-shutter::after{content:'';display:block;width:100%;height:100%;border-radius:50%;background:#fff}
+.cam-shutter:active::after{background:#ccc}
+.browser-bar{padding:8px 12px;background:var(--hb);backdrop-filter:blur(20px);border-bottom:1px solid var(--bd);display:flex;align-items:center;gap:8px}
+.browser-bar input{flex:1;background:var(--sf2);border:none;padding:9px 14px;border-radius:10px;font-size:15px;outline:none;text-align:center}
+.browser-bar button{width:32px;height:32px;display:flex;align-items:center;justify-content:center;color:var(--accent);border-radius:8px}
+.browser-frame{flex:1;border:none;background:#fff}
+.browser-error{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px;color:var(--tx2);text-align:center}
+.browser-error svg{width:60px;height:60px;opacity:.3;margin-bottom:16px}
+.store-tabs{display:flex;gap:6px;padding:8px 16px;overflow-x:auto;background:var(--bg);border-bottom:1px solid var(--bd);scrollbar-width:none}
+.store-tabs::-webkit-scrollbar{display:none}
+.store-tabs button{padding:8px 14px;border-radius:20px;font-size:14px;font-weight:500;background:var(--sf2);color:var(--tx);white-space:nowrap;flex-shrink:0;transition:all .15s}
+.store-tabs button.active{background:var(--accent);color:#fff}
+.store-app{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--bd)}
+.store-app .ai{width:60px;height:60px;border-radius:14px;display:flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0}
+.store-app .ai svg{width:30px;height:30px}
+.store-app .inf{flex:1;min-width:0}
+.store-app .inf .nm{font-size:15px;font-weight:600}
+.store-app .inf .dsc{font-size:12px;color:var(--tx2);margin-top:2px}
+.store-inst{background:var(--accent);color:#fff;padding:6px 20px;border-radius:20px;font-size:14px;font-weight:600;min-width:80px;transition:opacity .15s}
+.store-inst:active{opacity:.7}
+.store-inst.installed{background:transparent;color:var(--tx2);border:1px solid var(--bd)}
+.cal-header{display:flex;align-items:center;justify-content:space-between;padding:14px 20px}
+.cal-header h2{font-size:24px;font-weight:700;text-transform:capitalize}
+.cal-header button{color:var(--accent);font-size:22px;padding:6px 12px;border-radius:8px}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;padding:0 14px}
+.cal-dow{text-align:center;font-size:12px;color:var(--tx2);font-weight:600;padding:6px 0}
+.cal-day{aspect-ratio:1;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:15px;cursor:pointer;transition:background .15s;position:relative}
+.cal-day:active{background:var(--sf2)}
+.cal-day.other{color:var(--tx3)}
+.cal-day.today{background:var(--accent);color:#fff;font-weight:600}
+.cal-day .ev{position:absolute;bottom:2px;width:4px;height:4px;border-radius:50%;background:var(--accent)}
+.cal-day.today .ev{background:#fff}
+.wall-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;padding:16px}
+.wall-opt{aspect-ratio:9/16;border-radius:16px;cursor:pointer;border:3px solid transparent;transition:border .2s;position:relative;overflow:hidden}
+.wall-opt.selected{border-color:var(--accent)}
+.wall-opt:active{transform:scale(.97)}
+.devtools-toast{position:fixed;bottom:20px;left:20px;background:rgba(30,30,35,.92);color:#fff;padding:10px 16px;border-radius:10px;font-size:12px;font-family:monospace;z-index:99999;opacity:0;transition:opacity .3s;pointer-events:none}
+.devtools-toast.show{opacity:1}
 </style>
 </head>
 <body>
+<div id="phone">
+  <div id="wall"></div>
+  <div id="brightness"></div>
+  <div id="toasts"></div>
+  <div class="island" id="island"><span class="dot"></span><span class="cam"></span></div>
 
-<header class="topbar">
-  <div class="brand"><span class="bolt">⚡</span>Live&nbsp;Preview</div>
-  <div class="sep"></div>
-
-  <div class="field">
-    <span>Устройство</span>
-    <select id="deviceSel" class="control"></select>
+  <div class="status-bar" id="statusBar">
+    <div class="time" id="sbTime">9:41</div>
+    <div class="icons">
+      <span id="sbSig"></span><span id="sbWifi"></span><span id="sbBat"></span>
+    </div>
   </div>
 
-  <button id="rotateBtn" class="control icon-btn" title="Повернуть (портрет / ландшафт)">⟳</button>
+  <!-- LOCK -->
+  <div id="lock">
+    <div class="lock-time" id="lkTime">9:41</div>
+    <div class="lock-date" id="lkDate">—</div>
+    <div class="lock-w" id="lkW"></div>
+    <div class="lock-actions">
+      <button class="lock-action" id="lkFlash" aria-label="Фонарик"></button>
+      <button class="lock-action" id="lkCam" aria-label="Камера"></button>
+    </div>
+    <div class="lock-hint" id="lkHint">Свайп вверх для разблокировки</div>
+  </div>
+  <div class="pin-screen" id="pinScreen"></div>
 
-  <div class="zoom-group">
-    <button id="zoomOut" title="Уменьшить">−</button>
-    <div class="zoom-val" id="zoomVal">100%</div>
-    <button id="zoomIn" title="Увеличить">+</button>
+  <!-- HOME -->
+  <div id="home">
+    <div class="widgets-row" id="widgets"></div>
+    <div id="homePages"></div>
+    <div id="pageDots"></div>
+    <div id="dock"></div>
   </div>
 
-  <label class="check"><input type="checkbox" id="autoFit" checked> Вписать</label>
-
-  <div class="spacer"></div>
-  <button id="resetBtn" class="control">Сбросить код</button>
-</header>
-
-<main>
-  <section class="pane editor-pane" id="editorPane">
-    <div class="pane-head">
-      <span>index.html</span>
-      <span class="hint">Ctrl + Enter — обновить сразу</span>
+  <!-- SYSTEM PANELS -->
+  <div id="cc"></div>
+  <div id="nc"></div>
+  <div id="switcher"><div id="switcherScroll"></div></div>
+  <div id="spotlight">
+    <div class="spot-search">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+      <input id="spotInput" placeholder="Поиск приложений, заметок, настроек" autocomplete="off">
     </div>
-    <div class="editor-body">
-      <div class="gutter" id="gutter"></div>
-      <textarea id="code" spellcheck="false" wrap="off" autocomplete="off"
-        autocapitalize="off" autocorrect="off"></textarea>
-    </div>
-  </section>
+    <div id="spotResults"></div>
+  </div>
+  <div id="appLib"></div>
 
-  <div class="splitter" id="splitter"></div>
-
-  <section class="pane preview-pane">
-    <div class="pane-head">
-      <span class="live-dot"></span>
-      <span>Предпросмотр</span>
-      <span class="dims" id="dims">—</span>
-    </div>
-    <div class="stage" id="stage">
-      <div class="device-wrap" id="deviceWrap">
-        <div class="device" id="deviceFrame">
-          <div class="chrome">
-            <span class="cdot r"></span><span class="cdot y"></span><span class="cdot g"></span>
-            <div class="curl">localhost:3000</div>
-          </div>
-          <iframe id="preview" title="Предпросмотр"
-            sandbox="allow-scripts allow-forms allow-modals allow-popups allow-pointer-lock"></iframe>
-          <div class="notch"></div>
-          <div class="home-bar"></div>
-        </div>
-      </div>
-    </div>
-  </section>
-</main>
+  <div class="home-bar" id="homeBar"></div>
+</div>
 
 <script>
+'use strict';
 /* ============================================================
-   УСТРОЙСТВА  (логические CSS-пиксели)
-   ============================================================ */
-const DEVICES = [
-  { id:'ip16pm',   name:'iPhone 16 Pro Max',  w:440,  h:956,  phone:true  },
-  { id:'ip16p',    name:'iPhone 16 Pro',      w:402,  h:874,  phone:true  },
-  { id:'ip16',     name:'iPhone 16',          w:393,  h:852,  phone:true  },
-  { id:'ip15',     name:'iPhone 15 / 14 Pro', w:393,  h:852,  phone:true  },
-  { id:'ipse',     name:'iPhone SE',          w:375,  h:667,  phone:true  },
-  { id:'gs24u',    name:'Galaxy S24 Ultra',   w:412,  h:915,  phone:true  },
-  { id:'px9p',     name:'Pixel 9 Pro',        w:412,  h:923,  phone:true  },
-  { id:'ipadmini', name:'iPad mini',          w:744,  h:1133, phone:false },
-  { id:'ipadpro',  name:'iPad Pro 12.9"',     w:1024, h:1366, phone:false },
-  { id:'mbp14',    name:'MacBook Pro 14"',    w:1512, h:982,  phone:false },
-  { id:'desktop',  name:'Desktop 1440',       w:1440, h:900,  phone:false },
-  { id:'fluid',    name:'Без рамки (резиновый)', w:null, h:null, phone:false }
+   SAFE STORAGE
+============================================================ */
+const Store = (() => {
+  let mem = {};
+  const ok = (() => { try { localStorage.setItem('_t','1'); localStorage.removeItem('_t'); return true; } catch(e){ return false; } })();
+  return {
+    get(k, def) { try { const v = ok ? localStorage.getItem('nova_'+k) : mem[k]; return v ? JSON.parse(v) : def; } catch(e){ return def; } },
+    set(k, v) { try { const s = JSON.stringify(v); if (ok) localStorage.setItem('nova_'+k, s); else mem[k] = s; } catch(e){} },
+    del(k) { try { if (ok) localStorage.removeItem('nova_'+k); else delete mem[k]; } catch(e){} },
+    clear() { try { if (ok) Object.keys(localStorage).forEach(k=>k.startsWith('nova_')&&localStorage.removeItem(k)); else mem = {}; } catch(e){} }
+  };
+})();
+
+/* ============================================================
+   STATE
+============================================================ */
+const ALL_APPS = ['phone','messages','safari','music','notes','calculator','clock','calendar','weather','gallery','files','camera','settings','store','terminal','browser','photos'];
+const DEFAULT_STATE = {
+  theme: 'dark',
+  brightness: 100,
+  volume: 70,
+  wifi: true,
+  wifiNet: 'Nova-5G',
+  wifiList: [
+    {name:'Nova-5G', signal:3, secured:true, pass:'1234'},
+    {name:'HomeWiFi', signal:2, secured:true, pass:'home'},
+    {name:'Guest_Network', signal:3, secured:false},
+    {name:'CoffeeShop', signal:1, secured:false}
+  ],
+  bt: false,
+  btList: [
+    {name:'AirPods Pro', type:'headphones', connected:false},
+    {name:'MacBook Pro', type:'laptop', connected:false},
+    {name:'Magic Keyboard', type:'keyboard', connected:false},
+    {name:'MX Master 3', type:'mouse', connected:false}
+  ],
+  airplane: false,
+  mobile: true,
+  rotation: false,
+  dnd: false,
+  flashlight: false,
+  lowPower: false,
+  battery: 83,
+  charging: false,
+  wallpaper: 0,
+  pin: '1234',
+  unlocked: false,
+  installed: ['phone','messages','safari','music','notes','calculator','clock','calendar','weather','gallery','files','camera','settings','store'],
+  homePages: [
+    ['phone','messages','safari','music','notes','calculator','clock','calendar','weather','gallery','files','camera','settings','store'],
+    []
+  ],
+  dock: ['phone','safari','messages','music'],
+  folders: {},
+  notes: [
+    {id:'n1', title:'Добро пожаловать в NovaOS', body:'Это твоя новая мобильная система.\n\n• Свайп вверх — разблокировка\n• Свайп сверху-слева — уведомления\n• Свайп сверху-справа — Control Center\n• Долгое нажатие на иконку — режим редактирования\n\nПриятного использования!', date:Date.now(), pinned:false},
+    {id:'n2', title:'Идеи', body:'• Написать приложение\n• Позвонить маме\n• Купить хлеб', date:Date.now()-86400000, pinned:false}
+  ],
+  chats: {
+    'n1': {name:'Мама', avatar:'М', color:'#0a84ff', messages:[
+      {text:'Привет, как дела?', sent:false, time:Date.now()-3600000},
+      {text:'Всё отлично!', sent:true, time:Date.now()-3500000},
+      {text:'Позвони вечером', sent:false, time:Date.now()-3400000}
+    ]},
+    'n2': {name:'Дмитрий', avatar:'Д', color:'#ff375f', messages:[
+      {text:'Встречаемся в 6?', sent:false, time:Date.now()-7200000}
+    ]},
+    'n3': {name:'Анна', avatar:'А', color:'#bf5af2', messages:[
+      {text:'Спасибо большое! 🎉', sent:false, time:Date.now()-10800000}
+    ]},
+    'n4': {name:'Работа', avatar:'Р', color:'#ff9f0a', messages:[
+      {text:'Совещание перенесли на 15:00', sent:false, time:Date.now()-14400000}
+    ]}
+  },
+  events: {},
+  files: {
+    'Documents': [{name:'presentation.pdf', size:'2.4 МБ', type:'pdf'}, {name:'report.docx', size:'156 КБ', type:'doc'}],
+    'Downloads': [{name:'photo.jpg', size:'3.1 МБ', type:'img'}, {name:'archive.zip', size:'12 МБ', type:'zip'}],
+    'Images': [],
+    'Music': [{name:'track01.mp3', size:'4.2 МБ', type:'audio'}],
+    'Videos': []
+  },
+  notifications: [],
+  permissions: {camera:'prompt', notifications:'prompt', photos:'granted', location:'prompt', microphone:'prompt'},
+  lastApps: [],
+  charging: false
+};
+let S = Object.assign({}, DEFAULT_STATE, Store.get('state', {}));
+const save = () => Store.set('state', S);
+
+/* ============================================================
+   ICONS
+============================================================ */
+const I = (() => {
+  const mk = (d, o={}) => `<svg viewBox="${o.vb||'0 0 24 24'}" width="${o.w||32}" height="${o.w||32}" fill="${o.fill||'none'}" stroke="${o.fill?'none':'currentColor'}" stroke-width="${o.sw||1.8}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+  return {
+    // status
+    signal: `<svg viewBox="0 0 20 14" width="18" height="12" fill="currentColor"><rect x="0" y="9" width="3" height="5" rx="1"/><rect x="5.5" y="6" width="3" height="8" rx="1"/><rect x="11" y="3" width="3" height="11" rx="1"/><rect x="16.5" y="0" width="3" height="14" rx="1"/></svg>`,
+    wifi: `<svg viewBox="0 0 20 15" width="17" height="13" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M1.5 5.5C5.5 1.8 14.5 1.8 18.5 5.5"/><path d="M4.5 8.5C7 6.3 13 6.3 15.5 8.5"/><path d="M7.5 11.3C8.7 10.2 11.3 10.2 12.5 11.3"/><circle cx="10" cy="13.5" r="1" fill="currentColor"/></svg>`,
+    battery: (lvl, chg) => `<svg viewBox="0 0 28 13" width="26" height="12"><rect x="0.5" y="0.5" width="24" height="12" rx="3.5" fill="none" stroke="currentColor" stroke-width="1" opacity="0.4"/><rect x="2.5" y="2.5" width="${Math.max(2, 20*lvl/100).toFixed(1)}" height="8" rx="2" fill="currentColor"/><path d="M26 4.5v4a2 2 0 0 0 0-4z" fill="currentColor" opacity="0.4"/>${chg?'<path d="M12 5l-3 4h2l-1 3 4-5h-2z" fill="#30d158"/>':''}</svg>`,
+    // system
+    lock: mk('<path d="M5 11h14a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2z"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>'),
+    back: mk('<path d="M15 6l-6 6 6 6"/>'),
+    arrowUp: mk('<path d="M12 19V5M5 12l7-7 7 7"/>'),
+    x: mk('<path d="M18 6L6 18M6 6l12 12"/>'),
+    plus: mk('<path d="M12 5v14M5 12h14"/>'),
+    minus: mk('<path d="M5 12h14"/>'),
+    eq: mk('<path d="M5 9h14M5 15h14"/>'),
+    mult: mk('<path d="M18 6L6 18M6 6l12 12"/>'),
+    div: mk('<circle cx="12" cy="6" r="0.7" fill="currentColor"/><circle cx="12" cy="18" r="0.7" fill="currentColor"/><path d="M5 12h14"/>'),
+    percent: mk('<path d="M19 5L5 19"/><circle cx="7.5" cy="7.5" r="2.5"/><circle cx="16.5" cy="16.5" r="2.5"/>'),
+    pm: mk('<path d="M12 5v6M9 8h6M9 18h6"/>'),
+    del: mk('<path d="M20 5H9l-7 7 7 7h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2z"/><path d="M18 9l-6 6M12 9l6 6"/>'),
+    search: mk('<circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>'),
+    chevron: mk('<path d="M9 6l6 6-6 6"/>'),
+    chevronL: mk('<path d="M15 6l-6 6 6 6"/>'),
+    chevronD: mk('<path d="M6 9l6 6 6-6"/>'),
+    // apps
+    phone: mk('<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>'),
+    messages: mk('<path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>'),
+    safari: mk('<circle cx="12" cy="12" r="9"/><path d="M16 8l-2 6-6 2 2-6z"/>'),
+    music: mk('<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>'),
+    notes: mk('<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h5"/>'),
+    calculator: mk('<rect x="4" y="2" width="16" height="20" rx="2.5"/><path d="M8 6h8"/><circle cx="8" cy="11" r="0.6" fill="currentColor"/><circle cx="12" cy="11" r="0.6" fill="currentColor"/><circle cx="16" cy="11" r="0.6" fill="currentColor"/><circle cx="8" cy="15" r="0.6" fill="currentColor"/><circle cx="12" cy="15" r="0.6" fill="currentColor"/><circle cx="16" cy="15" r="0.6" fill="currentColor"/><circle cx="8" cy="19" r="0.6" fill="currentColor"/><circle cx="12" cy="19" r="0.6" fill="currentColor"/><circle cx="16" cy="19" r="0.6" fill="currentColor"/>'),
+    clock: mk('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/>'),
+    calendar: mk('<rect x="3" y="4" width="18" height="18" rx="2.5"/><path d="M16 2v4M8 2v4M3 10h18"/>'),
+    weather: mk('<path d="M17.5 19a4.5 4.5 0 0 0 0-9 6 6 0 0 0-11.5 1.7A4 4 0 0 0 6.5 19z"/><path d="M12 3v2M5.5 5.5l1.4 1.4M3 12h2M5.5 18.5l1.4-1.4"/>'),
+    gallery: mk('<rect x="3" y="3" width="18" height="18" rx="2.5"/><circle cx="8.5" cy="8.5" r="1.6"/><path d="M21 16l-5-5-11 11"/>'),
+    files: mk('<path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>'),
+    camera: mk('<path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/>'),
+    settings: mk('<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>'),
+    store: mk('<path d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.3 5H19"/><circle cx="9" cy="20" r="1.5"/><circle cx="17" cy="20" r="1.5"/>'),
+    terminal: mk('<rect x="2" y="4" width="20" height="16" rx="2.5"/><path d="M6 9l3 3-3 3M12 15h6"/>'),
+    browser: mk('<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18"/>'),
+    photos: mk('<rect x="3" y="3" width="18" height="18" rx="2.5"/><circle cx="8.5" cy="8.5" r="1.6"/><path d="M21 16l-5-5-11 11"/>'),
+    // control
+    airplane: mk('<path d="M22 16v-2l-8.5-5V3.5a1.5 1.5 0 0 0-3 0V9L2 14v2l8.5-2.5V19L8 20.5V22l4-1 4 1v-1.5L13.5 19v-5.5z"/>'),
+    bt: mk('<path d="M6.5 6.5l11 11L12 23V1l5.5 5.5-11 11"/>'),
+    cellular: mk('<path d="M2 20h3v-3H2zM7 20h3v-7H7zM12 20h3V9h-3zM17 20h3V4h-3z" fill="currentColor" stroke="none"/>'),
+    moon: mk('<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>'),
+    sun: mk('<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>'),
+    flash: mk('<path d="M13 2L3 14h9l-1 8 10-12h-9z"/>'),
+    vol: mk('<path d="M11 5L6 9H2v6h4l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M19 5a10 10 0 0 1 0 14"/>'),
+    volMute: mk('<path d="M11 5L6 9H2v6h4l5 4z"/><path d="M22 9l-6 6M16 9l6 6"/>'),
+    bright: mk('<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>'),
+    focus: mk('<circle cx="12" cy="12" r="9"/><path d="M12 3v6M21 12h-6M12 21v-6M3 12h6"/>'),
+    cast: mk('<path d="M2 16.1A5 5 0 0 1 5.9 20M2 12.05A9 9 0 0 1 9.95 20M2 8V6a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-6M2 20h.01"/>'),
+    rotate: mk('<path d="M21 2v6h-6M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M3 22v-6h6M21 12a9 9 0 0 1-15 6.7L3 16"/>'),
+    bell: mk('<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>'),
+    // misc
+    play: `<svg viewBox="0 0 24 24" width="28" height="28" fill="currentColor"><path d="M7 4.5v15a1 1 0 0 0 1.5.86l13-7.5a1 1 0 0 0 0-1.72l-13-7.5A1 1 0 0 0 7 4.5z"/></svg>`,
+    pause: `<svg viewBox="0 0 24 24" width="28" height="28" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>`,
+    prev: `<svg viewBox="0 0 24 24" width="26" height="26" fill="currentColor"><path d="M6 4a1 1 0 0 1 2 0v16a1 1 0 1 1-2 0z"/><path d="M18.5 5.1 9.4 11a1.2 1.2 0 0 0 0 2l9.1 5.9a1 1 0 0 0 1.5-.9V6a1 1 0 0 0-1.5-.9z"/></svg>`,
+    next: `<svg viewBox="0 0 24 24" width="26" height="26" fill="currentColor"><path d="M18 4a1 1 0 0 0-2 0v16a1 1 0 1 0 2 0z"/><path d="M5.5 5.1 14.6 11a1.2 1.2 0 0 1 0 2l-9.1 5.9A1 1 0 0 1 4 18V6a1 1 0 0 1 1.5-.9z"/></svg>`,
+    folder: mk('<path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>'),
+    image: mk('<rect x="3" y="3" width="18" height="18" rx="2.5"/><circle cx="8.5" cy="8.5" r="1.6"/><path d="M21 16l-5-5-11 11"/>'),
+    doc: mk('<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/>'),
+    home: mk('<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/>'),
+    user: mk('<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>'),
+    trash: mk('<path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>'),
+    edit: mk('<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4z"/>'),
+    check: mk('<path d="M20 6L9 17l-5-5"/>'),
+    star: mk('<path d="M12 2l3 7h7l-5.5 4.5 2 8L12 17l-6.5 4.5 2-8L2 9h7z"/>'),
+    heart: mk('<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>'),
+    send: mk('<path d="M22 2L11 13M22 2l-7 20-4-9-9-4z"/>'),
+    copy: mk('<rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>'),
+    share: mk('<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.59 13.51l6.83 3.98M15.41 6.51L8.59 10.49"/>'),
+    location: mk('<path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>'),
+    info: mk('<circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/>'),
+    warning: mk('<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><path d="M12 9v4M12 17h.01"/>'),
+    download: mk('<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>'),
+    upload: mk('<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/>'),
+    refresh: mk('<path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>'),
+  };
+})();
+
+/* ============================================================
+   APP DEFINITIONS
+============================================================ */
+const APPS = {
+  phone: {name:'Телефон', icon:I.phone, color:'linear-gradient(180deg,#30d158,#0a84ff)', dark:false, category:'Связь'},
+  messages: {name:'Сообщения', icon:I.messages, color:'linear-gradient(180deg,#30d158,#64d2ff)', dark:false, category:'Связь'},
+  safari: {name:'Safari', icon:I.safari, color:'linear-gradient(180deg,#0a84ff,#64d2ff)', dark:false, category:'Утилиты'},
+  browser: {name:'Браузер', icon:I.browser, color:'linear-gradient(180deg,#5e5ce6,#bf5af2)', dark:false, category:'Утилиты'},
+  music: {name:'Музыка', icon:I.music, color:'linear-gradient(180deg,#ff375f,#bf5af2)', dark:true, category:'Медиа'},
+  notes: {name:'Заметки', icon:I.notes, color:'linear-gradient(180deg,#ffd60a,#ff9f0a)', dark:false, category:'Продуктивность'},
+  calculator: {name:'Калькулятор', icon:I.calculator, color:'linear-gradient(180deg,#3a3a3c,#1c1c1e)', dark:true, category:'Утилиты'},
+  clock: {name:'Часы', icon:I.clock, color:'linear-gradient(180deg,#1c1c1e,#0a0a0c)', dark:true, category:'Утилиты'},
+  calendar: {name:'Календарь', icon:I.calendar, color:'linear-gradient(180deg,#ff3b30,#ff9500)', dark:false, category:'Продуктивность'},
+  weather: {name:'Погода', icon:I.weather, color:'linear-gradient(180deg,#0a84ff,#5e5ce6)', dark:false, category:'Погода'},
+  gallery: {name:'Галерея', icon:I.gallery, color:'linear-gradient(180deg,#ff6b9d,#feca57)', dark:false, category:'Медиа'},
+  photos: {name:'Фото', icon:I.photos, color:'linear-gradient(180deg,#ff6b9d,#feca57)', dark:false, category:'Медиа'},
+  files: {name:'Файлы', icon:I.files, color:'linear-gradient(180deg,#0a84ff,#00c6ff)', dark:false, category:'Продуктивность'},
+  camera: {name:'Камера', icon:I.camera, color:'linear-gradient(180deg,#3a3a3c,#1c1c1e)', dark:true, category:'Медиа'},
+  settings: {name:'Настройки', icon:I.settings, color:'linear-gradient(180deg,#8e8e93,#48484a)', dark:false, category:'Система'},
+  store: {name:'Магазин', icon:I.store, color:'linear-gradient(180deg,#0a84ff,#5e5ce6)', dark:false, category:'Система'},
+  terminal: {name:'Терминал', icon:I.terminal, color:'linear-gradient(180deg,#1c1c1e,#000)', dark:true, category:'Утилиты'},
+};
+
+/* ============================================================
+   WALLPAPERS
+============================================================ */
+const WALLS = [
+  'radial-gradient(circle at 20% 15%, #ff9a9e 0%, transparent 40%), radial-gradient(circle at 85% 20%, #a18cd1 0%, transparent 45%), radial-gradient(circle at 50% 90%, #fbc2eb 0%, transparent 50%), linear-gradient(160deg, #4a5fc1 0%, #6a3fa0 50%, #b83d7c 100%)',
+  'radial-gradient(circle at 20% 20%, #ff8a65 0%, transparent 45%), radial-gradient(circle at 80% 30%, #ffb74d 0%, transparent 50%), linear-gradient(160deg,#4a1a4a,#1a1a2e)',
+  'radial-gradient(circle at 70% 20%, #4facfe 0%, transparent 50%), radial-gradient(circle at 20% 80%, #00f2fe 0%, transparent 50%), linear-gradient(160deg,#0a0e27,#1a1a3a)',
+  'radial-gradient(circle at 30% 30%, #43e97b 0%, transparent 45%), radial-gradient(circle at 80% 70%, #38f9d7 0%, transparent 50%), linear-gradient(160deg,#0a3a2a,#0a1a1a)',
+  'radial-gradient(circle at 25% 25%, #bf5af2 0%, transparent 45%), radial-gradient(circle at 75% 75%, #5e5ce6 0%, transparent 50%), linear-gradient(160deg,#1a0a2a,#0a0a1a)',
+  'linear-gradient(160deg,#1a1a1f 0%,#2a2a30 50%,#0a0a0f 100%)',
 ];
 
 /* ============================================================
-   КОД ПО УМОЛЧАНИЮ
-   ============================================================ */
-const DEFAULT_CODE = `<!DOCTYPE html>
-<html lang="ru">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Моё приложение</title>
-<style>
-  *{ box-sizing:border-box; }
-  html,body{ height:100%; }
-  body{
-    margin:0;
-    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
-    color:#eef2ff;
-    background:radial-gradient(120% 80% at 50% 0%, #241a4d 0%, #0b1020 55%, #05070f 100%);
-    display:flex; align-items:center; justify-content:center;
-    padding:24px;
+   HELPERS
+============================================================ */
+const $ = (sel, root=document) => root.querySelector(sel);
+const $$ = (sel, root=document) => Array.from(root.querySelectorAll(sel));
+const el = (tag, props={}, children=[]) => {
+  const e = document.createElement(tag);
+  for (const k in props) {
+    if (k === 'class') e.className = props[k];
+    else if (k === 'style') e.style.cssText = props[k];
+    else if (k.startsWith('on') && typeof props[k] === 'function') e.addEventListener(k.slice(2), props[k]);
+    else if (k === 'html') e.innerHTML = props[k];
+    else if (k === 'text') e.textContent = props[k];
+    else e.setAttribute(k, props[k]);
   }
-  .card{
-    width:100%; max-width:380px; text-align:center;
-    background:rgba(255,255,255,.06);
-    border:1px solid rgba(255,255,255,.12);
-    border-radius:28px; padding:28px 24px 22px;
-    backdrop-filter:blur(14px);
-    box-shadow:0 30px 60px -20px rgba(0,0,0,.7);
-  }
-  .avatar{
-    width:84px; height:84px; border-radius:50%; margin:0 auto 16px;
-    display:grid; place-items:center; font-size:34px;
-    background:conic-gradient(from 210deg,#7c5cff,#22d3ee,#7c5cff);
-  }
-  h1{ margin:0 0 6px; font-size:22px; letter-spacing:-.02em; }
-  p{ margin:0 0 22px; color:#a5b0d0; font-size:14px; line-height:1.5; }
-  .row{ display:flex; gap:10px; }
-  button{
-    flex:1; padding:13px 16px; border-radius:14px; border:0;
-    font-size:15px; font-weight:600; cursor:pointer; font-family:inherit;
-  }
-  .primary{ background:linear-gradient(135deg,#7c5cff,#4f46e5); color:#fff; }
-  .ghost{ background:rgba(255,255,255,.08); color:#dfe4ff; border:1px solid rgba(255,255,255,.14); }
-  .stats{ display:flex; gap:8px; margin-top:20px; }
-  .stat{ flex:1; background:rgba(255,255,255,.05); border-radius:14px; padding:12px 8px; }
-  .stat b{ display:block; font-size:17px; }
-  .stat span{ font-size:10px; color:#93a0c4; text-transform:uppercase; letter-spacing:.06em; }
-  @media (min-width:600px){ .card{ max-width:460px; } }
-<\/style>
-</head>
-<body>
-  <div class="card">
-    <div class="avatar">🚀</div>
-    <h1>Привет, разработчик!</h1>
-    <p>Меняй код слева — предпросмотр справа обновится сам. Устройство переключается сверху.</p>
-    <div class="row">
-      <button class="primary" id="go">Начать</button>
-      <button class="ghost">Позже</button>
-    </div>
-    <div class="stats">
-      <div class="stat"><b id="v">0</b><span>Клики</span></div>
-      <div class="stat"><b>100%</b><span>Живой</span></div>
-      <div class="stat"><b>24/7</b><span>Онлайн</span></div>
-    </div>
-  </div>
-  <script>
-    let n = 0;
-    document.getElementById('go').addEventListener('click', () => {
-      document.getElementById('v').textContent = ++n;
-    });
-  <\/script>
-</body>
-</html>`;
-
-/* ============================================================
-   ЭЛЕМЕНТЫ
-   ============================================================ */
-const $ = id => document.getElementById(id);
-const els = {
-  deviceSel : $('deviceSel'),
-  rotateBtn : $('rotateBtn'),
-  zoomIn    : $('zoomIn'),
-  zoomOut   : $('zoomOut'),
-  zoomVal   : $('zoomVal'),
-  autoFit   : $('autoFit'),
-  resetBtn  : $('resetBtn'),
-  stage     : $('stage'),
-  wrap      : $('deviceWrap'),
-  frame     : $('deviceFrame'),
-  iframe    : $('preview'),
-  code      : $('code'),
-  gutter    : $('gutter'),
-  dims      : $('dims'),
-  editorPane: $('editorPane'),
-  splitter  : $('splitter')
+  (Array.isArray(children) ? children : [children]).forEach(c => c && e.appendChild(c));
+  return e;
 };
+const esc = s => String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const vibrate = (ms=8) => { try { navigator.vibrate && navigator.vibrate(ms); } catch(e){} };
+const fmtTime = d => d.toLocaleTimeString('ru-RU', {hour:'2-digit', minute:'2-digit'});
+const fmtTimeSec = d => d.toLocaleTimeString('ru-RU');
+const fmtDate = d => { const s = d.toLocaleDateString('ru-RU', {weekday:'long', day:'numeric', month:'long'}); return s.charAt(0).toUpperCase()+s.slice(1); };
+const fmtDateShort = d => d.toLocaleDateString('ru-RU', {day:'numeric', month:'long'});
+const uid = () => Math.random().toString(36).slice(2, 10);
 
 /* ============================================================
-   СОСТОЯНИЕ
-   ============================================================ */
-const state = {
-  deviceId : 'ip16pm',
-  landscape: false,
-  zoom     : 1,
-  autoFit  : true
-};
-
-/* ============================================================
-   ЗАПОЛНЯЕМ СПИСОК УСТРОЙСТВ
-   ============================================================ */
-DEVICES.forEach(d => {
-  const o = document.createElement('option');
-  o.value = d.id;
-  o.textContent = d.name + (d.w ? `  —  ${d.w}×${d.h}` : '');
-  els.deviceSel.appendChild(o);
-});
-els.deviceSel.value = state.deviceId;
-
-/* ============================================================
-   РАСКЛАДКА ПРЕДПРОСМОТРА
-   ============================================================ */
-function currentDevice(){
-  return DEVICES.find(d => d.id === state.deviceId) || DEVICES[0];
-}
-
-function layout(){
-  const d = currentDevice();
-  const isPhone = !!d.phone;
-
-  let w = d.w, h = d.h;
-  if (w && h && state.landscape) { const t = w; w = h; h = t; }
-
-  const frame = els.frame, wrap = els.wrap, iframe = els.iframe;
-
-  frame.classList.toggle('phone', isPhone);
-  frame.classList.toggle('fluid', !w);
-  iframe.classList.toggle('fluid', !w);
-
-  /* --- резиновый режим --- */
-  if (!w){
-    frame.style.width = '100%';
-    frame.style.height = '100%';
-    wrap.style.width = '100%';
-    wrap.style.height = '100%';
-    iframe.style.width = '100%';
-    iframe.style.height = '100%';
-    els.dims.textContent = 'резиновый';
-    els.zoomVal.textContent = '—';
-    return;
-  }
-
-  /* --- размеры --- */
-  if (isPhone){
-    frame.style.width  = w + 'px';
-    frame.style.height = h + 'px';
-    iframe.style.width  = w + 'px';
-    iframe.style.height = h + 'px';
-  } else {
-    frame.style.width  = w + 'px';
-    frame.style.height = (h + 36) + 'px';
-    iframe.style.width  = w + 'px';
-    iframe.style.height = h + 'px';
-  }
-
-  const totalW = isPhone ? w + 24 : w;
-  const totalH = isPhone ? h + 24 : h + 36;
-
-  /* --- масштаб --- */
-  let scale = state.zoom;
-  if (state.autoFit){
-    const pad = 64;
-    const sw = els.stage.clientWidth  - pad;
-    const sh = els.stage.clientHeight - pad;
-    scale = Math.min(1, sw / totalW, sh / totalH);
-    scale = Math.max(0.1, scale);
-  }
-  state.effectiveZoom = scale;
-
-  frame.style.transform = `scale(${scale})`;
-  wrap.style.width  = (totalW * scale) + 'px';
-  wrap.style.height = (totalH * scale) + 'px';
-
-  els.dims.textContent = `${w} × ${h}`;
-  els.zoomVal.textContent = Math.round(scale * 100) + '%';
-}
-
-/* ============================================================
-   ПРЕДПРОСМОТР В РЕАЛЬНОМ ВРЕМЕНИ
-   ============================================================ */
-let previewTimer = null;
-function schedulePreview(delay = 350){
-  clearTimeout(previewTimer);
-  previewTimer = setTimeout(() => {
-    els.iframe.srcdoc = els.code.value;
-  }, delay);
-}
-
-/* ============================================================
-   РЕДАКТОР
-   ============================================================ */
-function updateGutter(){
-  const lines = els.code.value.split('\n').length;
-  let s = '';
-  for (let i = 1; i <= lines; i++) s += (i === lines ? i : i + '\n');
-  els.gutter.textContent = s;
-  els.gutter.scrollTop = els.code.scrollTop;
-}
-
-let saveTimer = null;
-function onInput(){
-  updateGutter();
-  schedulePreview();
-  clearTimeout(saveTimer);
-  saveTimer = setTimeout(() => {
-    try { localStorage.setItem('lps.code', els.code.value); } catch(e){}
-  }, 600);
-}
-
-els.code.addEventListener('input', onInput);
-els.code.addEventListener('scroll', () => { els.gutter.scrollTop = els.code.scrollTop; });
-
-/* Tab = 2 пробела */
-els.code.addEventListener('keydown', e => {
-  if (e.key === 'Tab'){
-    e.preventDefault();
-    const ta = e.target;
-    const s = ta.selectionStart, en = ta.selectionEnd;
-    ta.value = ta.value.slice(0, s) + '  ' + ta.value.slice(en);
-    ta.selectionStart = ta.selectionEnd = s + 2;
-    onInput();
-  }
-  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter'){
-    e.preventDefault();
-    clearTimeout(previewTimer);
-    els.iframe.srcdoc = els.code.value;
-  }
-});
-
-/* ============================================================
-   УПРАВЛЕНИЕ
-   ============================================================ */
-els.deviceSel.addEventListener('change', e => {
-  state.deviceId = e.target.value;
-  layout();
-});
-
-els.rotateBtn.addEventListener('click', () => {
-  state.landscape = !state.landscape;
-  els.rotateBtn.style.color = state.landscape ? 'var(--accent)' : '';
-  layout();
-});
-
-function setZoom(v){
-  state.autoFit = false;
-  els.autoFit.checked = false;
-  state.zoom = Math.min(2.5, Math.max(0.15, v));
-  layout();
-}
-els.zoomIn.addEventListener('click', () => setZoom((state.effectiveZoom || 1) + 0.1));
-els.zoomOut.addEventListener('click', () => setZoom((state.effectiveZoom || 1) - 0.1));
-
-els.autoFit.addEventListener('change', e => {
-  state.autoFit = e.target.checked;
-  if (!state.autoFit) state.zoom = state.effectiveZoom || 1;
-  layout();
-});
-
-els.resetBtn.addEventListener('click', () => {
-  if (!confirm('Вернуть исходный код? Твои изменения будут потеряны.')) return;
-  els.code.value = DEFAULT_CODE;
-  onInput();
-  clearTimeout(previewTimer);
-  els.iframe.srcdoc = els.code.value;
-});
-
-/* ============================================================
-   ПЕРЕТАСКИВАНИЕ РАЗДЕЛИТЕЛЯ
-   ============================================================ */
-let dragging = false;
-els.splitter.addEventListener('mousedown', e => {
-  dragging = true;
-  document.body.style.cursor = 'col-resize';
-  document.body.style.userSelect = 'none';
-  e.preventDefault();
-});
-window.addEventListener('mousemove', e => {
-  if (!dragging) return;
-  const rect = document.querySelector('main').getBoundingClientRect();
-  let w = e.clientX - rect.left;
-  w = Math.max(220, Math.min(rect.width - 280, w));
-  els.editorPane.style.width = w + 'px';
-  layout();
-});
-window.addEventListener('mouseup', () => {
-  if (!dragging) return;
-  dragging = false;
-  document.body.style.cursor = '';
-  document.body.style.userSelect = '';
-});
-
-/* ============================================================
-   ПЕРЕСЧЁТ ПРИ ИЗМЕНЕНИИ ОКНА
-   ============================================================ */
-if (window.ResizeObserver){
-  new ResizeObserver(() => layout()).observe(els.stage);
-} else {
-  window.addEventListener('resize', layout);
-}
-window.addEventListener('resize', layout);
-
-/* ============================================================
-   СТАРТ
-   ============================================================ */
-(function init(){
-  let saved = null;
-  try { saved = localStorage.getItem('lps.code'); } catch(e){}
-  els.code.value = saved || DEFAULT_CODE;
-  updateGutter();
-  els.iframe.srcdoc = els.code.value;
-  layout();
-  requestAnimationFrame(layout);
+   TOAST / MODAL
+============================================================ */
+const Toast = (() => {
+  const container = $('#toasts');
+  return (msg, dur=2200) => {
+    const t = el('div', {class:'toast', text:msg});
+    container.appendChild(t);
+    setTimeout(() => {
+      t.classList.add('out');
+      setTimeout(() => t.remove(), 280);
+    }, dur);
+  };
 })();
+
+const Modal = (() => {
+  let current = null;
+  function close(result) {
+    if (!current) return;
+    const {resolve, bd} = current;
+    bd.classList.remove('open');
+    setTimeout(() => bd.remove(), 260);
+    current = null;
+    resolve && resolve(result);
+  }
+  function show({title, message, actions, allowBackdrop=true}) {
+    return new Promise(resolve => {
+      const bd = el('div', {class:'modal-bd'});
+      const m = el('div', {class:'modal'});
+      const body = el('div', {class:'modal-body'});
+      if (title) body.appendChild(el('div', {class:'modal-title', text:title}));
+      if (message) body.appendChild(el('div', {class:'modal-msg', text:message}));
+      m.appendChild(body);
+      const acts = el('div', {class:'modal-actions'});
+      actions.forEach(a => {
+        acts.appendChild(el('button', {
+          class: a.primary ? 'primary' : (a.danger ? 'danger' : ''),
+          text: a.label,
+          onclick: () => close(a.value)
+        }));
+      });
+      m.appendChild(acts);
+      bd.appendChild(m);
+      document.body.appendChild(bd);
+      requestAnimationFrame(() => bd.classList.add('open'));
+      current = {resolve, bd};
+      if (allowBackdrop) bd.addEventListener('click', e => { if (e.target === bd) close(null); });
+      const esc = e => { if (e.key === 'Escape') { close(null); document.removeEventListener('keydown', esc); } };
+      document.addEventListener('keydown', esc);
+    });
+  }
+  return {
+    alert: (title, message) => show({title, message, actions:[{label:'OK', value:true, primary:true}]}),
+    confirm: (title, message, confirmLabel='OK') => show({title, message, actions:[
+      {label:'Отмена', value:false}, {label:confirmLabel, value:true, primary:true}
+    ]}),
+    danger: (title, message, confirmLabel='Удалить') => show({title, message, actions:[
+      {label:'Отмена', value:false}, {label:confirmLabel, value:true, danger:true}
+    ]}),
+    prompt: (title, def='') => new Promise(resolve => {
+      const bd = el('div', {class:'modal-bd'});
+      const m = el('div', {class:'modal'});
+      const body = el('div', {class:'modal-body'});
+      body.appendChild(el('div', {class:'modal-title', text:title}));
+      const inp = el('input', {style:'width:100%;padding:10px;border-radius:8px;background:var(--sf2);color:var(--tx);margin-top:8px;font-size:16px', value:def});
+      body.appendChild(inp);
+      m.appendChild(body);
+      const acts = el('div', {class:'modal-actions'});
+      acts.appendChild(el('button', {text:'Отмена', onclick:() => { close(null); }}));
+      acts.appendChild(el('button', {class:'primary', text:'OK', onclick:() => { close(inp.value); }}));
+      m.appendChild(acts);
+      bd.appendChild(m);
+      document.body.appendChild(bd);
+      requestAnimationFrame(() => { bd.classList.add('open'); inp.focus(); inp.select(); });
+      current = {resolve, bd};
+      inp.addEventListener('keydown', e => { if (e.key === 'Enter') close(inp.value); });
+    })
+  };
+})();
+
+/* ============================================================
+   STATUS BAR
+============================================================ */
+function updateStatusBar() {
+  const now = new Date();
+  $('#sbTime').textContent = fmtTime(now);
+  $('#sbSig').innerHTML = S.airplane ? I.airplane.replace('width="32"','width="14"') : I.signal;
+  $('#sbWifi').innerHTML = S.wifi ? I.wifi : I.airplane.replace('width="32"','width="14"');
+  $('#sbBat').innerHTML = I.battery(S.battery, S.charging);
+  $('#statusBar').classList.toggle('dark', !S.unlocked ? false : (currentAppIsLight()));
+}
+
+function currentAppIsLight() {
+  const w = $('.app-window.open');
+  if (!w) return false;
+  const app = APPS[w.dataset.appId];
+  return app && !app.dark;
+}
+
+/* ============================================================
+   WALLPAPER
+============================================================ */
+function applyWallpaper() {
+  $('#wall').style.background = WALLS[S.wallpaper] || WALLS[0];
+}
+
+/* ============================================================
+   BRIGHTNESS
+============================================================ */
+function applyBrightness() {
+  $('#brightness').style.opacity = (100 - S.brightness) / 200;
+}
+
+/* ============================================================
+   THEME
+============================================================ */
+function applyTheme() {
+  document.documentElement.dataset.theme = S.theme;
+}
+
+/* ============================================================
+   LOCK SCREEN
+============================================================ */
+const Lock = (() => {
+  const lockEl = $('#lock');
+  const pinScreen = $('#pinScreen');
+  let startY = null, entered = '';
+  let pinPurpose = 'unlock';
+  let pinCallback = null;
+
+  function updateClock() {
+    const now = new Date();
+    $('#lkTime').textContent = fmtTime(now);
+    $('#lkDate').textContent = fmtDate(now);
+  }
+
+  function buildWidgets() {
+    $('#lkW').innerHTML = `
+      <div class="lock-widget">
+        <div class="lwh">${I.weather.replace('width="32"','width="14"')} Погода</div>
+        <div class="lwb">+18°</div>
+        <div class="lws">Ясно · Москва</div>
+      </div>
+      <div class="lock-widget">
+        <div class="lwh">${I.calendar.replace('width="32"','width="14"')} Календарь</div>
+        <div class="lwb">${new Date().getDate()} ${new Date().toLocaleDateString('ru-RU',{month:'short'})}</div>
+        <div class="lws">${Object.keys(S.events).length} событий</div>
+      </div>`;
+    $('#lkFlash').innerHTML = I.flash;
+    $('#lkCam').innerHTML = I.camera.replace('width="32"','width="22"');
+    $('#lkFlash').classList.toggle('on', S.flashlight);
+  }
+
+  function showPin(purpose, callback) {
+    pinPurpose = purpose;
+    pinCallback = callback;
+    entered = '';
+    renderPin();
+    pinScreen.classList.add('open');
+  }
+
+  function hidePin() {
+    pinScreen.classList.remove('open');
+  }
+
+  function renderPin() {
+    const titles = {
+      unlock: 'Введите PIN-код',
+      confirm: 'Подтвердите PIN-код',
+      change: 'Текущий PIN-код'
+    };
+    pinScreen.innerHTML = `
+      <div class="pin-title">${titles[pinPurpose] || 'Введите PIN'}</div>
+      <div class="pin-dots">
+        ${[0,1,2,3].map(i => `<div class="pin-dot${i < entered.length ? ' filled' : ''}"></div>`).join('')}
+      </div>
+      <div class="pin-pad">
+        ${[1,2,3,4,5,6,7,8,9].map(n => `<button class="pin-key" data-n="${n}">${n}</button>`).join('')}
+        <button class="pin-key empty"></button>
+        <button class="pin-key" data-n="0">0</button>
+        <button class="pin-key del" data-act="del">${I.del.replace('width="32"','width="26"')}</button>
+      </div>`;
+    pinScreen.querySelectorAll('.pin-key').forEach(k => {
+      k.onclick = () => {
+        const act = k.dataset.act;
+        const n = k.dataset.n;
+        vibrate(6);
+        if (act === 'del') {
+          entered = entered.slice(0, -1);
+        } else if (n !== undefined && entered.length < 4) {
+          entered += n;
+        }
+        renderPin();
+        if (entered.length === 4) {
+          setTimeout(() => checkPin(), 150);
+        }
+      };
+    });
+  }
+
+  function checkPin() {
+    if (entered === S.pin) {
+      hidePin();
+      if (pinPurpose === 'unlock') {
+        unlock();
+      } else if (pinCallback) {
+        const cb = pinCallback;
+        pinCallback = null;
+        cb(true);
+      }
+    } else {
+      vibrate(60);
+      pinScreen.classList.add('shake');
+      setTimeout(() => pinScreen.classList.remove('shake'), 420);
+      entered = '';
+      setTimeout(() => renderPin(), 300);
+      Toast('Неверный PIN-код');
+    }
+  }
+
+  function unlock() {
+    S.unlocked = true;
+    save();
+    lockEl.classList.add('unlocked');
+    $('#home').classList.add('visible');
+    expandIsland('Разблокировано');
+  }
+
+  function swipeStart(y) { startY = y; }
+  function swipeMove(y) {
+    if (startY === null) return;
+    const dy = y - startY;
+    if (dy < 0) {
+      lockEl.style.transform = `translateY(${dy}px)`;
+      lockEl.style.opacity = Math.max(0, 1 + dy / 400);
+    }
+  }
+  function swipeEnd(y) {
+    if (startY === null) return;
+    const dy = y - startY;
+    if (dy < -80) {
+      showPin('unlock');
+      lockEl.style.transform = '';
+      lockEl.style.opacity = '';
+    } else {
+      lockEl.style.transform = '';
+      lockEl.style.opacity = '';
+    }
+    startY = null;
+  }
+
+  function init() {
+    updateClock();
+    buildWidgets();
+    setInterval(() => { updateClock(); if (!$('#home').classList.contains('visible')) buildWidgets(); }, 1000);
+
+    lockEl.addEventListener('touchstart', e => swipeStart(e.touches[0].clientY), {passive:true});
+    lockEl.addEventListener('touchmove', e => swipeMove(e.touches[0].clientY), {passive:true});
+    lockEl.addEventListener('touchend', e => swipeEnd(e.changedTouches[0].clientY));
+
+    let md = false;
+    lockEl.addEventListener('mousedown', e => { md = true; swipeStart(e.clientY); });
+    window.addEventListener('mousemove', e => { if (md) swipeMove(e.clientY); });
+    window.addEventListener('mouseup', e => { if (md) { swipeEnd(e.clientY); md = false; } });
+
+    $('#lkFlash').onclick = (e) => {
+      e.stopPropagation();
+      S.flashlight = !S.flashlight;
+      save();
+      buildWidgets();
+      Toast(S.flashlight ? 'Фонарик включён' : 'Фонарик выключен');
+      vibrate(10);
+    };
+    $('#lkCam').onclick = async (e) => {
+      e.stopPropagation();
+      showPin('unlock', () => {
+        unlock();
+        setTimeout(() => AppManager.open('camera'), 400);
+      });
+    };
+  }
+
+  return {init, showPin, hidePin, unlock, renderPin};
+})();
+
+/* ============================================================
+   ISLAND
+============================================================ */
+let islandTimer = null;
+function expandIsland(text) {
+  const isl = $('#island');
+  if (!isl) return;
+  isl.innerHTML = `<span class="dot"></span><span style="font-size:12px">${esc(text)}</span><span class="cam"></span>`;
+  isl.classList.add('expanded');
+  clearTimeout(islandTimer);
+  islandTimer = setTimeout(() => {
+    isl.classList.remove('expanded');
+    setTimeout(() => { isl.innerHTML = '<span class="dot"></span><span class="cam"></span>'; }, 300);
+  }, 1600);
+}
+
+/* ============================================================
+   HOME SCREEN
+============================================================ */
+const Home = (() => {
+  let editMode = false;
+  let dragData = null;
+
+  function renderWidgets() {
+    const now = new Date();
+    $('#widgets').innerHTML = `
+      <div class="widget weather" data-open="weather">
+        <svg class="wt-icon" viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+        <div class="wt-city">Москва</div>
+        <div class="wt-temp">+18°</div>
+        <div class="wt-desc">Ясно · Ощущается +17°</div>
+      </div>
+      <div class="widget">
+        <div class="wt-time" id="wTime">${fmtTime(now)}</div>
+        <div class="wt-date" id="wDate">${fmtDateShort(now)}</div>
+      </div>`;
+    $('#widgets .weather').onclick = () => AppManager.open('weather');
+  }
+
+  function updateTime() {
+    const now = new Date();
+    const wt = $('#wTime'); const wd = $('#wDate');
+    if (wt) wt.textContent = fmtTime(now);
+    if (wd) wd.textContent = fmtDateShort(now);
+  }
+
+  function renderAppIcon(appId, inDock=false) {
+    const app = APPS[appId];
+    if (!app) return null;
+    const div = el('div', {class:'app-icon', 'data-app':appId});
+    div.innerHTML = `
+      <div class="bg" style="background:${app.color}">${app.icon}</div>
+      <div class="name">${app.name}</div>
+      ${editMode && !inDock ? '<div class="del"></div>' : ''}`;
+    div.onclick = (e) => {
+      if (editMode) return;
+      if (e.target.classList.contains('del')) return;
+      AppManager.open(appId);
+    };
+    // Long press
+    let lt = null;
+    div.addEventListener('pointerdown', e => {
+      if (inDock) return;
+      lt = setTimeout(() => {
+        lt = null;
+        enterEdit();
+        vibrate(15);
+      }, 550);
+    });
+    ['pointerup','pointerleave','pointercancel'].forEach(ev => div.addEventListener(ev, () => {
+      if (lt) { clearTimeout(lt); lt = null; }
+    }));
+    // Del button
+    const del = div.querySelector('.del');
+    if (del) del.onclick = async (e) => {
+      e.stopPropagation();
+      const ok = await Modal.danger(`Удалить ${app.name}?`, 'Приложение будет удалено с домашнего экрана');
+      if (ok) {
+        S.installed = S.installed.filter(id => id !== appId);
+        S.homePages = S.homePages.map(p => p.filter(id => id !== appId));
+        save();
+        render();
+        Toast(`${app.name} удалено`);
+      }
+    };
+    return div;
+  }
+
+  function render() {
+    // Pages
+    const pages = $('#homePages');
+    pages.innerHTML = '';
+    const pageCount = Math.max(S.homePages.length, 1);
+    for (let i = 0; i < pageCount; i++) {
+      const pageEl = el('div', {class:'page'});
+      (S.homePages[i] || []).forEach(id => {
+        if (S.installed.includes(id)) {
+          const icon = renderAppIcon(id);
+          if (icon) pageEl.appendChild(icon);
+        }
+      });
+      pages.appendChild(pageEl);
+    }
+    // Dots
+    const dots = $('#pageDots');
+    dots.innerHTML = '';
+    for (let i = 0; i < pageCount; i++) {
+      const d = el('div', {class:'dot' + (i === 0 ? ' active' : '')});
+      d.onclick = () => pages.scrollTo({left: i * pages.offsetWidth, behavior:'smooth'});
+      dots.appendChild(d);
+    }
+    // Dock
+    const dock = $('#dock');
+    dock.innerHTML = '';
+    S.dock.forEach(id => {
+      if (S.installed.includes(id)) {
+        const icon = renderAppIcon(id, true);
+        if (icon) dock.appendChild(icon);
+      }
+    });
+    // Page scroll listener
+    pages.onscroll = () => {
+      const idx = Math.round(pages.scrollLeft / pages.offsetWidth);
+      $$('#pageDots .dot').forEach((d, i) => d.classList.toggle('active', i === idx));
+    };
+  }
+
+  function enterEdit() {
+    editMode = true;
+    $('#home').classList.add('edit');
+    render();
+    Toast('Режим редактирования. Tap вне иконки для выхода');
+  }
+
+  function exitEdit() {
+    editMode = false;
+    $('#home').classList.remove('edit');
+    render();
+  }
+
+  function init() {
+    renderWidgets();
+    render();
+    setInterval(updateTime, 1000);
+    // Click outside to exit edit
+    $('#home').addEventListener('click', e => {
+      if (editMode && !e.target.closest('.app-icon')) exitEdit();
+    });
+    // Swipe up for App Library
+    let sy = null, st = 0;
+    $('#homePages').addEventListener('touchstart', e => { sy = e.touches[0].clientY; st = Date.now(); }, {passive:true});
+    $('#homePages').addEventListener('touchend', e => {
+      if (sy === null) return;
+      const dy = e.changedTouches[0].clientY - sy;
+      const dt = Date.now() - st;
+      if (dy < -80 && dt < 500) AppLib.open();
+      sy = null;
+    });
+  }
+
+  return {init, render, renderWidgets, enterEdit, exitEdit, isEdit: () => editMode};
+})();
+
+/* ============================================================
+   CONTROL CENTER
+============================================================ */
+const CC = (() => {
+  const ccEl = $('#cc');
+  function render() {
+    ccEl.innerHTML = `
+      <div class="cc-grid">
+        <div class="cc-card span2">
+          <div class="cc-row">
+            <div class="cc-tog ${S.airplane?'on orange':''}" data-tog="airplane">${I.airplane.replace('width="32"','width="20"')}</div>
+            <div class="cc-tog ${S.mobile?'on green':''}" data-tog="mobile">${I.cellular.replace('width="32"','width="20"')}</div>
+          </div>
+          <div class="cc-row">
+            <div class="cc-tog ${S.wifi?'on':''}" data-tog="wifi">${I.wifi.replace('width="32"','width="20"')}</div>
+            <div class="cc-tog ${S.bt?'on':''}" data-tog="bt">${I.bt.replace('width="32"','width="20"')}</div>
+          </div>
+        </div>
+        <div class="cc-slider" data-slider="brightness">
+          <div class="fill" style="height:${S.brightness}%"></div>
+          ${I.bright.replace('width="32"','width="20"')}
+        </div>
+        <div class="cc-slider" data-slider="volume">
+          <div class="fill" style="height:${S.volume}%"></div>
+          ${S.volume === 0 ? I.volMute.replace('width="32"','width="20"') : I.vol.replace('width="32"','width="20"')}
+        </div>
+        <div class="cc-card" data-tog="dnd" style="grid-column:span 2;display:flex;align-items:center;gap:12px;padding:14px">
+          <div class="cc-tog ${S.dnd?'on purple':''}">${I.focus.replace('width="32"','width="20"')}</div>
+          <div class="cc-lbl">Фокус</div>
+        </div>
+        <div class="cc-card" data-tog="flashlight" style="display:flex;align-items:center;gap:12px;padding:14px">
+          <div class="cc-tog ${S.flashlight?'on':''}">${I.flash.replace('width="32"','width="20"')}</div>
+        </div>
+        <div class="cc-card" data-tog="rotation" style="display:flex;align-items:center;gap:12px;padding:14px">
+          <div class="cc-tog ${S.rotation?'on':''}">${I.rotate.replace('width="32"','width="20"')}</div>
+        </div>
+        <div class="cc-card" data-open="camera" style="display:flex;align-items:center;gap:12px;padding:14px">
+          <div class="cc-tog">${I.camera.replace('width="32"','width="20"')}</div>
+        </div>
+        <div class="cc-card" data-open="calculator" style="display:flex;align-items:center;gap:12px;padding:14px">
+          <div class="cc-tog">${I.calculator.replace('width="32"','width="20"')}</div>
+        </div>
+      </div>`;
+    // Toggles
+    ccEl.querySelectorAll('[data-tog]').forEach(card => {
+      card.onclick = (e) => {
+        e.stopPropagation();
+        const t = card.dataset.tog;
+        if (t === 'wifi') { S.wifi = !S.wifi; Toast(S.wifi ? 'Wi-Fi включён' : 'Wi-Fi выключен'); }
+        else if (t === 'bt') { S.bt = !S.bt; Toast(S.bt ? 'Bluetooth включён' : 'Bluetooth выключен'); }
+        else if (t === 'airplane') { S.airplane = !S.airplane; if (S.airplane) { S.wifi = false; S.bt = false; S.mobile = false; } Toast(S.airplane ? 'Авиарежим включён' : 'Авиарежим выключен'); }
+        else if (t === 'mobile') S.mobile = !S.mobile;
+        else if (t === 'dnd') { S.dnd = !S.dnd; Toast(S.dnd ? 'Не беспокоить' : 'Уведомления включены'); }
+        else if (t === 'flashlight') { S.flashlight = !S.flashlight; Toast(S.flashlight ? 'Фонарик включён' : 'Фонарик выключен'); }
+        else if (t === 'rotation') S.rotation = !S.rotation;
+        save();
+        render();
+        updateStatusBar();
+        vibrate(8);
+      };
+    });
+    // Sliders
+    ccEl.querySelectorAll('.cc-slider').forEach(sl => {
+      const key = sl.dataset.slider;
+      const fill = sl.querySelector('.fill');
+      const update = (y) => {
+        const rect = sl.getBoundingClientRect();
+        const v = Math.round(Math.max(0, Math.min(1, 1 - (y - rect.top) / rect.height)) * 100);
+        S[key] = v;
+        fill.style.height = v + '%';
+        if (key === 'brightness') applyBrightness();
+        if (key === 'volume') {
+          // re-render just the icon
+          const iconContainer = sl.querySelector('svg') && sl.querySelector('svg').parentElement;
+          const newIcon = (v === 0 ? I.volMute : I.vol).replace('width="32"','width="20"');
+          const oldSvg = sl.querySelector('svg');
+          if (oldSvg) oldSvg.outerHTML = newIcon;
+        }
+        save();
+      };
+      sl.addEventListener('pointerdown', e => {
+        e.stopPropagation();
+        sl.setPointerCapture(e.pointerId);
+        update(e.clientY);
+        const mv = ev => update(ev.clientY);
+        const up = () => { sl.removeEventListener('pointermove', mv); sl.removeEventListener('pointerup', up); };
+        sl.addEventListener('pointermove', mv);
+        sl.addEventListener('pointerup', up);
+      });
+    });
+    // Open apps
+    ccEl.querySelectorAll('[data-open]').forEach(b => {
+      b.onclick = (e) => {
+        e.stopPropagation();
+        close();
+        setTimeout(() => AppManager.open(b.dataset.open), 200);
+      };
+    });
+  }
+  function open() { render(); ccEl.classList.add('open'); }
+  function close() { ccEl.classList.remove('open'); }
+  function toggle() { ccEl.classList.contains('open') ? close() : open(); }
+  function init() {
+    ccEl.addEventListener('click', e => { if (e.target === ccEl) close(); });
+  }
+  return {open, close, toggle, init, render};
+})();
+
+/* ============================================================
+   NOTIFICATION CENTER
+============================================================ */
+const NC = (() => {
+  const ncEl = $('#nc');
+  function render() {
+    if (S.notifications.length === 0) {
+      ncEl.innerHTML = `
+        <div class="nc-header"><h2>Уведомления</h2></div>
+        <div class="nc-empty">${I.bell.replace('width="32"','width="56" height="56"')}<div>Нет новых уведомлений</div></div>`;
+    } else {
+      ncEl.innerHTML = `
+        <div class="nc-header">
+          <h2>Уведомления</h2>
+          <button class="nc-clear" id="ncClear">Очистить</button>
+        </div>
+        <div id="ncList"></div>`;
+      const list = $('#ncList');
+      S.notifications.forEach(n => {
+        const div = el('div', {class:'notif'});
+        div.innerHTML = `
+          <div class="ico" style="background:${n.color || 'var(--accent)'}">${(APPS[n.app] && APPS[n.app].icon) || I.bell}</div>
+          <div class="txt">
+            <div class="t"><span>${esc(n.title)}</span><span class="time">${fmtTime(new Date(n.time))}</span></div>
+            <div class="m">${esc(n.message)}</div>
+          </div>`;
+        div.onclick = () => {
+          if (n.app && APPS[n.app]) {
+            close();
+            setTimeout(() => AppManager.open(n.app), 200);
+          }
+        };
+        // Swipe right to dismiss
+        let sx = null;
+        div.addEventListener('pointerdown', e => { sx = e.clientX; });
+        div.addEventListener('pointerup', e => {
+          if (sx !== null && e.clientX - sx > 80) {
+            S.notifications = S.notifications.filter(x => x.id !== n.id);
+            save();
+            render();
+          }
+          sx = null;
+        });
+        list.appendChild(div);
+      });
+      $('#ncClear').onclick = async () => {
+        const ok = await Modal.confirm('Очистить все уведомления?', '', 'Очистить');
+        if (ok) { S.notifications = []; save(); render(); }
+      };
+    }
+  }
+  function open() { render(); ncEl.classList.add('open'); }
+  function close() { ncEl.classList.remove('open'); }
+  function push(app, title, message, color) {
+    S.notifications.unshift({id:uid(), app, title, message, color, time:Date.now()});
+    if (S.notifications.length > 50) S.notifications = S.notifications.slice(0, 50);
+    save();
+    if (!ncEl.classList.contains('open')) {
+      expandIsland(`${title}: ${message}`);
+    } else render();
+  }
+  function init() {
+    ncEl.addEventListener('click', e => { if (e.target === ncEl) close(); });
+  }
+  return {open, close, push, render, init};
+})();
+
+/* ============================================================
+   APP SWITCHER
+============================================================ */
+const Switcher = (() => {
+  const sw = $('#switcher');
+  function render() {
+    const scroll = $('#switcherScroll');
+    const apps = S.lastApps.slice(-8).reverse();
+    if (apps.length === 0) {
+      scroll.innerHTML = '<div class="switcher-empty">Нет активных приложений</div>';
+      return;
+    }
+    scroll.innerHTML = '';
+    apps.forEach(id => {
+      const app = APPS[id];
+      if (!app) return;
+      const card = el('div', {class:'switch-card'});
+      card.innerHTML = `
+        <div class="head">
+          <div class="ico" style="background:${app.color}">${app.icon}</div>
+          <span>${app.name}</span>
+        </div>
+        <div class="preview">${app.icon.replace('width="32"','width="80" height="80"')}</div>`;
+      card.onclick = () => {
+        close();
+        setTimeout(() => AppManager.open(id), 200);
+      };
+      // Swipe up to close
+      let sy = null;
+      card.addEventListener('pointerdown', e => { sy = e.clientY; });
+      card.addEventListener('pointerup', e => {
+        if (sy !== null && sy - e.clientY > 100) {
+          S.lastApps = S.lastApps.filter(x => x !== id);
+          save();
+          render();
+        }
+        sy = null;
+      });
+      scroll.appendChild(card);
+    });
+  }
+  function open() { render(); sw.classList.add('open'); }
+  function close() { sw.classList.remove('open'); }
+  function init() {
+    sw.addEventListener('click', e => { if (e.target === sw) close(); });
+  }
+  return {open, close, init};
+})();
+
+/* ============================================================
+   SPOTLIGHT
+============================================================ */
+const Spot = (() => {
+  const sp = $('#spotlight');
+  const input = $('#spotInput');
+  const results = $('#spotResults');
+
+  function search(q) {
+    q = q.toLowerCase().trim();
+    results.innerHTML = '';
+    const appMatches = Object.entries(APPS).filter(([id, a]) =>
+      S.installed.includes(id) && (!q || a.name.toLowerCase().includes(q)));
+    if (appMatches.length === 0 && !q) {
+      // Show all apps when empty
+      Object.entries(APPS).filter(([id]) => S.installed.includes(id)).forEach(([id, a]) => {
+        results.appendChild(makeAppIcon(id, a));
+      });
+      return;
+    }
+    if (!q) return;
+    if (appMatches.length > 0) {
+      results.appendChild(el('div', {style:'grid-column:1/-1;font-size:13px;opacity:.6;text-transform:uppercase;letter-spacing:.5px;font-weight:600;margin-top:6px', text:'Приложения'}));
+      appMatches.forEach(([id, a]) => results.appendChild(makeAppIcon(id, a)));
+    }
+    // Notes
+    const noteMatches = S.notes.filter(n => n.title.toLowerCase().includes(q) || n.body.toLowerCase().includes(q));
+    if (noteMatches.length > 0) {
+      results.appendChild(el('div', {style:'grid-column:1/-1;font-size:13px;opacity:.6;text-transform:uppercase;letter-spacing:.5px;font-weight:600;margin-top:6px', text:'Заметки'}));
+      noteMatches.slice(0, 3).forEach(n => {
+        const item = el('div', {class:'app-icon'});
+        item.innerHTML = `<div class="bg" style="background:linear-gradient(180deg,#ffd60a,#ff9f0a)">${I.notes}</div><div class="name">${esc(n.title.slice(0, 20))}</div>`;
+        item.onclick = () => { close(); setTimeout(() => AppManager.open('notes', {noteId:n.id}), 200); };
+        results.appendChild(item);
+      });
+    }
+    if (results.children.length === 0) {
+      results.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;opacity:.6">Ничего не найдено</div>';
+    }
+  }
+
+  function makeAppIcon(id, app) {
+    const item = el('div', {class:'app-icon'});
+    item.innerHTML = `<div class="bg" style="background:${app.color}">${app.icon}</div><div class="name">${app.name}</div>`;
+    item.onclick = () => { close(); setTimeout(() => AppManager.open(id), 200); };
+    return item;
+  }
+
+  function open() {
+    sp.classList.add('open');
+    search('');
+    setTimeout(() => input.focus(), 200);
+  }
+  function close() { sp.classList.remove('open'); input.value = ''; }
+  function init() {
+    input.addEventListener('input', e => search(e.target.value));
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Escape') close();
+    });
+    sp.addEventListener('click', e => { if (e.target === sp) close(); });
+  }
+  return {open, close, init};
+})();
+
+/* ============================================================
+   APP LIBRARY
+============================================================ */
+const AppLib = (() => {
+  const al = $('#appLib');
+  function render(q='') {
+    q = q.toLowerCase();
+    const grouped = {};
+    S.installed.forEach(id => {
+      const app = APPS[id];
+      if (!app) return;
+      if (q && !app.name.toLowerCase().includes(q)) return;
+      const cat = app.category || 'Другое';
+      grouped[cat] = grouped[cat] || [];
+      grouped[cat].push(id);
+    });
+    let html = `<div class="al-search">
+      ${I.search.replace('width="32"','width="16" height="16"')}
+      <input id="alInput" placeholder="Поиск" autocomplete="off">
+    </div>`;
+    for (const [cat, ids] of Object.entries(grouped)) {
+      html += `<div class="al-cat"><h3>${cat}</h3><div class="al-grid">`;
+      ids.forEach(id => {
+        const app = APPS[id];
+        html += `<div class="app-icon" data-app="${id}">
+          <div class="bg" style="background:${app.color}">${app.icon}</div>
+          <div class="name">${app.name}</div>
+        </div>`;
+      });
+      html += '</div></div>';
+    }
+    al.innerHTML = html;
+    const inp = $('#alInput');
+    if (inp) {
+      inp.value = q;
+      inp.addEventListener('input', e => render(e.target.value));
+    }
+    al.querySelectorAll('.app-icon').forEach(ic => {
+      ic.onclick = () => { close(); setTimeout(() => AppManager.open(ic.dataset.app), 250); };
+    });
+  }
+  function open() { render(); al.classList.add('open'); }
+  function close() { al.classList.remove('open'); }
+  function toggle() { al.classList.contains('open') ? close() : open(); }
+  return {open, close, toggle};
+})();
+
+/* ============================================================
+   APP MANAGER
+============================================================ */
+const AppManager = (() => {
+  const open = {};
+  const winCount = {};
+
+  function create(id, opts={}) {
+    const app = APPS[id];
+    if (!app) return null;
+
+    const win = el('div', {class:'app-window' + (app.dark ? '' : ''), 'data-app-id':id});
+    win.style.background = app.dark ? '#000' : 'var(--bg)';
+
+    const header = el('div', {class:'app-header'});
+    header.innerHTML = `
+      <button class="back">${I.chevronL.replace('width="32"','width="11" height="18"')} Назад</button>
+      <div class="title">${app.name}</div>
+      <div class="action-slot"></div>`;
+    win.appendChild(header);
+
+    const body = el('div', {class:'app-body'});
+    win.appendChild(body);
+
+    // back
+    header.querySelector('.back').onclick = () => close(id);
+
+    // Render content
+    const renderer = Renderers[id];
+    if (renderer) {
+      try {
+        renderer(body, header.querySelector('.action-slot'), opts);
+      } catch (e) {
+        console.error('App render error', id, e);
+        body.innerHTML = `<div style="padding:40px 20px;text-align:center;color:var(--tx2)">Ошибка приложения</div>`;
+      }
+    } else {
+      body.innerHTML = `<div style="padding:40px 20px;text-align:center;color:var(--tx2)">Приложение в разработке</div>`;
+    }
+
+    return win;
+  }
+
+  function open_(id, opts={}) {
+    if (open[id]) {
+      // Bring to front
+      const w = open[id];
+      w.classList.add('open');
+      w.classList.remove('closing');
+      return;
+    }
+    const win = create(id, opts);
+    if (!win) return;
+    $('#phone').appendChild(win);
+    open[id] = win;
+    requestAnimationFrame(() => requestAnimationFrame(() => win.classList.add('open')));
+    vibrate(6);
+    // Track
+    S.lastApps = S.lastApps.filter(x => x !== id);
+    S.lastApps.push(id);
+    if (S.lastApps.length > 10) S.lastApps.shift();
+    save();
+    updateStatusBar();
+  }
+
+  function close(id) {
+    const w = open[id];
+    if (!w) return;
+    w.classList.remove('open');
+    w.classList.add('closing');
+    setTimeout(() => {
+      w.remove();
+      delete open[id];
+      updateStatusBar();
+    }, 380);
+  }
+
+  function closeAll() {
+    Object.keys(open).forEach(id => close(id));
+  }
+
+  function goHome() {
+    // close all windows
+    Object.keys(open).forEach(id => close(id));
+    // close panels
+    CC.close(); NC.close(); Switcher.close(); Spot.close(); AppLib.close();
+  }
+
+  return {open: open_, close, closeAll, goHome, isOpen: id => !!open[id]};
+})();
+
+// Small polyfill so render calls below can use openApp(id)
+function openApp(id) { AppManager.open(id); }
+
+/* ============================================================
+   GLOBAL GESTURES
+============================================================ */
+const Gestures = (() => {
+  let tStart = null;
+
+  function init() {
+    document.addEventListener('touchstart', e => {
+      if (!S.unlocked) return;
+      if (AppManager.isOpen(APP_ID_ANY())) return;
+      const t = e.touches[0];
+      const y = t.clientY;
+      const x = t.clientX;
+      // Top edge
+      if (y < 40) {
+        tStart = {y, x, side: x > window.innerWidth / 2 ? 'right' : 'left'};
+      }
+      // Bottom edge (home gesture)
+      else if (y > window.innerHeight - 40) {
+        tStart = {y, x, side: 'bottom'};
+      }
+    }, {passive:true});
+
+    document.addEventListener('touchmove', e => {
+      if (!tStart) return;
+      const t = e.touches[0];
+      const dy = t.clientY - tStart.y;
+      if (tStart.side === 'right' && dy > 30) {
+        CC.open();
+        tStart = null;
+      } else if (tStart.side === 'left' && dy > 30) {
+        NC.open();
+        tStart = null;
+      }
+    }, {passive:true});
+
+    document.addEventListener('touchend', e => {
+      if (!tStart) return;
+      if (tStart.side === 'bottom') {
+        const t = e.changedTouches[0];
+        const dy = tStart.y - t.clientY;
+        if (dy > 80) {
+          AppManager.goHome();
+        }
+      }
+      tStart = null;
+    });
+
+    // Desktop: click to top edge
+    document.addEventListener('mousedown', e => {
+      if (!S.unlocked) return;
+      if (e.clientY < 40 && !e.target.closest('.app-window') && !e.target.closest('.app-icon')) {
+        tStart = {y: e.clientY, x: e.clientX, side: e.clientX > window.innerWidth / 2 ? 'right' : 'left'};
+      }
+    });
+    document.addEventListener('mousemove', e => {
+      if (!tStart) return;
+      const dy = e.clientY - tStart.y;
+      if (tStart.side === 'right' && dy > 30) { CC.open(); tStart = null; }
+      else if (tStart.side === 'left' && dy > 30) { NC.open(); tStart = null; }
+    });
+    document.addEventListener('mouseup', () => { tStart = null; });
+
+    // Swipe down from home center → Spotlight
+    let spotStart = null;
+    $('#home').addEventListener('touchstart', e => {
+      if (e.target.closest('.app-icon')) return;
+      spotStart = {y: e.touches[0].clientY, time: Date.now()};
+    }, {passive:true});
+    $('#home').addEventListener('touchend', e => {
+      if (!spotStart) return;
+      const dy = e.changedTouches[0].clientY - spotStart.y;
+      const dt = Date.now() - spotStart.time;
+      if (dy > 60 && dt < 400 && spotStart.y > 150) Spot.open();
+      spotStart = null;
+    });
+    // Desktop alt: hover over home area then drag — skip, use keyboard
+  }
+  return {init};
+})();
+
+function APP_ID_ANY() { return ''; } // dummy
+
+/* ============================================================
+   APP RENDERERS
+============================================================ */
+const Renderers = {};
+
+/* ---------- CALCULATOR ---------- */
+Renderers.calculator = (body) => {
+  let cur = '0', prev = null, op = null, reset = false;
+  let history = Store.get('calc_history', []);
+
+  function calc(a, b, op) {
+    a = parseFloat(a); b = parseFloat(b);
+    let r;
+    switch(op) {
+      case '+': r = a + b; break;
+      case '-': r = a - b; break;
+      case '*': r = a * b; break;
+      case '/': r = b === 0 ? NaN : a / b; break;
+      default: return b;
+    }
+    if (!isFinite(r) || isNaN(r)) return 'Ошибка';
+    return String(Math.round(r * 1e10) / 1e10);
+  }
+
+  function render() {
+    const keys = [
+      {l:'AC', cls:'gray', act:'C'},
+      {l:'+/−', cls:'gray', act:'±'},
+      {l:'%', cls:'gray', act:'%'},
+      {l:'÷', cls:'op', act:'/'},
+      {l:'7', act:'7'},{l:'8', act:'8'},{l:'9', act:'9'},{l:'×', cls:'op', act:'*'},
+      {l:'4', act:'4'},{l:'5', act:'5'},{l:'6', act:'6'},{l:'−', cls:'op', act:'-'},
+      {l:'1', act:'1'},{l:'2', act:'2'},{l:'3', act:'3'},{l:'+', cls:'op', act:'+'},
+      {l:'0', cls:'zero', act:'0'},{l:'.', act:'.'},{l:'=', cls:'op', act:'='}
+    ];
+    body.innerHTML = `
+      <div class="calc">
+        <div class="calc-display" id="calcDisp">${esc(cur)}</div>
+        <div class="calc-keys">
+          ${keys.map(k => `<button class="${k.cls||''}" data-act="${k.act}">${k.l}</button>`).join('')}
+        </div>
+      </div>`;
+    body.querySelectorAll('.calc-keys button').forEach(b => {
+      b.onclick = () => { press(b.dataset.act); };
+    });
+  }
+
+  function press(v) {
+    vibrate(4);
+    if (v === 'C') { cur = '0'; prev = null; op = null; reset = false; }
+    else if (v === '±') cur = String(parseFloat(cur) * -1);
+    else if (v === '%') cur = String(parseFloat(cur) / 100);
+    else if (['+','-','*','/'].includes(v)) {
+      if (op && !reset) cur = calc(prev, cur, op);
+      prev = cur; op = v; reset = true;
+    }
+    else if (v === '=') {
+      if (op) {
+        const result = calc(prev, cur, op);
+        history.unshift(`${prev} ${op} ${cur} = ${result}`);
+        history = history.slice(0, 30);
+        Store.set('calc_history', history);
+        cur = result;
+        op = null; prev = null; reset = true;
+      }
+    }
+    else if (v === '.') {
+      if (reset) { cur = '0'; reset = false; }
+      if (!cur.includes('.')) cur += '.';
+    }
+    else {
+      if (reset || cur === '0') { cur = v; reset = false; }
+      else if (cur.length < 12) cur += v;
+    }
+    const d = body.querySelector('#calcDisp');
+    d.textContent = cur;
+    d.style.fontSize = cur.length > 8 ? '48px' : cur.length > 6 ? '60px' : '80px';
+  }
+
+  render();
+};
+
+/* ---------- NOTES ---------- */
+Renderers.notes = (body, actionSlot, opts={}) => {
+  if (opts.noteId) return openEditor(opts.noteId);
+
+  function renderList() {
+    actionSlot.innerHTML = `<button class="action new">+ Новая</button>`;
+    actionSlot.querySelector('.new').onclick = () => openEditor(null);
+    if (S.notes.length === 0) {
+      body.innerHTML = `<div class="notes-empty">${I.notes.replace('width="32"','width="56" height="56"')}<div>Нет заметок</div><div style="font-size:13px;margin-top:8px">Нажми + чтобы создать</div></div>`;
+      return;
+    }
+    body.innerHTML = '';
+    const sorted = [...S.notes].sort((a,b) => (b.pinned?1:0) - (a.pinned?1:0) || b.date - a.date);
+    sorted.forEach(n => {
+      const div = el('div', {class:'note-item'});
+      div.innerHTML = `
+        <div class="ttl">${n.pinned ? `<span class="pin">${I.star.replace('width="32"','width="14" height="14"')}</span>` : ''}${esc(n.title || 'Без названия')}</div>
+        <div class="prv">${esc(n.body)}</div>
+        <div class="dt">${new Date(n.date).toLocaleDateString('ru-RU', {day:'numeric', month:'short', hour:'2-digit', minute:'2-digit'})}</div>`;
+      div.onclick = () => openEditor(n.id);
+      body.appendChild(div);
+    });
+  }
+
+  function openEditor(noteId) {
+    const note = noteId ? S.notes.find(n => n.id === noteId) : {id:uid(), title:'', body:'', date:Date.now(), pinned:false};
+    const isNew = !noteId;
+    actionSlot.innerHTML = `
+      <button class="action save">Готово</button>
+      ${!isNew ? `<button class="action del">🗑</button>` : ''}`;
+    body.innerHTML = `
+      <div class="note-editor">
+        <input class="title" placeholder="Заголовок" value="${esc(note.title)}">
+        <textarea placeholder="Текст заметки...">${esc(note.body)}</textarea>
+      </div>`;
+    const titleI = body.querySelector('input.title');
+    const bodyT = body.querySelector('textarea');
+    actionSlot.querySelector('.save').onclick = () => {
+      note.title = titleI.value.trim() || 'Без названия';
+      note.body = bodyT.value;
+      note.date = Date.now();
+      if (isNew) S.notes.unshift(note);
+      else {
+        const idx = S.notes.findIndex(n => n.id === note.id);
+        if (idx >= 0) S.notes[idx] = note;
+      }
+      save();
+      Toast('Заметка сохранена');
+      renderList();
+    };
+    if (!isNew) {
+      actionSlot.querySelector('.del').onclick = async () => {
+        const ok = await Modal.danger('Удалить заметку?', 'Действие нельзя отменить');
+        if (ok) {
+          S.notes = S.notes.filter(n => n.id !== note.id);
+          save();
+          renderList();
+          Toast('Удалено');
+        }
+      };
+    }
+    setTimeout(() => (isNew ? titleI : bodyT).focus(), 100);
+  }
+
+  renderList();
+};
+
+/* ---------- CLOCK ---------- */
+Renderers.clock = (body) => {
+  let tab = 'clock';
+  let swRunning = false, swStart = 0, swElapsed = 0;
+  let timerLeft = 0, timerRunning = false, timerInt = null;
+  let clockInt = null;
+
+  function render() {
+    if (clockInt) { clearInterval(clockInt); clockInt = null; }
+    body.innerHTML = `
+      <div class="clock-app">
+        <div class="clock-tabs">
+          <button data-tab="clock" class="${tab==='clock'?'active':''}">Часы</button>
+          <button data-tab="stopwatch" class="${tab==='stopwatch'?'active':''}">Секундомер</button>
+          <button data-tab="timer" class="${tab==='timer'?'active':''}">Таймер</button>
+        </div>
+        <div id="clockContent"></div>
+      </div>`;
+    body.querySelectorAll('.clock-tabs button').forEach(b => {
+      b.onclick = () => { tab = b.dataset.tab; render(); };
+    });
+    const c = body.querySelector('#clockContent');
+    if (tab === 'clock') renderClock(c);
+    else if (tab === 'stopwatch') renderStopwatch(c);
+    else renderTimer(c);
+  }
+
+  function renderClock(c) {
+    const update = () => {
+      const now = new Date();
+      c.innerHTML = `
+        <div class="clock-big">${fmtTimeSec(now)}</div>
+        <div class="clock-date">${fmtDate(now)}</div>`;
+    };
+    update();
+    clockInt = setInterval(update, 1000);
+  }
+
+  function renderStopwatch(c) {
+    const fmt = ms => {
+      const m = Math.floor(ms/60000);
+      const s = Math.floor((ms%60000)/1000);
+      const cs = Math.floor((ms%1000)/10);
+      return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}.${String(cs).padStart(2,'0')}`;
+    };
+    const update = () => {
+      const t = c.querySelector('.sw-time');
+      if (t) t.textContent = fmt(swElapsed + (swRunning ? Date.now() - swStart : 0));
+    };
+    c.innerHTML = `<div class="sw-time">${fmt(swElapsed)}</div>
+      <div class="sw-ctrl">
+        ${swRunning ? '<button class="sw-btn stop" data-act="stop">Стоп</button>' : '<button class="sw-btn start" data-act="start">Старт</button>'}
+        <button class="sw-btn lap" data-act="reset">Сброс</button>
+      </div>`;
+    c.querySelectorAll('.sw-btn').forEach(b => {
+      b.onclick = () => {
+        if (b.dataset.act === 'start') { swStart = Date.now(); swRunning = true; }
+        else if (b.dataset.act === 'stop') { swElapsed += Date.now() - swStart; swRunning = false; }
+        else if (b.dataset.act === 'reset') { swElapsed = 0; swRunning = false; }
+        render();
+      };
+    });
+    if (swRunning) {
+      const iv = setInterval(() => {
+        if (!document.body.contains(c)) { clearInterval(iv); return; }
+        update();
+      }, 30);
+    }
+  }
+
+  function renderTimer(c) {
+    const fmt = s => {
+      const m = Math.floor(s / 60);
+      const sec = s % 60;
+      return `${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+    };
+    c.innerHTML = `
+      <div class="timer-disp">${fmt(timerLeft)}</div>
+      <div class="timer-inp">
+        <input type="number" id="tM" min="0" max="99" placeholder="00" value="${Math.floor(timerLeft/60)}">
+        <span>:</span>
+        <input type="number" id="tS" min="0" max="59" placeholder="00" value="${timerLeft%60}">
+      </div>
+      <div class="sw-ctrl">
+        <button class="sw-btn ${timerRunning?'stop':'start'}" data-act="tog">${timerRunning?'Стоп':'Старт'}</button>
+        <button class="sw-btn lap" data-act="tr">Сброс</button>
+      </div>`;
+    const mI = c.querySelector('#tM');
+    const sI = c.querySelector('#tS');
+    mI.oninput = sI.oninput = () => {
+      if (timerRunning) return;
+      timerLeft = (parseInt(mI.value)||0) * 60 + (parseInt(sI.value)||0);
+    };
+    c.querySelectorAll('.sw-btn').forEach(b => {
+      b.onclick = () => {
+        if (b.dataset.act === 'tog') {
+          if (!timerRunning) {
+            if (timerLeft === 0) timerLeft = (parseInt(mI.value)||0)*60 + (parseInt(sI.value)||0);
+            if (timerLeft === 0) { Toast('Введите время'); return; }
+            timerRunning = true;
+            timerInt = setInterval(() => {
+              timerLeft--;
+              const t = c.querySelector('.timer-disp');
+              if (t) t.textContent = fmt(timerLeft);
+              if (timerLeft <= 0) {
+                clearInterval(timerInt); timerInt = null; timerRunning = false;
+                Toast('Таймер завершён!');
+                vibrate([100, 100, 100]);
+                render();
+              }
+            }, 1000);
+          } else {
+            timerRunning = false;
+            clearInterval(timerInt); timerInt = null;
+          }
+        } else {
+          timerRunning = false;
+          clearInterval(timerInt); timerInt = null;
+          timerLeft = 0;
+        }
+        render();
+      };
+    });
+  }
+
+  render();
+};
+
+/* ---------- WEATHER ---------- */
+Renderers.weather = (body) => {
+  // Static simulation
+  const hours = ['Сейчас','13:00','14:00','15:00','16:00','17:00'];
+  const temps = [18,19,20,20,19,17];
+  const days = [['Пн',20,12],['Вт',22,13],['Ср',19,11],['Чт',17,10],['Пт',21,13],['Сб',23,14],['Вс',24,15]];
+  body.innerHTML = `
+    <div class="weather-app">
+      <div class="w-loc">Москва</div>
+      <div class="w-temp">18°</div>
+      <div class="w-cond">Ясно</div>
+      <div class="w-hl">Макс: 22°   Мин: 12°</div>
+      <div class="w-hourly">
+        ${hours.map((h,i)=>`<div><div>${h}</div><div class="hi">${I.weather.replace('width="32"','width="22" height="22"')}</div><div class="ht">${temps[i]}°</div></div>`).join('')}
+      </div>
+      <div class="w-daily">
+        ${days.map(([d,a,b])=>`<div class="row"><div>${d}</div><div>${I.weather.replace('width="32"','width="20" height="20"')}</div><div class="bar"></div><div style="text-align:right"><span class="tmin">${b}°</span><span class="tmax">${a}°</span></div></div>`).join('')}
+      </div>
+      <div style="text-align:center;margin-top:20px;font-size:12px;opacity:.55">Демонстрационные данные</div>
+    </div>`;
+};
+
+/* ---------- MESSAGES ---------- */
+Renderers.messages = (body, actionSlot, opts={}) => {
+  if (opts.chatId) return openChat(opts.chatId);
+
+  function renderList() {
+    body.innerHTML = '';
+    actionSlot.innerHTML = '';
+    const chats = Object.entries(S.chats).sort((a,b) => {
+      const la = a[1].messages.slice(-1)[0]; const lb = b[1].messages.slice(-1)[0];
+      return (lb?.time||0) - (la?.time||0);
+    });
+    if (chats.length === 0) {
+      body.innerHTML = '<div style="padding:80px 20px;text-align:center;color:var(--tx2)">Нет чатов</div>';
+      return;
+    }
+    chats.forEach(([id, c]) => {
+      const last = c.messages.slice(-1)[0];
+      const div = el('div', {class:'msg-row'});
+      div.innerHTML = `
+        <div class="av" style="background:${c.color}">${c.avatar}</div>
+        <div class="info">
+          <div class="nm"><span>${esc(c.name)}</span><span class="time">${last ? fmtTime(new Date(last.time)) : ''}</span></div>
+          <div class="txt">${esc(last ? last.text : 'Нет сообщений')}</div>
+        </div>`;
+      div.onclick = () => { AppManager.close('messages'); setTimeout(() => AppManager.open('messages', {chatId:id}), 200); };
+      body.appendChild(div);
+    });
+  }
+
+  function openChat(chatId) {
+    const chat = S.chats[chatId];
+    if (!chat) return renderList();
+    actionSlot.innerHTML = '';
+    body.innerHTML = `
+      <div class="chat-view">
+        <div class="chat-body" id="chatBody"></div>
+        <div class="chat-input">
+          <input id="chatInput" placeholder="Сообщение..." autocomplete="off">
+          <button class="send" id="chatSend">${I.arrowUp.replace('width="32"','width="18" height="18"')}</button>
+        </div>
+      </div>`;
+    const cb = body.querySelector('#chatBody');
+    chat.messages.forEach(m => {
+      const b = el('div', {class:'bubble ' + (m.sent ? 'sent' : 'recv')});
+      b.textContent = m.text;
+      cb.appendChild(b);
+    });
+    cb.scrollTop = cb.scrollHeight;
+    const input = body.querySelector('#chatInput');
+    const send = body.querySelector('#chatSend');
+    function sendMsg() {
+      const txt = input.value.trim();
+      if (!txt) return;
+      chat.messages.push({text:txt, sent:true, time:Date.now()});
+      save();
+      input.value = '';
+      openChat(chatId);
+      // Auto-reply after 1s
+      setTimeout(() => {
+        const replies = ['Понятно', 'Ок', 'Хорошо', 'Договорились', 'Интересно!', 'Спасибо!', '👍'];
+        chat.messages.push({text:replies[Math.floor(Math.random()*replies.length)], sent:false, time:Date.now()});
+        save();
+        if (AppManager.isOpen('messages')) openChat(chatId);
+      }, 1200);
+    }
+    send.onclick = sendMsg;
+    input.addEventListener('keydown', e => { if (e.key === 'Enter') sendMsg(); });
+    setTimeout(() => input.focus(), 100);
+  }
+
+  renderList();
+};
+
+/* ---------- PHONE ---------- */
+Renderers.phone = (body) => {
+  let num = '';
+  function render() {
+    body.innerHTML = `
+      <div class="phone-app" style="padding:20px 0">
+        <div class="dial-num">${esc(num) || '&nbsp;'}</div>
+        <div class="dial-grid">
+          ${[['1',''],['2','ABC'],['3','DEF'],['4','GHI'],['5','JKL'],['6','MNO'],['7','PQRS'],['8','TUV'],['9','WXYZ'],['*',''],['0','+'],['#','']].map(([n,l]) => `
+            <button class="dial-key" data-n="${n}"><div class="n">${n}</div>${l ? `<div class="l">${l}</div>` : ''}</button>
+          `).join('')}
+          <button class="dial-key call" id="callBtn">${I.phone.replace('width="32"','width="30" height="30"')}</button>
+        </div>
+      </div>`;
+    body.querySelectorAll('.dial-key[data-n]').forEach(b => {
+      b.onclick = () => { num += b.dataset.n; vibrate(4); render(); };
+    });
+    body.querySelector('#callBtn').onclick = () => {
+      if (!num) return;
+      startCall(num);
+    };
+  }
+
+  function startCall(number) {
+    const win = $('.app-window[data-app-id="phone"]');
+    const call = el('div', {class:'call-screen'});
+    call.innerHTML = `
+      <div class="who">
+        <div class="nm">${esc(number)}</div>
+        <div class="stat" id="callStat">Звонок...</div>
+      </div>
+      <div class="call-actions">
+        <button class="call-btn end" id="endCall">${I.phone.replace('width="32"','width="32" height="32"')}</button>
+      </div>`;
+    win.appendChild(call);
+    let sec = 0;
+    const stat = call.querySelector('#callStat');
+    setTimeout(() => {
+      stat.textContent = 'Соединение...';
+      setTimeout(() => {
+        stat.textContent = '00:00';
+        const iv = setInterval(() => {
+          if (!document.body.contains(call)) { clearInterval(iv); return; }
+          sec++;
+          stat.textContent = `${String(Math.floor(sec/60)).padStart(2,'0')}:${String(sec%60).padStart(2,'0')}`;
+        }, 1000);
+        call._iv = iv;
+      }, 1500);
+    }, 800);
+    call.querySelector('#endCall').onclick = () => {
+      if (call._iv) clearInterval(call._iv);
+      call.remove();
+      num = '';
+      render();
+      Toast('Звонок завершён');
+    };
+  }
+
+  render();
+};
+
+/* ---------- CAMERA ---------- */
+Renderers.camera = async (body) => {
+  body.innerHTML = `
+    <div style="height:100%;display:flex;flex-direction:column;background:#000;color:#fff">
+      <div class="cam-view" id="camView">
+        <div class="fallback">
+          ${I.camera.replace('width="32"','width="80" height="80"')}
+          <p>Запрос доступа к камере...</p>
+        </div>
+      </div>
+      <div class="cam-ctrl">
+        <div style="width:60px"></div>
+        <button class="cam-shutter" id="camShoot" aria-label="Снять"></button>
+        <div style="width:60px"></div>
+      </div>
+    </div>`;
+  const view = body.querySelector('#camView');
+  const shutter = body.querySelector('#camShoot');
+  const video = el('video', {autoplay:'', playsinline:'', muted:''});
+  let stream = null;
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'user'}});
+    video.srcObject = stream;
+    view.innerHTML = '';
+    view.appendChild(video);
+    shutter.onclick = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+      canvas.getContext('2d').drawImage(video, 0, 0);
+      const dataUrl = canvas.toDataURL('image/jpeg');
+      // Save to gallery
+      let gallery = Store.get('gallery', []);
+      gallery.unshift({id:uid(), src:dataUrl, date:Date.now()});
+      gallery = gallery.slice(0, 50);
+      Store.set('gallery', gallery);
+      Toast('Фото сохранено в галерею');
+      vibrate(20);
+      // Flash effect
+      view.style.opacity = '.3';
+      setTimeout(() => view.style.opacity = '1', 100);
+    };
+  } catch (e) {
+    view.innerHTML = `
+      <div class="fallback">
+        ${I.camera.replace('width="32"','width="80" height="80"')}
+        <p><b>Камера недоступна</b><br>Разрешение не получено или API не поддерживается.<br>Доступен демо-режим.</p>
+      </div>`;
+    shutter.onclick = () => {
+      let gallery = Store.get('gallery', []);
+      const colors = ['#667eea,#764ba2','#f093fb,#f5576c','#4facfe,#00f2fe','#43e97b,#38f9d7','#fa709a,#fee140'];
+      const c = colors[Math.floor(Math.random()*colors.length)];
+      gallery.unshift({id:uid(), src:`linear-gradient(135deg,${c})`, date:Date.now(), demo:true});
+      gallery = gallery.slice(0, 50);
+      Store.set('gallery', gallery);
+      Toast('Демо-фото сохранено');
+    };
+  }
+  // Cleanup on close
+  const cleanup = () => {
+    if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+  };
+  // Observe removal
+  const observer = new MutationObserver(() => {
+    if (!document.body.contains(body)) { cleanup(); observer.disconnect(); }
+  });
+  observer.observe(document.body, {childList:true, subtree:true});
+};
+
+/* ---------- GALLERY / PHOTOS ---------- */
+Renderers.gallery = Renderers.photos = (body) => {
+  function render() {
+    let gallery = Store.get('gallery', []);
+    if (gallery.length === 0) {
+      // Demo photos
+      const colors = ['#667eea,#764ba2','#f093fb,#f5576c','#4facfe,#00f2fe','#43e97b,#38f9d7','#fa709a,#fee140','#ff9a9e,#fecfef'];
+      gallery = colors.map((c, i) => ({id:'demo'+i, src:`linear-gradient(135deg,${c})`, date:Date.now()-i*86400000, demo:true}));
+    }
+    body.innerHTML = `<div class="gallery-grid" id="gGrid"></div>`;
+    const grid = body.querySelector('#gGrid');
+    gallery.forEach(item => {
+      const div = el('div', {class:'gallery-item'});
+      if (item.src.startsWith('data:')) {
+        div.innerHTML = `<img src="${item.src}" style="width:100%;height:100%;object-fit:cover">`;
+      } else {
+        div.style.background = item.src;
+      }
+      div.onclick = () => openViewer(item);
+      grid.appendChild(div);
+    });
+  }
+
+  function openViewer(item) {
+    const v = el('div', {class:'gallery-viewer open'});
+    const inner = el('div');
+    inner.style.cssText = 'max-width:100%;max-height:100%;display:flex;flex-direction:column;gap:16px;align-items:center';
+    if (item.src.startsWith('data:')) {
+      inner.innerHTML = `<img src="${item.src}" style="max-width:90vw;max-height:80vh;border-radius:12px">`;
+    } else {
+      const box = el('div');
+      box.style.cssText = `width:80vw;max-width:500px;aspect-ratio:1;background:${item.src};border-radius:12px`;
+      inner.appendChild(box);
+    }
+    const actions = el('div');
+    actions.style.cssText = 'display:flex;gap:20px';
+    const del = el('button', {class:'btn btn-danger', text:'Удалить'});
+    del.onclick = async () => {
+      const ok = await Modal.danger('Удалить фото?', '');
+      if (ok) {
+        let gal = Store.get('gallery', []);
+        gal = gal.filter(x => x.id !== item.id);
+        Store.set('gallery', gal);
+        v.remove();
+        render();
+      }
+    };
+    const close = el('button', {class:'btn', text:'Закрыть', style:'background:rgba(255,255,255,.15);color:#fff'});
+    close.onclick = () => v.remove();
+    actions.append(del, close);
+    inner.appendChild(actions);
+    v.appendChild(inner);
+    v.onclick = (e) => { if (e.target === v) v.remove(); };
+    document.body.appendChild(v);
+  }
+
+  render();
+};
+
+/* ---------- FILES ---------- */
+Renderers.files = (body, actionSlot) => {
+  let cwd = null;
+  function render() {
+    if (cwd) renderFolder(cwd);
+    else renderRoot();
+  }
+  function renderRoot() {
+    actionSlot.innerHTML = '';
+    body.innerHTML = '';
+    Object.keys(S.files).forEach(name => {
+      const div = el('div', {class:'files-row'});
+      const cnt = S.files[name].length;
+      div.innerHTML = `
+        <div class="ic">${I.folder.replace('width="32"','width="24" height="24"')}</div>
+        <div class="nm">${esc(name)}</div>
+        <div class="sz">${cnt} ${cnt === 1 ? 'файл' : 'файлов'}</div>`;
+      div.onclick = () => { cwd = name; render(); };
+      body.appendChild(div);
+    });
+  }
+  function renderFolder(name) {
+    actionSlot.innerHTML = `<button class="action add">+ Файл</button>`;
+    actionSlot.querySelector('.add').onclick = async () => {
+      const fname = await Modal.prompt('Имя файла');
+      if (!fname) return;
+      S.files[name].push({name:fname, size:'0 КБ', type:'doc'});
+      save();
+      render();
+      Toast('Файл создан');
+    };
+    const header = el('div', {class:'app-header', style:'position:sticky;top:0;background:var(--bg);z-index:2;height:auto;padding:10px 16px;display:flex;align-items:center'});
+    header.innerHTML = `<button style="color:var(--accent);display:flex;align-items:center;gap:4px">${I.chevronL.replace('width="32"','width="11" height="18"')} Назад</button>
+      <div style="flex:1;text-align:center;font-weight:600">${esc(name)}</div>
+      <div style="width:60px"></div>`;
+    header.querySelector('button').onclick = () => { cwd = null; render(); };
+    body.innerHTML = '';
+    body.appendChild(header);
+    const list = el('div');
+    if (S.files[name].length === 0) {
+      list.innerHTML = '<div style="padding:60px 20px;text-align:center;color:var(--tx2)">Папка пуста</div>';
+    } else {
+      S.files[name].forEach((f, i) => {
+        const div = el('div', {class:'files-row'});
+        let icon = I.doc;
+        if (f.type === 'img') icon = I.image;
+        else if (f.type === 'audio') icon = I.music;
+        div.innerHTML = `
+          <div class="ic">${icon.replace('width="32"','width="24" height="24"')}</div>
+          <div class="nm">${esc(f.name)}</div>
+          <div class="sz">${esc(f.size)}</div>`;
+        div.onclick = async () => {
+          const ok = await Modal.danger(`Удалить ${f.name}?`, '');
+          if (ok) {
+            S.files[name].splice(i, 1);
+            save();
+            render();
+          }
+        };
+        list.appendChild(div);
+      });
+    }
+    body.appendChild(list);
+  }
+  render();
+};
+
+/* ---------- SETTINGS ---------- */
+Renderers.settings = (body, actionSlot, opts={}) => {
+  if (opts.section) return renderSection(opts.section);
+  renderRoot();
+
+  function renderRoot() {
+    actionSlot.innerHTML = '';
+    body.innerHTML = `
+      <div class="settings-app">
+        <div class="settings-search">
+          ${I.search.replace('width="32"','width="15" height="15"')}
+          <input placeholder="Поиск настроек" id="setSearch">
+        </div>
+        <div class="list" style="margin:14px 16px 0">
+          <div class="row" data-sec="profile">
+            <div class="ico-box" style="background:linear-gradient(135deg,#667eea,#764ba2)">${I.user.replace('width="32"','width="18" height="18"')}</div>
+            <div class="grow"><b>Admin</b><div style="font-size:12px;color:var(--tx2)">Nova ID, iCloud</div></div>
+            <div class="chev">${I.chevron.replace('width="32"','width="8" height="14"')}</div>
+          </div>
+        </div>
+        <div class="list" style="margin:14px 16px 0">
+          <div class="row" data-sec="wifi"><div class="ico-box" style="background:var(--accent)">${I.wifi.replace('width="32"','width="18" height="18"')}</div><div class="grow">Wi-Fi</div><div class="val">${S.wifi ? (S.wifiNet || 'Выкл') : 'Выкл'}</div><div class="chev">${I.chevron.replace('width="32"','width="8" height="14"')}</div></div>
+          <div class="row" data-sec="bt"><div class="ico-box" style="background:var(--accent)">${I.bt.replace('width="32"','width="18" height="18"')}</div><div class="grow">Bluetooth</div><div class="val">${S.bt ? 'Вкл' : 'Выкл'}</div><div class="chev">${I.chevron.replace('width="32"','width="8" height="14"')}</div></div>
+          <div class="row" data-sec="mobile"><div class="ico-box" style="background:var(--green)">${I.cellular.replace('width="32"','width="18" height="18"')}</div><div class="grow">Сотовая связь</div><div class="chev">${I.chevron.replace('width="32"','width="8" height="14"')}</div></div>
+        </div>
+        <div class="list" style="margin:14px 16px 0">
+          <div class="row" data-sec="notifications"><div class="ico-box" style="background:var(--red)">${I.bell.replace('width="32"','width="18" height="18"')}</div><div class="grow">Уведомления</div><div class="chev">${I.chevron.replace('width="32"','width="8" height="14"')}</div></div>
+          <div class="row" data-sec="sounds"><div class="ico-box" style="background:var(--pink)">${I.vol.replace('width="32"','width="18" height="18"')}</div><div class="grow">Звуки</div><div class="chev">${I.chevron.replace('width="32"','width="8" height="14"')}</div></div>
+          <div class="row" data-sec="display"><div class="ico-box" style="background:var(--accent)">${I.bright.replace('width="32"','width="18" height="18"')}</div><div class="grow">Экран и яркость</div><div class="chev">${I.chevron.replace('width="32"','width="8" height="14"')}</div></div>
+        </div>
+        <div class="list" style="margin:14px 16px 0">
+          <div class="row" data-sec="wallpaper"><div class="ico-box" style="background:linear-gradient(135deg,#ff375f,#bf5af2)">${I.image.replace('width="32"','width="18" height="18"')}</div><div class="grow">Обои</div><div class="chev">${I.chevron.replace('width="32"','width="8" height="14"')}</div></div>
+          <div class="row" data-sec="battery"><div class="ico-box" style="background:var(--green)">${I.battery(80, false).replace('width="26"','width="18" height="10"')}</div><div class="grow">Аккумулятор</div><div class="val">${S.battery}%</div><div class="chev">${I.chevron.replace('width="32"','width="8" height="14"')}</div></div>
+          <div class="row" data-sec="storage"><div class="ico-box" style="background:var(--orange)">${I.folder.replace('width="32"','width="18" height="18"')}</div><div class="grow">Хранилище</div><div class="val">64 ГБ</div><div class="chev">${I.chevron.replace('width="32"','width="8" height="14"')}</div></div>
+        </div>
+        <div class="list" style="margin:14px 16px 0">
+          <div class="row" data-sec="privacy"><div class="ico-box" style="background:var(--purple)">${I.lock.replace('width="32"','width="18" height="18"')}</div><div class="grow">Конфиденциальность</div><div class="chev">${I.chevron.replace('width="32"','width="8" height="14"')}</div></div>
+          <div class="row" data-sec="security"><div class="ico-box" style="background:#8e8e93">${I.lock.replace('width="32"','width="18" height="18"')}</div><div class="grow">Безопасность (PIN)</div><div class="chev">${I.chevron.replace('width="32"','width="8" height="14"')}</div></div>
+          <div class="row" data-sec="general"><div class="ico-box" style="background:#8e8e93">${I.settings.replace('width="32"','width="18" height="18"')}</div><div class="grow">Основные</div><div class="chev">${I.chevron.replace('width="32"','width="8" height="14"')}</div></div>
+        </div>
+        <div class="list" style="margin:14px 16px 20px">
+          <div class="row" data-sec="reset"><div class="ico-box" style="background:var(--red)">${I.warning.replace('width="32"','width="18" height="18"')}</div><div class="grow" style="color:var(--red)">Сброс</div></div>
+        </div>
+        <div class="app-ver">NovaOS 1.0.0 · Сборка 2025.1</div>
+      </div>`;
+    body.querySelectorAll('[data-sec]').forEach(r => {
+      r.onclick = () => { AppManager.close('settings'); setTimeout(() => AppManager.open('settings', {section:r.dataset.sec}), 200); };
+    });
+  }
+
+  function renderSection(sec) {
+    const back = () => { AppManager.close('settings'); setTimeout(() => AppManager.open('settings'), 200); };
+    let html = '';
+    let title = '';
+
+    if (sec === 'profile') {
+      title = 'Nova ID';
+      html = `<div style="padding:40px 20px;text-align:center">
+        <div style="width:100px;height:100px;border-radius:50%;background:linear-gradient(135deg,#667eea,#764ba2);margin:0 auto 20px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:42px;font-weight:600">A</div>
+        <div style="font-size:24px;font-weight:600">Admin</div>
+        <div style="color:var(--tx2);font-size:14px;margin-top:4px">admin@nova.os</div>
+      </div>`;
+    } else if (sec === 'wifi') {
+      title = 'Wi-Fi';
+      html = `<div class="list" style="margin:14px 16px 0"><div class="row"><div class="grow">Wi-Fi</div><div class="switch ${S.wifi?'on':''}" id="wifiSw"></div></div></div>
+        <div class="grp-title">Мои сети</div>
+        <div class="list" style="margin:0 16px">${S.wifiList.map((n,i) => `
+          <div class="row" data-wifi="${i}">
+            <div class="grow">${esc(n.name)}${n.secured ? ' ' + I.lock.replace('width="32"','width="12" height="12"') : ''}${S.wifiNet === n.name ? '<span style="color:var(--accent);font-size:13px;margin-left:8px">Подключено</span>' : ''}</div>
+            <div class="val">${n.signal === 3 ? '▮▮▮' : n.signal === 2 ? '▮▮' : '▮'}</div>
+            <div class="chev">${I.chevron.replace('width="32"','width="8" height="14"')}</div>
+          </div>`).join('')}</div>`;
+    } else if (sec === 'bt') {
+      title = 'Bluetooth';
+      html = `<div class="list" style="margin:14px 16px 0"><div class="row"><div class="grow">Bluetooth</div><div class="switch ${S.bt?'on':''}" id="btSw"></div></div></div>
+        <div class="grp-title">Устройства</div>
+        <div class="list" style="margin:0 16px">${S.btList.map((d,i) => `
+          <div class="row" data-bt="${i}">
+            <div class="grow">${esc(d.name)}</div>
+            ${d.connected ? `<div class="val" style="color:var(--accent)">Подключено</div>` : `<div class="val">${S.bt ? 'Не подключено' : ''}</div>`}
+          </div>`).join('')}</div>`;
+    } else if (sec === 'mobile') {
+      title = 'Сотовая связь';
+      html = `<div class="list" style="margin:14px 16px 0">
+        <div class="row"><div class="grow">Сотовые данные</div><div class="switch ${S.mobile?'on':''}" id="mobSw"></div></div>
+        <div class="row"><div class="grow">Роуминг</div><div class="switch" id="roamSw"></div></div>
+      </div>`;
+    } else if (sec === 'notifications') {
+      title = 'Уведомления';
+      html = `<div class="list" style="margin:14px 16px 0">
+        <div class="row"><div class="grow">Разрешить уведомления</div><div class="switch on"></div></div>
+        <div class="row"><div class="grow">Звук</div><div class="switch on"></div></div>
+        <div class="row"><div class="grow">Баннер</div><div class="switch on"></div></div>
+        <div class="row"><div class="grow">На экране блокировки</div><div class="switch on"></div></div>
+      </div>`;
+    } else if (sec === 'sounds') {
+      title = 'Звуки';
+      html = `<div class="list" style="margin:14px 16px 0">
+        <div class="row"><div class="grow">Громкость</div><div class="val">${S.volume}%</div></div>
+        <div class="row"><div class="grow">Звук клавиатуры</div><div class="switch on"></div></div>
+        <div class="row"><div class="grow">Вибрация</div><div class="switch on"></div></div>
+      </div>`;
+    } else if (sec === 'display') {
+      title = 'Экран и яркость';
+      html = `
+        <div class="grp-title">Внешний вид</div>
+        <div class="list" style="margin:0 16px">
+          <div class="row"><div class="grow">Тёмная тема</div><div class="switch ${S.theme === 'dark' ? 'on' : ''}" id="darkSw"></div></div>
+        </div>
+        <div class="grp-title">Яркость</div>
+        <div class="list" style="margin:0 16px;padding:14px 16px">
+          <input type="range" min="10" max="100" value="${S.brightness}" id="brRange" style="width:100%;accent-color:var(--accent)">
+        </div>`;
+    } else if (sec === 'wallpaper') {
+      title = 'Обои';
+      html = `<div class="wall-grid">${WALLS.map((w,i) => `
+        <div class="wall-opt ${S.wallpaper===i?'selected':''}" data-wall="${i}" style="background:${w}"></div>`).join('')}</div>`;
+    } else if (sec === 'battery') {
+      title = 'Аккумулятор';
+      html = `<div style="padding:30px 20px;text-align:center">
+        <div style="font-size:64px;font-weight:200">${S.battery}%</div>
+        <div style="color:var(--tx2);font-size:14px;margin-top:8px">${S.charging ? 'Заряжается' : 'Батарея в норме'}</div>
+      </div>
+      <div class="list" style="margin:0 16px">
+        <div class="row"><div class="grow">Экономия энергии</div><div class="switch ${S.lowPower?'on':''}" id="lpSw"></div></div>
+        <div class="row"><div class="grow">Симулировать зарядку</div><div class="switch ${S.charging?'on':''}" id="chgSw"></div></div>
+      </div>`;
+    } else if (sec === 'storage') {
+      title = 'Хранилище';
+      html = `<div style="padding:20px 16px">
+        <div style="height:8px;background:var(--sf3);border-radius:4px;overflow:hidden;display:flex">
+          <div style="width:25%;background:var(--accent)"></div>
+          <div style="width:15%;background:var(--green)"></div>
+          <div style="width:10%;background:var(--orange)"></div>
+          <div style="width:8%;background:var(--purple)"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:13px;color:var(--tx2);margin-top:8px">
+          <span>58 ГБ занято</span><span>64 ГБ всего</span>
+        </div>
+      </div>`;
+    } else if (sec === 'privacy') {
+      title = 'Конфиденциальность';
+      html = `<div class="list" style="margin:14px 16px 0">${Object.entries(S.permissions).map(([k,v]) => `
+        <div class="row"><div class="grow" style="text-transform:capitalize">${k}</div><div class="val">${v === 'granted' ? 'Разрешено' : v === 'denied' ? 'Запрещено' : 'Не задано'}</div></div>
+      `).join('')}</div>`;
+    } else if (sec === 'security') {
+      title = 'Безопасность';
+      html = `<div class="list" style="margin:14px 16px 0">
+        <div class="row" id="changePin"><div class="grow">Изменить PIN</div><div class="chev">${I.chevron.replace('width="32"','width="8" height="14"')}</div></div>
+        <div class="row"><div class="grow">Face ID</div><div class="switch on"></div></div>
+        <div class="row"><div class="grow">Автоблокировка</div><div class="val">1 минута</div></div>
+      </div>`;
+    } else if (sec === 'general') {
+      title = 'Основные';
+      html = `<div class="list" style="margin:14px 16px 0">
+        <div class="row"><div class="grow">Об устройстве</div><div class="val">NovaOS 1.0</div></div>
+        <div class="row"><div class="grow">Дата и время</div><div class="val">Авто</div></div>
+        <div class="row"><div class="grow">Клавиатура</div><div class="val">Русская, English</div></div>
+        <div class="row"><div class="grow">Язык</div><div class="val">Русский</div></div>
+      </div>`;
+    } else if (sec === 'reset') {
+      title = 'Сброс';
+      html = `<div class="list" style="margin:14px 16px 0">
+        <div class="row" id="resetSet" style="color:var(--red)"><div class="grow">Сбросить настройки</div></div>
+        <div class="row" id="resetAll" style="color:var(--red)"><div class="grow">Стереть все данные</div></div>
+      </div>`;
+    }
+
+    actionSlot.innerHTML = '';
+    body.innerHTML = `
+      <div style="padding:0 0 40px">
+        <div style="padding:12px 16px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--bd);position:sticky;top:0;background:var(--bg);z-index:2">
+          <button id="backBtn" style="color:var(--accent);display:flex;align-items:center;gap:2px;font-size:16px">${I.chevronL.replace('width="32"','width="10" height="16"')} Назад</button>
+          <div style="flex:1;text-align:center;font-weight:600;font-size:17px">${title}</div>
+          <div style="width:60px"></div>
+        </div>
+        ${html}
+      </div>`;
+
+    body.querySelector('#backBtn').onclick = back;
+
+    // Wire up controls
+    if (sec === 'wifi') {
+      const sw = body.querySelector('#wifiSw');
+      if (sw) sw.onclick = () => { S.wifi = !S.wifi; save(); updateStatusBar(); renderSection('wifi'); };
+      body.querySelectorAll('[data-wifi]').forEach(r => {
+        r.onclick = async () => {
+          const idx = +r.dataset.wifi;
+          const net = S.wifiList[idx];
+          if (!S.wifi) { Toast('Сначала включите Wi-Fi'); return; }
+          if (S.wifiNet === net.name) {
+            S.wifiNet = null;
+            save();
+            Toast('Отключено');
+            renderSection('wifi');
+          } else {
+            if (net.secured) {
+              const pass = await Modal.prompt(`Пароль для ${net.name}`);
+              if (pass !== net.pass) { Toast('Неверный пароль'); return; }
+            }
+            S.wifiNet = net.name;
+            save();
+            Toast(`Подключено к ${net.name}`);
+            renderSection('wifi');
+          }
+        };
+      });
+    }
+    if (sec === 'bt') {
+      const sw = body.querySelector('#btSw');
+      if (sw) sw.onclick = () => { S.bt = !S.bt; save(); renderSection('bt'); };
+      body.querySelectorAll('[data-bt]').forEach(r => {
+        r.onclick = () => {
+          const idx = +r.dataset.bt;
+          const d = S.btList[idx];
+          if (!S.bt) { Toast('Включите Bluetooth'); return; }
+          d.connected = !d.connected;
+          save();
+          Toast(d.connected ? `Подключено: ${d.name}` : `Отключено: ${d.name}`);
+          renderSection('bt');
+        };
+      });
+    }
+    if (sec === 'mobile') {
+      const s1 = body.querySelector('#mobSw');
+      if (s1) s1.onclick = () => { S.mobile = !S.mobile; save(); updateStatusBar(); };
+    }
+    if (sec === 'display') {
+      const ds = body.querySelector('#darkSw');
+      if (ds) ds.onclick = () => {
+        S.theme = S.theme === 'dark' ? 'light' : 'dark';
+        save();
+        applyTheme();
+        ds.classList.toggle('on');
+      };
+      const br = body.querySelector('#brRange');
+      if (br) {
+        br.oninput = e => { S.brightness = +e.target.value; save(); applyBrightness(); };
+      }
+    }
+    if (sec === 'wallpaper') {
+      body.querySelectorAll('[data-wall]').forEach(w => {
+        w.onclick = () => {
+          S.wallpaper = +w.dataset.wall;
+          save();
+          applyWallpaper();
+          renderSection('wallpaper');
+          Toast('Обои применены');
+        };
+      });
+    }
+    if (sec === 'battery') {
+      const lp = body.querySelector('#lpSw');
+      if (lp) lp.onclick = () => { S.lowPower = !S.lowPower; save(); renderSection('battery'); };
+      const chg = body.querySelector('#chgSw');
+      if (chg) chg.onclick = () => { S.charging = !S.charging; save(); updateStatusBar(); renderSection('battery'); };
+    }
+    if (sec === 'security') {
+      const cp = body.querySelector('#changePin');
+      if (cp) cp.onclick = async () => {
+        AppManager.close('settings');
+        setTimeout(() => {
+          $('#lock').classList.remove('unlocked');
+          $('#lock').style.transform = 'translateY(0)';
+          $('#lock').style.opacity = '1';
+          $('#home').classList.remove('visible');
+          Lock.showPin('change', () => {
+            setTimeout(() => {
+              $('#lock').classList.add('unlocked');
+              $('#home').classList.add('visible');
+              Lock.showPin('confirm', () => {});
+            }, 300);
+          });
+        }, 300);
+      };
+    }
+    if (sec === 'reset') {
+      const r1 = body.querySelector('#resetSet');
+      if (r1) r1.onclick = async () => {
+        const ok = await Modal.danger('Сбросить настройки?', 'Все настройки вернутся к значениям по умолчанию. Данные (заметки, чаты) сохранятся.', 'Сбросить');
+        if (ok) {
+          const keepNotes = S.notes, keepChats = S.chats, keepGallery = Store.get('gallery', []);
+          S = Object.assign({}, DEFAULT_STATE);
+          save();
+          applyTheme(); applyWallpaper(); applyBrightness();
+          Home.render();
+          Toast('Настройки сброшены');
+        }
+      };
+      const r2 = body.querySelector('#resetAll');
+      if (r2) r2.onclick = async () => {
+        const ok = await Modal.danger('Стереть все данные?', 'Все данные будут удалены безвозвратно.', 'Стереть');
+        if (ok) {
+          Store.clear();
+          S = Object.assign({}, DEFAULT_STATE);
+          save();
+          applyTheme(); applyWallpaper(); applyBrightness();
+          Home.render();
+          Toast('Все данные стёрты');
+        }
+      };
+    }
+  }
+};
+
+/* ---------- BROWSER / SAFARI ---------- */
+Renderers.browser = Renderers.safari = (body, actionSlot) => {
+  let url = 'example.com';
+  let history = [url], histIdx = 0;
+  body.innerHTML = `
+    <div style="height:100%;display:flex;flex-direction:column">
+      <div class="browser-bar">
+        <button id="bBack">${I.chevronL.replace('width="32"','width="14" height="20"')}</button>
+        <input id="bUrl" value="${esc(url)}" autocomplete="off" autocapitalize="off">
+        <button id="bGo">${I.search.replace('width="32"','width="18" height="18"')}</button>
+      </div>
+      <div id="bContent" style="flex:1;display:flex;overflow:hidden"></div>
+    </div>`;
+  const content = body.querySelector('#bContent');
+  const urlI = body.querySelector('#bUrl');
+
+  function load(u) {
+    u = u.trim();
+    if (!u.startsWith('http')) u = 'https://' + u;
+    url = u;
+    urlI.value = u;
+    content.innerHTML = `
+      <div class="browser-error">
+        ${I.browser.replace('width="32"','width="60" height="60"')}
+        <div style="font-size:16px;font-weight:600;margin-bottom:8px">Загрузка страницы</div>
+        <div>${esc(u)}</div>
+        <div style="margin-top:20px;padding:14px;background:var(--sf);border-radius:12px;max-width:400px;text-align:left;font-size:13px;color:var(--tx2)">
+          <b>Техническое ограничение:</b> большинство сайтов запрещают отображение внутри iframe из соображений безопасности (X-Frame-Options). Браузер корректно обрабатывает ошибку и показывает это сообщение.
+        </div>
+        <button class="btn btn-primary" style="margin-top:20px" onclick="window.open('${esc(u)}','_blank')">Открыть в новой вкладке</button>
+      </div>`;
+    // Try iframe
+    const iframe = el('iframe', {src:u, style:'width:100%;height:100%;border:none;background:#fff'});
+    iframe.onload = () => {
+      // Check if it actually loaded
+      try {
+        // If we can access contentWindow location it's not cross-origin blocked
+        if (iframe.contentWindow.location.href === 'about:blank') throw new Error('blocked');
+        content.innerHTML = '';
+        content.appendChild(iframe);
+      } catch(e) {
+        // Cross-origin — keep fallback but replace with iframe for user to see
+        content.innerHTML = '';
+        content.appendChild(iframe);
+      }
+    };
+    iframe.onerror = () => { /* keep fallback */ };
+    setTimeout(() => {
+      // After 2.5s try to show iframe anyway
+      if (content.querySelector('.browser-error')) {
+        // leave fallback
+      }
+    }, 2500);
+  }
+
+  urlI.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { history.push(urlI.value); histIdx = history.length - 1; load(urlI.value); }
+  });
+  body.querySelector('#bGo').onclick = () => { history.push(urlI.value); histIdx = history.length - 1; load(urlI.value); };
+  body.querySelector('#bBack').onclick = () => {
+    if (histIdx > 0) { histIdx--; load(history[histIdx]); }
+    else AppManager.close(body.closest('.app-window').dataset.appId);
+  };
+  load(url);
+};
+
+/* ---------- APP STORE ---------- */
+Renderers.store = (body) => {
+  let tab = 'all';
+  const TABS = [
+    {id:'all', label:'Все'},
+    {id:'installed', label:'Установлено'},
+    {id:'utilities', label:'Утилиты'},
+    {id:'media', label:'Медиа'},
+    {id:'productivity', label:'Продуктивность'},
+    {id:'system', label:'Система'}
+  ];
+
+  function render() {
+    body.innerHTML = `
+      <div class="store-tabs">
+        ${TABS.map(t => `<button class="${tab===t.id?'active':''}" data-tab="${t.id}">${t.label}</button>`).join('')}
+      </div>
+      <div id="storeList"></div>`;
+    body.querySelectorAll('[data-tab]').forEach(b => {
+      b.onclick = () => { tab = b.dataset.tab; render(); };
+    });
+    const list = body.querySelector('#storeList');
+    let apps = Object.entries(APPS);
+    if (tab === 'installed') apps = apps.filter(([id]) => S.installed.includes(id));
+    else if (tab === 'utilities') apps = apps.filter(([,a]) => a.category === 'Утилиты');
+    else if (tab === 'media') apps = apps.filter(([,a]) => a.category === 'Медиа');
+    else if (tab === 'productivity') apps = apps.filter(([,a]) => a.category === 'Продуктивность');
+    else if (tab === 'system') apps = apps.filter(([,a]) => a.category === 'Система');
+
+    if (apps.length === 0) {
+      list.innerHTML = '<div style="padding:60px 20px;text-align:center;color:var(--tx2)">Нет приложений</div>';
+      return;
+    }
+
+    apps.forEach(([id, app]) => {
+      const installed = S.installed.includes(id);
+      const div = el('div', {class:'store-app'});
+      div.innerHTML = `
+        <div class="ai" style="background:${app.color}">${app.icon}</div>
+        <div class="inf"><div class="nm">${app.name}</div><div class="dsc">${app.category} · 1.0.0</div></div>
+        <button class="store-inst ${installed?'installed':''}">${installed ? 'Удалить' : 'Загрузить'}</button>`;
+      const btn = div.querySelector('.store-inst');
+      btn.onclick = async () => {
+        if (S.installed.includes(id)) {
+          const ok = await Modal.danger(`Удалить ${app.name}?`, '');
+          if (ok) {
+            S.installed = S.installed.filter(x => x !== id);
+            S.homePages = S.homePages.map(p => p.filter(x => x !== id));
+            save();
+            Home.render();
+            Toast(`${app.name} удалено`);
+            render();
+          }
+        } else {
+          S.installed.push(id);
+          // Add to first page with free space
+          let added = false;
+          for (let i = 0; i < S.homePages.length; i++) {
+            if (S.homePages[i].length < 20) { S.homePages[i].push(id); added = true; break; }
+          }
+          if (!added) S.homePages.push([id]);
+          save();
+          Home.render();
+          Toast(`${app.name} установлено`);
+          render();
+        }
+      };
+      list.appendChild(div);
+    });
+  }
+  render();
+};
+
+/* ---------- CALENDAR ---------- */
+Renderers.calendar = (body, actionSlot) => {
+  let viewDate = new Date();
+  function render() {
+    const y = viewDate.getFullYear(), m = viewDate.getMonth();
+    const monthName = viewDate.toLocaleDateString('ru-RU', {month:'long', year:'numeric'});
+    const firstDay = new Date(y, m, 1);
+    const startDow = (firstDay.getDay() + 6) % 7; // Mon = 0
+    const daysInMonth = new Date(y, m + 1, 0).getDate();
+    const prevDays = new Date(y, m, 0).getDate();
+    const today = new Date();
+    const isToday = d => d.getFullYear() === today.getFullYear() && d.getMonth() === today.getMonth() && d.getDate() === today.getDate();
+
+    let days = [];
+    for (let i = startDow - 1; i >= 0; i--) {
+      const d = prevDays - i;
+      days.push({d, other:true, date:new Date(y, m-1, d)});
+    }
+    for (let i = 1; i <= daysInMonth; i++) {
+      days.push({d:i, date:new Date(y, m, i)});
+    }
+    while (days.length % 7 !== 0) {
+      const i = days.length - (startDow + daysInMonth) + 1;
+      days.push({d:i, other:true, date:new Date(y, m+1, i)});
+    }
+
+    actionSlot.innerHTML = '';
+    body.innerHTML = `
+      <div class="cal-header">
+        <button id="prevM">${I.chevronL.replace('width="32"','width="14" height="22"')}</button>
+        <h2>${monthName}</h2>
+        <button id="nextM">${I.chevron.replace('width="32"','width="14" height="22"')}</button>
+      </div>
+      <div class="cal-grid">
+        ${['Пн','Вт','Ср','Чт','Пт','Сб','Вс'].map(d => `<div class="cal-dow">${d}</div>`).join('')}
+        ${days.map(({d, other, date}) => {
+          const key = date.toISOString().slice(0,10);
+          const hasEv = S.events[key] && S.events[key].length > 0;
+          return `<div class="cal-day ${other?'other':''} ${isToday(date)?'today':''}" data-date="${key}">${d}${hasEv?'<div class="ev"></div>':''}</div>`;
+        }).join('')}
+      </div>`;
+
+    body.querySelector('#prevM').onclick = () => { viewDate = new Date(y, m-1, 1); render(); };
+    body.querySelector('#nextM').onclick = () => { viewDate = new Date(y, m+1, 1); render(); };
+    body.querySelectorAll('.cal-day').forEach(d => {
+      d.onclick = () => showDay(d.dataset.date);
+    });
+  }
+  async function showDay(key) {
+    const events = S.events[key] || [];
+    const lines = events.map((e,i) => `${i+1}. ${e.time} — ${e.title}`).join('\n') || '(нет событий)';
+    const add = await Modal.confirm(`${key}\n\n${lines}`, '', 'Добавить');
+    if (add) {
+      const title = await Modal.prompt('Название события');
+      if (!title) return;
+      const time = await Modal.prompt('Время (ЧЧ:ММ)', '12:00');
+      if (!time) return;
+      S.events[key] = S.events[key] || [];
+      S.events[key].push({title, time});
+      save();
+      render();
+      Toast('Событие добавлено');
+    }
+  }
+  render();
+};
+
+/* ---------- TERMINAL ---------- */
+Renderers.terminal = (body) => {
+  body.innerHTML = `<div class="term-app" id="termBody" style="background:#0a0a0c;color:#e8e8e8;font-family:'SF Mono','Menlo',monospace;font-size:13.5px;line-height:1.55;padding:14px;overflow-y:auto;height:100%">
+    <div>NovaOS Terminal v1.0</div>
+    <div>Введите <span style="color:#30d158">help</span> для списка команд.</div>
+    <div id="termOut"></div>
+    <div><span style="color:#30d158">$</span> <input id="termInput" style="background:transparent;border:none;color:#e8e8e8;font:inherit;outline:none;width:70%" autocomplete="off" autocapitalize="off" spellcheck="false"></div>
+  </div>`;
+  const termBody = body.querySelector('#termBody');
+  const input = body.querySelector('#termInput');
+  const out = body.querySelector('#termOut');
+  setTimeout(() => input.focus(), 300);
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      const cmd = input.value.trim();
+      input.value = '';
+      const result = runCmd(cmd);
+      const line = el('div', {html:`<span style="color:#30d158">$</span> ${esc(cmd)}` + (result ? `\n${result}` : '')});
+      line.style.whiteSpace = 'pre-wrap';
+      termBody.insertBefore(line, out.parentElement);
+      termBody.scrollTop = termBody.scrollHeight;
+      input.focus();
+    }
+  });
+  termBody.onclick = () => input.focus();
+
+  function runCmd(cmd) {
+    const c = cmd.toLowerCase().trim();
+    if (!c) return '';
+    if (c === 'help') return 'Команды: help, date, time, whoami, ver, apps, open [app], echo [текст], clear, theme [dark|light], wall [0-5]';
+    if (c === 'date') return new Date().toLocaleDateString('ru-RU');
+    if (c === 'time') return new Date().toLocaleTimeString('ru-RU');
+    if (c === 'whoami') return 'admin';
+    if (c === 'ver') return 'NovaOS v1.0';
+    if (c === 'apps') return Object.keys(APPS).join(', ');
+    if (c.startsWith('echo ')) return esc(cmd.slice(5));
+    if (c.startsWith('open ')) {
+      const id = c.slice(5).trim();
+      if (APPS[id]) { AppManager.open(id); return `Открываю ${APPS[id].name}`; }
+      return `Приложение не найдено: ${esc(id)}`;
+    }
+    if (c.startsWith('theme ')) {
+      const t = c.slice(6).trim();
+      if (t === 'dark' || t === 'light') { S.theme = t; save(); applyTheme(); return `Тема: ${t}`; }
+      return 'Использование: theme dark | light';
+    }
+    if (c.startsWith('wall ')) {
+      const n = parseInt(c.slice(5));
+      if (n >= 0 && n < WALLS.length) { S.wallpaper = n; save(); applyWallpaper(); return `Обои: ${n}`; }
+      return `Обои 0-${WALLS.length-1}`;
+    }
+    if (c === 'clear') { termBody.innerHTML = `<div><span style="color:#30d158">$</span> <input id="termInput" style="background:transparent;border:none;color:#e8e8e8;font:inherit;outline:none;width:70%" autocomplete="off"></div>`; setTimeout(() => { const i2 = termBody.querySelector('#termInput'); i2.focus(); Renderers.terminal(body); }, 10); return ''; }
+    return `Команда не найдена: ${esc(cmd)}`;
+  }
+};
+
+/* ============================================================
+   HOME BAR / HOME GESTURE
+============================================================ */
+function initHomeBar() {
+  const bar = $('#homeBar');
+  let startY = null, startTime = 0, holding = false, holdTimer = null;
+
+  function start(y) {
+    startY = y; startTime = Date.now(); holding = false;
+    holdTimer = setTimeout(() => {
+      holding = true;
+      vibrate(15);
+    }, 400);
+  }
+  function end(y) {
+    clearTimeout(holdTimer);
+    if (startY === null) return;
+    const dy = startY - y;
+    const dt = Date.now() - startTime;
+    if (holding || (dy > 60 && dt > 400)) {
+      // Long hold OR slow drag → App Switcher
+      Switcher.open();
+      AppManager.closeAll();
+    } else if (dy > 60) {
+      AppManager.goHome();
+    }
+    startY = null; holding = false;
+  }
+
+  bar.style.pointerEvents = 'auto';
+  bar.addEventListener('pointerdown', e => start(e.clientY));
+  bar.addEventListener('pointerup', e => end(e.clientY));
+  bar.addEventListener('pointercancel', () => { startY = null; clearTimeout(holdTimer); });
+}
+
+/* ============================================================
+   INIT
+============================================================ */
+function init() {
+  applyTheme();
+  applyWallpaper();
+  applyBrightness();
+  updateStatusBar();
+  setInterval(updateStatusBar, 1000);
+  setInterval(() => {
+    // Battery drain simulation
+    if (!S.charging && S.battery > 5 && Math.random() < 0.15) {
+      S.battery -= 1;
+      save();
+    }
+    // Charging
+    if (S.charging && S.battery < 100) {
+      S.battery += 1;
+      save();
+    }
+  }, 30000);
+
+  Lock.init();
+  Home.init();
+  CC.init();
+  NC.init();
+  Switcher.init();
+  Spot.init();
+  Gestures.init();
+  initHomeBar();
+
+  // Initial unlock check
+  if (S.unlocked) {
+    Lock.unlock();
+  }
+
+  // Unlock on swipe (also for desktop clicks on bottom of lock)
+  $('#lock').addEventListener('dblclick', () => Lock.showPin('unlock'));
+
+  // Home bar always available when unlocked
+  document.addEventListener('keydown', e => {
+    // Escape closes topmost
+    if (e.key === 'Escape') {
+      if ($('#pinScreen').classList.contains('open')) return;
+      if (Spot && Spot.close) {
+        const sp = $('#spotlight');
+        if (sp.classList.contains('open')) { Spot.close(); return; }
+      }
+      const sw = $('#switcher');
+      if (sw.classList.contains('open')) { Switcher.close(); return; }
+      const cc = $('#cc');
+      if (cc.classList.contains('open')) { CC.close(); return; }
+      const nc = $('#nc');
+      if (nc.classList.contains('open')) { NC.close(); return; }
+      const al = $('#appLib');
+      if (al.classList.contains('open')) { AppLib.close(); return; }
+    }
+    // 'h' for home on desktop
+    if (e.key === 'h' && !e.target.matches('input, textarea')) {
+      AppManager.goHome();
+    }
+  });
+
+  console.log('%cNovaOS v1.0', 'color:#0a84ff;font-size:18px;font-weight:bold;padding:4px;');
+  console.log('Сочетания клавиш: H = Home, Esc = Закрыть');
+  console.log('Управление: свайп вверх для разблокировки, PIN по умолчанию: 1234');
+}
+
+// Boot
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', init);
+} else init();
+
+// Global error handler
+window.addEventListener('error', e => {
+  console.error('NovaOS error:', e.error || e.message);
+});
 </script>
 </body>
 </html>
