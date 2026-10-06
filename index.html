@@ -2,487 +2,621 @@
 <html lang="ru" data-theme="dark">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="description" content="SHERLOCK OSINT — поиск информации из открытых источников">
-<title>SHERLOCK OSINT — Open Source Intelligence</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no, maximum-scale=1">
+<meta name="description" content="SHERLOCK OSINT — поиск по открытым источникам">
+<title>SHERLOCK OSINT</title>
 <style>
-/* =========================================================
-   SHERLOCK OSINT — single-file build
-   ========================================================= */
 :root{
   --bg:#08090D; --panel:#101218; --panel-2:#151821; --panel-3:#1B1F2B;
-  --border:rgba(255,255,255,.08); --border-strong:rgba(255,255,255,.16);
-  --text:#E8EAF2; --text-dim:#8B90A6; --text-mute:#5C6178;
-  --accent:#6C7BFF; --accent-2:#9A6CFF; --accent-soft:rgba(108,123,255,.14);
+  --border:rgba(255,255,255,.08); --border-2:rgba(255,255,255,.16);
+  --text:#E8EAF2; --dim:#8B90A6; --mute:#5C6178;
+  --accent:#6C7BFF; --accent-2:#9A6CFF; --soft:rgba(108,123,255,.14);
   --green:#33D69F; --yellow:#F5C451; --red:#FF5C6C;
-  --radius:16px; --radius-sm:10px; --radius-xs:8px;
-  --shadow:0 20px 50px rgba(0,0,0,.55); --shadow-soft:0 8px 26px rgba(0,0,0,.35);
-  --sidebar-w:250px; --topbar-h:64px;
-  --font:"Inter","SF Pro Display",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
-  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --r:16px; --r2:12px; --r3:10px;
+  --shadow:0 24px 60px rgba(0,0,0,.55);
+  --ease:cubic-bezier(.4,0,.2,1);
+  --t:340ms;
+  --sidebar:230px;
 }
 [data-theme="light"]{
-  --bg:#F2F3F8; --panel:#FFFFFF; --panel-2:#F7F8FC; --panel-3:#EFF1F8;
-  --border:rgba(12,14,28,.10); --border-strong:rgba(12,14,28,.20);
-  --text:#0E1020; --text-dim:#5A5F76; --text-mute:#878CA3;
-  --accent:#4E5DF0; --accent-2:#7C4DF0; --accent-soft:rgba(78,93,240,.10);
-  --shadow:0 18px 42px rgba(20,25,60,.12); --shadow-soft:0 8px 20px rgba(20,25,60,.08);
+  --bg:#F4F5FA; --panel:#FFFFFF; --panel-2:#F7F8FC; --panel-3:#EFF1F8;
+  --border:rgba(12,14,28,.10); --border-2:rgba(12,14,28,.20);
+  --text:#0E1020; --dim:#5A5F76; --mute:#878CA3;
+  --accent:#4E5DF0; --accent-2:#7C4DF0; --soft:rgba(78,93,240,.10);
+  --shadow:0 18px 44px rgba(20,25,60,.12);
 }
 *,*::before,*::after{box-sizing:border-box}
 html,body{height:100%}
 body{
-  margin:0; color:var(--text); font-family:var(--font); font-size:15px; line-height:1.55;
+  margin:0;color:var(--text);
+  font-family:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  font-size:16px;line-height:1.55;
   background:
     radial-gradient(1100px 620px at 12% -10%, rgba(108,123,255,.10), transparent 60%),
     radial-gradient(900px 520px at 92% 0%, rgba(154,108,255,.08), transparent 60%),
     var(--bg);
-  -webkit-font-smoothing:antialiased; overflow-x:hidden;
-  transition:background .35s ease, color .35s ease;
+  -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
+  transition:background var(--t) var(--ease), color var(--t) var(--ease);
 }
 a{color:inherit;text-decoration:none}
-button{font-family:inherit}
+button{font-family:inherit;cursor:pointer}
 img,svg{display:block;max-width:100%}
-::selection{background:var(--accent-soft)}
+::selection{background:var(--soft)}
 ::-webkit-scrollbar{width:10px;height:10px}
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:rgba(140,145,175,.25);border-radius:20px;border:3px solid transparent;background-clip:content-box}
+::-webkit-scrollbar-thumb:hover{background:rgba(140,145,175,.45);background-clip:content-box}
 
-/* layout */
 .app{display:flex;min-height:100vh;width:100%}
-.sidebar{
-  width:var(--sidebar-w); flex:0 0 var(--sidebar-w);
-  background:linear-gradient(180deg,rgba(21,24,33,.86),rgba(16,18,24,.92));
-  border-right:1px solid var(--border); backdrop-filter:blur(18px);
-  display:flex;flex-direction:column;padding:20px 14px;
-  position:sticky;top:0;height:100vh;z-index:40;
-}
-[data-theme="light"] .sidebar{background:linear-gradient(180deg,rgba(255,255,255,.92),rgba(247,248,252,.96))}
-.main{
-  flex:1 1 auto; min-width:0; padding:0 28px 60px;
-  display:flex;flex-direction:column;gap:22px;
-  max-width:1280px; margin:0 auto; width:100%;
-}
-.sidebar__brand{display:flex;align-items:center;gap:10px;padding:6px 8px 20px;border-bottom:1px solid var(--border);margin-bottom:16px}
-.sidebar__brand .logo__mark{width:34px;height:34px;font-size:16px}
-.nav{display:flex;flex-direction:column;gap:4px}
-.nav__item{
-  display:flex;align-items:center;gap:12px;padding:10px 12px;
-  border-radius:var(--radius-sm); color:var(--text-dim); font-size:14px; font-weight:500;
-  border:1px solid transparent; transition:.18s; position:relative; cursor:pointer;
-}
-.nav__item svg{width:18px;height:18px;flex:0 0 18px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-.nav__item:hover{background:var(--panel-2);color:var(--text)}
-.nav__item.is-active{background:var(--accent-soft);color:var(--text);border-color:rgba(108,123,255,.25)}
-.nav__item.is-active::before{content:"";position:absolute;left:-14px;top:12px;bottom:12px;width:3px;background:linear-gradient(180deg,var(--accent),var(--accent-2));border-radius:0 3px 3px 0}
-.sidebar__bottom{margin-top:auto;padding-top:16px;border-top:1px solid var(--border);font-size:12px;color:var(--text-mute)}
-.sidebar__system{display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--panel-2);border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:10px}
-.sidebar__system b{color:var(--text);font-weight:600;font-size:12px}
 
-/* topbar */
-.topbar{
-  height:var(--topbar-h); display:flex; align-items:center; justify-content:space-between; gap:16px;
-  border-bottom:1px solid var(--border); position:sticky; top:0; z-index:30;
-  background:color-mix(in srgb, var(--bg) 82%, transparent);
-  backdrop-filter:blur(14px); margin:0 -28px; padding:0 28px;
+/* ============ SIDEBAR ============ */
+.sidebar{
+  width:var(--sidebar);flex:0 0 var(--sidebar);
+  background:linear-gradient(180deg, rgba(21,24,33,.86), rgba(16,18,24,.94));
+  border-right:1px solid var(--border);
+  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  display:flex;flex-direction:column;padding:26px 16px;
+  position:sticky;top:0;height:100vh;z-index:40;
+  transition:width var(--t) var(--ease), padding var(--t) var(--ease);
 }
-.topbar__left,.topbar__right{display:flex;align-items:center;gap:14px}
-.topbar__nav{display:flex;gap:6px}
-.topbar__link{font-size:13px;font-weight:500;color:var(--text-dim);padding:7px 12px;border-radius:999px;transition:.18s;cursor:pointer}
-.topbar__link:hover{background:var(--panel-2);color:var(--text)}
-.topbar__link.is-active{background:var(--accent-soft);color:var(--text)}
-.status{display:inline-flex;align-items:center;gap:7px;font-size:12px;color:var(--text-dim);padding:6px 11px;border:1px solid var(--border);border-radius:999px;background:var(--panel-2)}
-.dot{width:7px;height:7px;border-radius:50%;display:inline-block}
-.dot--green{background:var(--green);box-shadow:0 0 10px var(--green);animation:pulse 2.2s infinite}
+[data-theme="light"] .sidebar{background:linear-gradient(180deg, rgba(255,255,255,.94), rgba(247,248,252,.98))}
+
+.brand{display:flex;align-items:center;gap:12px;padding:0 8px 22px;border-bottom:1px solid var(--border);margin-bottom:20px}
+.brand__mark{
+  width:42px;height:42px;border-radius:13px;display:grid;place-items:center;
+  font-weight:800;font-size:19px;color:#fff;
+  background:linear-gradient(135deg,var(--accent),var(--accent-2));
+  box-shadow:0 10px 26px rgba(108,123,255,.35);
+  transition:transform var(--t) var(--ease);
+}
+.brand:hover .brand__mark{transform:scale(1.06) rotate(-3deg)}
+.brand__text{display:flex;flex-direction:column;line-height:1.15}
+.brand__text strong{font-size:14px;letter-spacing:.16em;font-weight:800}
+.brand__text small{font-size:8.5px;letter-spacing:.22em;color:var(--mute);margin-top:2px}
+
+.nav{display:flex;flex-direction:column;gap:6px}
+.nav__item{
+  display:flex;align-items:center;gap:14px;
+  padding:14px 16px;border-radius:var(--r3);
+  color:var(--dim);font-size:15px;font-weight:500;
+  border:1px solid transparent;
+  transition:all var(--t) var(--ease);
+  position:relative;
+}
+.nav__item svg{width:20px;height:20px;flex:0 0 20px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;transition:transform var(--t) var(--ease)}
+.nav__item:hover{background:var(--panel-2);color:var(--text);transform:translateX(3px)}
+.nav__item:hover svg{transform:scale(1.08)}
+.nav__item.is-active{
+  background:var(--soft);color:var(--text);
+  border-color:rgba(108,123,255,.28);
+  box-shadow:0 0 0 3px rgba(108,123,255,.06);
+}
+.nav__item.is-active::before{
+  content:"";position:absolute;left:-16px;top:14px;bottom:14px;width:3px;
+  background:linear-gradient(180deg,var(--accent),var(--accent-2));
+  border-radius:0 3px 3px 0;
+}
+
+.sidebar__foot{
+  margin-top:auto;padding-top:18px;border-top:1px solid var(--border);
+  font-size:12px;color:var(--mute);
+  display:flex;flex-direction:column;gap:8px;
+}
+.sidebar__status{
+  display:flex;align-items:center;gap:9px;
+  padding:11px 14px;background:var(--panel-2);
+  border:1px solid var(--border);border-radius:var(--r3);
+  transition:border-color var(--t) var(--ease);
+}
+.sidebar__status:hover{border-color:var(--border-2)}
+.sidebar__status b{color:var(--text);font-weight:600;font-size:12.5px}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block;flex:0 0 8px}
+.dot--green{background:var(--green);box-shadow:0 0 10px var(--green);animation:pulse 2.4s infinite var(--ease)}
 .dot--accent{background:var(--accent);box-shadow:0 0 10px var(--accent)}
 .dot--yellow{background:var(--yellow);box-shadow:0 0 10px var(--yellow)}
 @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.82)}}
 
-/* icon button */
+/* ============ MAIN ============ */
+.main{
+  flex:1;min-width:0;
+  padding:0 32px 80px;
+  display:flex;flex-direction:column;gap:26px;
+  max-width:1200px;margin:0 auto;width:100%;
+}
+
+.topbar{
+  height:72px;display:flex;align-items:center;justify-content:space-between;gap:16px;
+  position:sticky;top:0;z-index:30;
+  background:color-mix(in srgb, var(--bg) 85%, transparent);
+  backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  margin:0 -32px;padding:0 32px;
+  border-bottom:1px solid var(--border);
+  transition:background var(--t) var(--ease);
+}
+.topbar__nav{display:flex;gap:6px}
+.topbar__link{
+  font-size:14px;font-weight:500;color:var(--dim);
+  padding:9px 16px;border-radius:999px;
+  transition:all var(--t) var(--ease);
+}
+.topbar__link:hover{background:var(--panel-2);color:var(--text)}
+.topbar__link.is-active{background:var(--soft);color:var(--text)}
+.topbar__right{display:flex;align-items:center;gap:12px}
+
 .icon-btn{
-  width:34px;height:34px;display:inline-flex;align-items:center;justify-content:center;
-  background:var(--panel-2);border:1px solid var(--border);border-radius:var(--radius-xs);
-  color:var(--text-dim);cursor:pointer;transition:.18s;position:relative;padding:0;
+  width:44px;height:44px;
+  display:inline-flex;align-items:center;justify-content:center;
+  background:var(--panel-2);border:1px solid var(--border);border-radius:var(--r3);
+  color:var(--dim);transition:all var(--t) var(--ease);position:relative;padding:0;
 }
-.icon-btn svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-.icon-btn:hover{color:var(--text);border-color:var(--border-strong);background:var(--panel-3)}
-.icon-btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-[data-tooltip]::after{
-  content:attr(data-tooltip); position:absolute; bottom:calc(100% + 8px); left:50%;
-  transform:translateX(-50%) translateY(4px); background:var(--panel-3); color:var(--text);
-  font-size:11px; padding:5px 9px; border-radius:6px; border:1px solid var(--border);
-  white-space:nowrap; opacity:0; pointer-events:none; transition:.18s; z-index:80;
-}
-[data-tooltip]:hover::after{opacity:1;transform:translateX(-50%) translateY(0)}
+.icon-btn svg{width:19px;height:19px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;transition:transform var(--t) var(--ease)}
+.icon-btn:hover{color:var(--text);border-color:var(--border-2);background:var(--panel-3);transform:translateY(-1px)}
+.icon-btn:hover svg{transform:scale(1.1)}
+.icon-btn:active{transform:translateY(0) scale(.97)}
 
-/* logo */
-.logo{display:flex;align-items:center;gap:12px}
-.logo__mark{
-  width:40px;height:40px;border-radius:12px;display:grid;place-items:center;
-  font-weight:800;font-size:18px;color:#fff;
-  background:linear-gradient(135deg,var(--accent),var(--accent-2));
-  box-shadow:0 8px 22px rgba(108,123,255,.32);
+.status{
+  display:inline-flex;align-items:center;gap:8px;
+  font-size:13px;color:var(--dim);
+  padding:9px 14px;border:1px solid var(--border);border-radius:999px;
+  background:var(--panel-2);
+  transition:border-color var(--t) var(--ease);
 }
-.logo__text{display:flex;flex-direction:column;line-height:1.15}
-.logo__text strong{font-size:14px;letter-spacing:.16em}
-.logo__text small{font-size:8.5px;letter-spacing:.22em;color:var(--text-mute)}
 
-/* hero */
-.hero{padding:56px 0 8px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:16px;animation:fadeUp .55s ease both}
-.hero__brand{margin-bottom:6px}
+/* ============ HERO / SEARCH ============ */
+.hero{
+  padding:70px 0 20px;text-align:center;
+  display:flex;flex-direction:column;align-items:center;gap:20px;
+  animation:fadeUp 600ms var(--ease) both;
+}
+.hero__brand{
+  display:flex;align-items:center;gap:14px;margin-bottom:8px;
+  animation:fadeUp 600ms var(--ease) 100ms both;
+}
+.hero__brand .brand__mark{width:52px;height:52px;font-size:22px;border-radius:15px}
+.hero__brand .brand__text strong{font-size:16px;letter-spacing:.2em}
+.hero__brand .brand__text small{font-size:9.5px;letter-spacing:.26em}
 .hero__title{
-  margin:0;font-size:clamp(28px,5vw,46px);letter-spacing:.12em;font-weight:800;
-  background:linear-gradient(120deg,#fff 10%,var(--accent) 55%,var(--accent-2) 95%);
+  margin:0;font-size:clamp(30px,5.5vw,52px);
+  letter-spacing:.14em;font-weight:800;
+  background:linear-gradient(120deg, #fff 10%, var(--accent) 55%, var(--accent-2) 95%);
   -webkit-background-clip:text;background-clip:text;color:transparent;
+  animation:fadeUp 600ms var(--ease) 180ms both;
 }
 [data-theme="light"] .hero__title{background:linear-gradient(120deg,#141830 10%,var(--accent) 55%,var(--accent-2) 95%);-webkit-background-clip:text;background-clip:text;color:transparent}
-.hero__subtitle{margin:0;color:var(--text-dim);font-size:15px}
-.hero__note{display:inline-flex;align-items:center;gap:8px;margin:6px 0 0;font-size:12.5px;color:var(--text-mute)}
-.hero__note-icon{width:14px;height:14px;border-radius:50%;background:var(--accent-soft);border:1px solid rgba(108,123,255,.4);display:inline-block}
+.hero__sub{margin:0;color:var(--dim);font-size:16.5px;animation:fadeUp 600ms var(--ease) 240ms both}
 
-/* searchbar */
 .searchbar{
-  display:flex;align-items:center;gap:10px;width:100%;max-width:820px;
-  padding:8px 8px 8px 18px;
-  background:linear-gradient(180deg,rgba(21,24,33,.92),rgba(16,18,24,.92));
-  border:1px solid var(--border-strong);border-radius:var(--radius);
-  box-shadow:var(--shadow);backdrop-filter:blur(18px);transition:.22s;
+  display:flex;align-items:center;gap:12px;
+  width:100%;max-width:860px;padding:10px 10px 10px 22px;
+  background:linear-gradient(180deg, rgba(21,24,33,.92), rgba(16,18,24,.94));
+  border:1px solid var(--border-2);border-radius:20px;
+  box-shadow:var(--shadow);
+  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  transition:all var(--t) var(--ease);
+  animation:fadeUp 600ms var(--ease) 300ms both;
 }
 [data-theme="light"] .searchbar{background:linear-gradient(180deg,#fff,#F7F8FC)}
-.searchbar:focus-within{border-color:rgba(108,123,255,.55);box-shadow:0 0 0 4px var(--accent-soft),var(--shadow)}
-.searchbar--compact{max-width:100%}
+.searchbar:focus-within{
+  border-color:rgba(108,123,255,.55);
+  box-shadow:0 0 0 5px var(--soft), var(--shadow);
+  transform:translateY(-1px);
+}
 .searchbar__icon{
-  width:18px;height:18px;flex:0 0 18px;background:currentColor;color:var(--text-mute);
+  width:22px;height:22px;flex:0 0 22px;
+  background:currentColor;color:var(--mute);
   -webkit-mask:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'><circle cx='11' cy='11' r='7'/><path d='M20 20l-3.5-3.5'/></svg>") center/contain no-repeat;
   mask:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'><circle cx='11' cy='11' r='7'/><path d='M20 20l-3.5-3.5'/></svg>") center/contain no-repeat;
 }
-.searchbar__input{flex:1;min-width:0;background:transparent;border:none;outline:none;color:var(--text);font-size:15.5px;padding:12px 4px}
-.searchbar__input::placeholder{color:var(--text-mute)}
-
-/* buttons */
-.btn{
-  display:inline-flex;align-items:center;justify-content:center;gap:8px;
-  padding:10px 16px;border-radius:var(--radius-sm);border:1px solid var(--border);
-  background:var(--panel-2);color:var(--text);font-size:13.5px;font-weight:600;
-  cursor:pointer;transition:.18s;white-space:nowrap;
+.searchbar__input{
+  flex:1;min-width:0;background:transparent;border:none;outline:none;
+  color:var(--text);font-size:17px;padding:14px 4px;font-family:inherit;
 }
-.btn svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-.btn:hover{border-color:var(--border-strong);background:var(--panel-3)}
-.btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-.btn--primary{background:linear-gradient(135deg,var(--accent),var(--accent-2));border-color:transparent;color:#fff;box-shadow:0 10px 26px rgba(108,123,255,.30)}
-.btn--primary:hover{filter:brightness(1.08);background:linear-gradient(135deg,var(--accent),var(--accent-2))}
-.btn--ghost{background:transparent}
-.btn--sm{padding:6px 12px;font-size:12.5px}
-.searchbar__btn{padding:12px 26px;letter-spacing:.06em}
+.searchbar__input::placeholder{color:var(--mute)}
 
-/* chips */
-.typechips{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.chips{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;animation:fadeUp 600ms var(--ease) 380ms both}
 .chip{
-  padding:8px 16px;border-radius:999px;border:1px solid var(--border);
-  background:var(--panel-2);color:var(--text-dim);
-  font-size:12px;font-weight:600;letter-spacing:.06em;cursor:pointer;transition:.18s;
+  padding:11px 22px;border-radius:999px;
+  border:1px solid var(--border);
+  background:var(--panel-2);color:var(--dim);
+  font-size:13px;font-weight:600;letter-spacing:.06em;
+  transition:all var(--t) var(--ease);
 }
-.chip:hover{color:var(--text);border-color:var(--border-strong)}
-.chip.is-active{color:var(--text);border-color:rgba(108,123,255,.5);background:var(--accent-soft);box-shadow:0 0 0 3px rgba(108,123,255,.08)}
-.chip:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.chip:hover{color:var(--text);border-color:var(--border-2);transform:translateY(-2px)}
+.chip.is-active{
+  color:var(--text);border-color:rgba(108,123,255,.5);
+  background:var(--soft);box-shadow:0 0 0 3px rgba(108,123,255,.08);
+}
 
-/* sections & panels */
-.section{display:flex;flex-direction:column;gap:14px;animation:fadeUp .5s ease both}
+.note{
+  display:inline-flex;align-items:center;gap:9px;
+  margin:4px 0 0;font-size:13px;color:var(--mute);
+  animation:fadeUp 600ms var(--ease) 460ms both;
+}
+.note__i{
+  width:16px;height:16px;border-radius:50%;
+  background:var(--soft);border:1px solid rgba(108,123,255,.4);
+  display:inline-block;
+}
+
+/* ============ BUTTONS ============ */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:10px;
+  padding:14px 26px;border-radius:var(--r2);
+  border:1px solid var(--border);
+  background:var(--panel-2);color:var(--text);
+  font-size:15px;font-weight:600;
+  transition:all var(--t) var(--ease);
+  white-space:nowrap;
+}
+.btn svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;transition:transform var(--t) var(--ease)}
+.btn:hover{border-color:var(--border-2);background:var(--panel-3);transform:translateY(-2px)}
+.btn:hover svg{transform:scale(1.1)}
+.btn:active{transform:translateY(0) scale(.98)}
+.btn:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.btn--primary{
+  background:linear-gradient(135deg,var(--accent),var(--accent-2));
+  border-color:transparent;color:#fff;
+  box-shadow:0 12px 30px rgba(108,123,255,.32);
+}
+.btn--primary:hover{filter:brightness(1.08);background:linear-gradient(135deg,var(--accent),var(--accent-2))}
+.btn--sm{padding:10px 18px;font-size:13.5px}
+.btn--ghost{background:transparent}
+.btn--icon{padding:12px;width:44px;height:44px}
+.searchbar .btn--primary{padding:14px 32px;letter-spacing:.08em;font-size:15px}
+
+/* ============ SECTION / PANEL ============ */
+.section{display:flex;flex-direction:column;gap:16px;animation:fadeUp 520ms var(--ease) both}
 .section__head{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap}
-.section__title{margin:0;font-size:13px;font-weight:700;letter-spacing:.2em;color:var(--text-dim);text-transform:uppercase}
+.section__title{
+  margin:0;font-size:13px;font-weight:700;
+  letter-spacing:.22em;color:var(--dim);text-transform:uppercase;
+}
 .panel{
-  background:linear-gradient(180deg,rgba(21,24,33,.72),rgba(16,18,24,.85));
-  border:1px solid var(--border);border-radius:var(--radius);
-  box-shadow:var(--shadow-soft);backdrop-filter:blur(14px);
-  overflow:hidden;animation:fadeUp .5s ease both;
+  background:linear-gradient(180deg, rgba(21,24,33,.72), rgba(16,18,24,.88));
+  border:1px solid var(--border);border-radius:var(--r);
+  box-shadow:0 8px 30px rgba(0,0,0,.35);
+  backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  overflow:hidden;animation:fadeUp 520ms var(--ease) both;
+  transition:border-color var(--t) var(--ease);
 }
 [data-theme="light"] .panel{background:linear-gradient(180deg,#fff,#FBFBFE)}
-.panel--search{padding:16px;display:flex;flex-direction:column;gap:12px;align-items:center}
-.panel__head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 20px;border-bottom:1px solid var(--border)}
-.panel__title{margin:0;font-size:14px;font-weight:600}
-.panel__body{padding:18px 20px}
+.panel:hover{border-color:var(--border-2)}
+.panel__head{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:20px 24px;border-bottom:1px solid var(--border);
+}
+.panel__title{margin:0;font-size:15.5px;font-weight:600}
+.panel__body{padding:22px 24px}
 .panel__body--flush{padding:0}
-.badge{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;font-size:11px;font-weight:600;letter-spacing:.04em;border:1px solid var(--border);background:var(--panel-2);color:var(--text-dim)}
-.badge--muted{color:var(--text-mute)}
+
+.badge{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:5px 12px;border-radius:999px;
+  font-size:11.5px;font-weight:600;letter-spacing:.04em;
+  border:1px solid var(--border);background:var(--panel-2);color:var(--dim);
+}
 .badge--high{color:var(--green);border-color:rgba(51,214,159,.35);background:rgba(51,214,159,.10)}
 .badge--med{color:var(--yellow);border-color:rgba(245,196,81,.35);background:rgba(245,196,81,.10)}
 .badge--low{color:var(--red);border-color:rgba(255,92,108,.35);background:rgba(255,92,108,.10)}
-.badge--accent{color:var(--accent);border-color:rgba(108,123,255,.35);background:var(--accent-soft)}
-.notice{padding:14px 16px;border-radius:var(--radius-sm);font-size:13.5px;line-height:1.6;border:1px solid var(--border)}
-.notice--info{background:var(--accent-soft);border-color:rgba(108,123,255,.28);color:var(--text)}
-.notice--warn{background:rgba(245,196,81,.08);border-color:rgba(245,196,81,.3);color:var(--text)}
-.notice--error{background:rgba(255,92,108,.08);border-color:rgba(255,92,108,.32);color:var(--text)}
+.badge--accent{color:var(--accent);border-color:rgba(108,123,255,.35);background:var(--soft)}
 
-/* tabs */
-.tabs{display:flex;gap:4px;flex-wrap:wrap;border-bottom:1px solid var(--border);padding-bottom:2px}
-.tab{padding:10px 16px;background:transparent;border:none;color:var(--text-dim);font-size:13.5px;font-weight:600;cursor:pointer;border-radius:var(--radius-xs) var(--radius-xs) 0 0;border-bottom:2px solid transparent;transition:.18s}
-.tab:hover{color:var(--text);background:var(--panel-2)}
-.tab.is-active{color:var(--text);border-bottom-color:var(--accent)}
-.tabpanel{display:none;animation:fadeUp .32s ease both}
-.tabpanel.is-active{display:block}
+.notice{
+  padding:18px 20px;border-radius:var(--r2);
+  font-size:14.5px;line-height:1.65;
+  border:1px solid var(--border);
+}
+.notice--info{background:var(--soft);border-color:rgba(108,123,255,.28)}
+.notice--warn{background:rgba(245,196,81,.08);border-color:rgba(245,196,81,.3)}
+.notice--error{background:rgba(255,92,108,.08);border-color:rgba(255,92,108,.32)}
 
-/* cards */
-.card{background:var(--panel-2);border:1px solid var(--border);border-radius:var(--radius);padding:18px;display:flex;flex-direction:column;gap:14px;transition:.2s}
-.card:hover{border-color:var(--border-strong);transform:translateY(-2px);box-shadow:var(--shadow-soft)}
-.cardgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px}
-.card__top{display:flex;align-items:center;gap:12px}
-.card__name{font-size:15px;font-weight:600}
-.card__sub{font-size:12.5px;color:var(--text-mute);font-family:var(--mono)}
+/* ============ CARDS ============ */
+.cardgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:18px}
+.card{
+  background:var(--panel-2);border:1px solid var(--border);border-radius:var(--r);
+  padding:22px;display:flex;flex-direction:column;gap:16px;
+  transition:all var(--t) var(--ease);
+  animation:fadeUp 460ms var(--ease) both;
+}
+.card:hover{border-color:var(--border-2);transform:translateY(-3px);box-shadow:0 20px 40px rgba(0,0,0,.4)}
+[data-theme="light"] .card:hover{box-shadow:0 20px 40px rgba(20,25,60,.08)}
+.card__top{display:flex;align-items:center;gap:16px}
+.card__name{font-size:17px;font-weight:600;line-height:1.3}
+.card__sub{font-size:13.5px;color:var(--mute);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;margin-top:2px}
 .card__meta{display:flex;flex-wrap:wrap;gap:8px}
-.kv{display:flex;flex-direction:column;gap:3px}
-.kv__k{font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--text-mute)}
-.kv__v{font-size:13.5px}
-.avatar{width:48px;height:48px;border-radius:14px;display:grid;place-items:center;font-weight:700;font-size:16px;color:#fff;background:linear-gradient(135deg,var(--accent),var(--accent-2));flex:0 0 auto}
-.avatar--lg{width:88px;height:88px;border-radius:22px;font-size:30px}
 
-/* tables */
+.avatar{
+  width:56px;height:56px;border-radius:16px;flex:0 0 auto;
+  display:grid;place-items:center;overflow:hidden;position:relative;
+  font-weight:700;font-size:20px;color:#fff;
+  background:linear-gradient(135deg,var(--accent),var(--accent-2));
+  box-shadow:0 8px 22px rgba(108,123,255,.28);
+  transition:transform var(--t) var(--ease);
+}
+.avatar img{width:100%;height:100%;object-fit:cover;display:block}
+.card:hover .avatar{transform:scale(1.05)}
+.avatar--lg{width:110px;height:110px;border-radius:26px;font-size:38px;box-shadow:0 14px 40px rgba(108,123,255,.35)}
+
+.kv{display:flex;flex-direction:column;gap:4px}
+.kv__k{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--mute);font-weight:600}
+.kv__v{font-size:14.5px;color:var(--text)}
+
+.linkchip{
+  display:inline-flex;align-items:center;gap:7px;
+  padding:8px 14px;border-radius:999px;
+  border:1px solid var(--border);background:var(--panel);
+  font-size:12.5px;color:var(--dim);
+  transition:all var(--t) var(--ease);
+}
+.linkchip:hover{color:var(--text);border-color:var(--border-2);background:var(--panel-3);transform:translateY(-1px)}
+.linkchip svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;opacity:.65}
+
+/* ============ LISTS ============ */
+.list{display:flex;flex-direction:column}
+.list__item{
+  display:flex;align-items:center;gap:16px;
+  padding:16px 0;border-bottom:1px solid var(--border);
+  transition:padding var(--t) var(--ease);
+}
+.list__item:last-child{border-bottom:none}
+.list__main{flex:1;min-width:0}
+.list__title{font-size:15px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.list__sub{font-size:13px;color:var(--mute);margin-top:3px}
+.list__actions{display:flex;gap:8px}
+
+/* ============ MODAL ============ */
+.modal{
+  position:fixed;inset:0;z-index:100;
+  display:none;align-items:center;justify-content:center;
+  background:rgba(4,5,8,.7);
+  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  padding:24px;overflow-y:auto;
+}
+.modal.is-open{display:flex;animation:fadeIn 240ms var(--ease) both}
+.modal__box{
+  width:100%;max-width:880px;max-height:90vh;overflow-y:auto;
+  background:linear-gradient(180deg, rgba(21,24,33,.98), rgba(16,18,24,.99));
+  border:1px solid var(--border-2);border-radius:24px;
+  box-shadow:var(--shadow);
+  animation:modalIn 360ms var(--ease) both;
+}
+[data-theme="light"] .modal__box{background:linear-gradient(180deg,#fff,#F7F8FC)}
+.modal__box--narrow{max-width:560px}
+.modal__box--wide{max-width:1100px}
+.modal__head{
+  display:flex;align-items:center;justify-content:space-between;gap:16px;
+  padding:22px 28px;border-bottom:1px solid var(--border);
+  position:sticky;top:0;background:inherit;z-index:2;
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+}
+.modal__title{margin:0;font-size:17px;font-weight:600;letter-spacing:.02em}
+.modal__body{padding:28px}
+.modal__body--flush{padding:0}
+
+/* ============ SCAN ============ */
+.scan{padding:36px 32px}
+.scan__title{
+  font-size:13px;letter-spacing:.26em;font-weight:700;
+  color:var(--dim);margin-bottom:22px;
+}
+.scan__bar{
+  height:6px;border-radius:999px;background:var(--panel-3);
+  overflow:hidden;border:1px solid var(--border);
+}
+.scan__bar i{
+  display:block;height:100%;width:0%;
+  background:linear-gradient(90deg,var(--accent),var(--accent-2));
+  box-shadow:0 0 18px rgba(108,123,255,.7);
+  transition:width 380ms var(--ease);
+}
+.scan__pct{
+  margin-top:12px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  font-size:13px;color:var(--mute);text-align:right;
+}
+.scan__steps{list-style:none;margin:26px 0 0;padding:0;display:flex;flex-direction:column;gap:14px}
+.scan__steps li{
+  display:flex;align-items:center;gap:14px;font-size:14.5px;
+  color:var(--mute);opacity:.35;
+  transition:all 380ms var(--ease);
+}
+.scan__steps li.is-active{opacity:1;color:var(--text);transform:translateX(4px)}
+.scan__steps li.is-done{opacity:1;color:var(--dim);transform:translateX(0)}
+.scan__steps .tick{
+  width:22px;height:22px;border-radius:50%;flex:0 0 22px;
+  border:1px solid var(--border-2);display:grid;place-items:center;
+  font-size:12px;color:transparent;transition:all 380ms var(--ease);
+}
+.scan__steps li.is-done .tick{
+  background:rgba(51,214,159,.14);border-color:rgba(51,214,159,.55);color:var(--green);
+}
+
+/* ============ TELEGRAM CARD ============ */
+.tg-card{
+  background:linear-gradient(135deg, rgba(41,182,246,.10), rgba(108,123,255,.10));
+  border:1px solid rgba(108,123,255,.25);
+  border-radius:var(--r);padding:22px;
+  display:flex;gap:20px;align-items:center;
+  animation:fadeUp 460ms var(--ease) both;
+}
+.tg-card__info{flex:1;min-width:0}
+.tg-card__name{font-size:19px;font-weight:600;line-height:1.3}
+.tg-card__user{font-size:13.5px;color:var(--mute);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;margin-top:3px}
+.tg-card__bio{font-size:14px;color:var(--dim);margin-top:10px;line-height:1.6}
+
+/* ============ TABLE ============ */
 .table-wrap{overflow-x:auto}
-.table{width:100%;border-collapse:collapse;font-size:13.5px;min-width:760px}
-.table th{text-align:left;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--text-mute);font-weight:700;padding:14px 18px;border-bottom:1px solid var(--border);white-space:nowrap}
-.table td{padding:14px 18px;border-bottom:1px solid var(--border);vertical-align:middle}
-.table tbody tr{transition:.16s}
+.table{width:100%;border-collapse:collapse;font-size:14px;min-width:720px}
+.table th{
+  text-align:left;font-size:11px;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--mute);font-weight:700;padding:16px 20px;
+  border-bottom:1px solid var(--border);white-space:nowrap;
+}
+.table td{padding:16px 20px;border-bottom:1px solid var(--border);vertical-align:middle}
+.table tbody tr{transition:background var(--t) var(--ease)}
 .table tbody tr:hover{background:var(--panel-2)}
-.table .mono{font-family:var(--mono);font-size:12.5px;color:var(--text-dim)}
+.table .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13px;color:var(--dim)}
 
-/* select/switch/segmented */
-.select{background:var(--panel-2);color:var(--text);border:1px solid var(--border);border-radius:var(--radius-xs);padding:8px 12px;font-size:13px;outline:none;cursor:pointer}
-.select:focus{border-color:var(--accent)}
-.sorter{display:flex;align-items:center;gap:8px}
-.sorter__label{font-size:12px;color:var(--text-mute)}
+/* ============ FORMS / SETTINGS ============ */
+.setting-row{
+  display:flex;align-items:center;justify-content:space-between;gap:22px;
+  padding:20px 0;border-bottom:1px solid var(--border);
+}
+.setting-row:last-child{border-bottom:none}
+.setting-row__title{font-size:15px;font-weight:600;margin-bottom:4px}
+.setting-row__desc{font-size:13.5px;color:var(--mute);max-width:520px;line-height:1.6}
+
 .switch{position:relative;display:inline-block;cursor:pointer}
 .switch input{position:absolute;opacity:0;width:0;height:0}
-.switch__track{display:block;width:46px;height:26px;border-radius:999px;background:var(--panel-3);border:1px solid var(--border);transition:.2s;position:relative}
-.switch__thumb{position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:var(--text-mute);transition:.2s}
-.switch input:checked + .switch__track{background:var(--accent-soft);border-color:rgba(108,123,255,.5)}
-.switch input:checked + .switch__track .switch__thumb{left:22px;background:linear-gradient(135deg,var(--accent),var(--accent-2))}
-.switch input:focus-visible + .switch__track{outline:2px solid var(--accent);outline-offset:2px}
-.segmented{display:inline-flex;padding:3px;gap:3px;background:var(--panel-3);border:1px solid var(--border);border-radius:var(--radius-xs)}
-.segmented__btn{padding:7px 14px;border:none;background:transparent;cursor:pointer;color:var(--text-dim);font-size:12.5px;font-weight:600;border-radius:6px;transition:.18s}
+.switch__track{
+  display:block;width:52px;height:30px;border-radius:999px;
+  background:var(--panel-3);border:1px solid var(--border);
+  transition:all var(--t) var(--ease);position:relative;
+}
+.switch__thumb{
+  position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;
+  background:var(--dim);transition:all var(--t) var(--ease);
+}
+.switch input:checked + .switch__track{background:var(--soft);border-color:rgba(108,123,255,.5)}
+.switch input:checked + .switch__track .switch__thumb{
+  left:25px;background:linear-gradient(135deg,var(--accent),var(--accent-2));
+}
+.switch input:focus-visible + .switch__track{outline:2px solid var(--accent);outline-offset:3px}
+
+.segmented{
+  display:inline-flex;padding:4px;gap:4px;
+  background:var(--panel-3);border:1px solid var(--border);border-radius:var(--r3);
+}
+.segmented__btn{
+  padding:10px 20px;border:none;background:transparent;cursor:pointer;
+  color:var(--dim);font-size:13.5px;font-weight:600;border-radius:8px;
+  transition:all var(--t) var(--ease);font-family:inherit;
+}
 .segmented__btn:hover{color:var(--text)}
-.segmented__btn.is-active{background:var(--panel);color:var(--text);box-shadow:var(--shadow-soft)}
-.setting-row{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:16px 0;border-bottom:1px solid var(--border)}
-.setting-row:last-child{border-bottom:none}
-.setting-row__title{font-size:14px;font-weight:600;margin-bottom:3px}
-.setting-row__desc{font-size:12.5px;color:var(--text-mute);max-width:520px}
+.segmented__btn.is-active{background:var(--panel);color:var(--text);box-shadow:0 4px 14px rgba(0,0,0,.25)}
+[data-theme="light"] .segmented__btn.is-active{box-shadow:0 4px 14px rgba(20,25,60,.08)}
 
-/* empty state */
-.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:56px 20px;text-align:center;color:var(--text-dim)}
-.empty__ico{width:56px;height:56px;border-radius:18px;display:grid;place-items:center;background:var(--panel-2);border:1px solid var(--border);color:var(--text-mute)}
-.empty__ico svg{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-.empty__title{font-size:16px;font-weight:600;color:var(--text)}
-.empty__text{font-size:13px;color:var(--text-mute);max-width:340px}
+/* ============ EMPTY ============ */
+.empty{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:14px;padding:60px 24px;text-align:center;color:var(--dim);
+}
+.empty__ico{
+  width:64px;height:64px;border-radius:20px;
+  display:grid;place-items:center;
+  background:var(--panel-2);border:1px solid var(--border);color:var(--mute);
+}
+.empty__ico svg{width:28px;height:28px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.empty__title{font-size:17px;font-weight:600;color:var(--text)}
+.empty__text{font-size:14.5px;color:var(--mute);max-width:360px}
 
-/* toast */
-.toast-container{position:fixed;right:20px;bottom:20px;display:flex;flex-direction:column;gap:10px;z-index:200;pointer-events:none}
-.toast{pointer-events:auto;display:flex;align-items:center;gap:10px;min-width:230px;max-width:340px;padding:12px 16px;background:var(--panel-3);border:1px solid var(--border-strong);border-left:3px solid var(--accent);border-radius:var(--radius-sm);box-shadow:var(--shadow);font-size:13px;color:var(--text);animation:slideIn .28s ease both}
-.toast.is-hiding{animation:slideOut .22s ease both}
+/* ============ TOAST ============ */
+.toast-container{
+  position:fixed;right:24px;bottom:24px;
+  display:flex;flex-direction:column;gap:12px;
+  z-index:200;pointer-events:none;
+}
+.toast{
+  pointer-events:auto;
+  display:flex;align-items:center;gap:12px;
+  min-width:260px;max-width:380px;
+  padding:16px 20px;
+  background:var(--panel-3);
+  border:1px solid var(--border-2);
+  border-left:3px solid var(--accent);
+  border-radius:var(--r2);
+  box-shadow:var(--shadow);
+  font-size:14.5px;color:var(--text);
+  animation:slideIn 380ms var(--ease) both;
+}
+.toast.is-hiding{animation:slideOut 300ms var(--ease) both}
 .toast--success{border-left-color:var(--green)}
 .toast--warn{border-left-color:var(--yellow)}
 .toast--error{border-left-color:var(--red)}
-.toast svg{width:16px;height:16px;flex:0 0 16px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.toast svg{width:18px;height:18px;flex:0 0 18px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 
-/* scan overlay */
-.scan{position:fixed;inset:0;z-index:300;display:none;align-items:center;justify-content:center;background:rgba(4,5,8,.82);backdrop-filter:blur(10px);padding:20px}
-.scan.is-open{display:flex;animation:fadeIn .25s ease both}
-.scan__box{width:100%;max-width:520px;background:linear-gradient(180deg,rgba(21,24,33,.96),rgba(16,18,24,.98));border:1px solid var(--border-strong);border-radius:20px;padding:30px 28px;box-shadow:var(--shadow);animation:scaleIn .3s ease both}
-[data-theme="light"] .scan__box{background:linear-gradient(180deg,#fff,#F7F8FC)}
-.scan__title{font-size:13px;letter-spacing:.22em;font-weight:700;color:var(--text-dim);margin-bottom:18px}
-.scan__bar{height:6px;border-radius:999px;background:var(--panel-3);overflow:hidden;border:1px solid var(--border)}
-.scan__bar i{display:block;height:100%;width:0%;background:linear-gradient(90deg,var(--accent),var(--accent-2));box-shadow:0 0 16px rgba(108,123,255,.7);transition:width .3s ease}
-.scan__pct{margin-top:10px;font-family:var(--mono);font-size:12px;color:var(--text-mute);text-align:right}
-.scan__steps{list-style:none;margin:20px 0 0;padding:0;display:flex;flex-direction:column;gap:10px}
-.scan__steps li{display:flex;align-items:center;gap:10px;font-size:13.5px;color:var(--text-mute);opacity:.35;transition:.3s}
-.scan__steps li.is-active{opacity:1;color:var(--text)}
-.scan__steps li.is-done{opacity:1;color:var(--text-dim)}
-.scan__steps li .tick{width:18px;height:18px;border-radius:50%;flex:0 0 18px;border:1px solid var(--border-strong);display:grid;place-items:center;font-size:11px;color:transparent}
-.scan__steps li.is-done .tick{background:rgba(51,214,159,.14);border-color:rgba(51,214,159,.5);color:var(--green)}
+/* ============ FOOTER ============ */
+.footer{
+  margin-top:auto;padding:32px 0 0;
+  border-top:1px solid var(--border);
+  color:var(--mute);font-size:12.5px;letter-spacing:.06em;text-align:center;
+}
 
-/* dashboard */
-.statgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px}
-.stat{background:linear-gradient(180deg,rgba(21,24,33,.72),rgba(16,18,24,.85));border:1px solid var(--border);border-radius:var(--radius);padding:18px;display:flex;flex-direction:column;gap:6px;position:relative;overflow:hidden;transition:.22s;animation:fadeUp .45s ease both}
-[data-theme="light"] .stat{background:linear-gradient(180deg,#fff,#FBFBFE)}
-.stat::after{content:"";position:absolute;inset:0;background:radial-gradient(220px 90px at 90% -20%, rgba(108,123,255,.16), transparent 70%);pointer-events:none}
-.stat:hover{transform:translateY(-3px);border-color:var(--border-strong);box-shadow:var(--shadow-soft)}
-.stat__ico{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;background:var(--accent-soft);border:1px solid rgba(108,123,255,.28);color:var(--accent);margin-bottom:4px}
-.stat__ico svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-.stat__label{font-size:10.5px;letter-spacing:.14em;color:var(--text-mute);font-weight:700}
-.stat__value{font-size:28px;font-weight:800;letter-spacing:-.02em;line-height:1.1}
-.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
-.list{display:flex;flex-direction:column}
-.list__item{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border);transition:.16s}
-.list__item:last-child{border-bottom:none}
-.list__main{flex:1;min-width:0}
-.list__title{font-size:13.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.list__sub{font-size:11.5px;color:var(--text-mute)}
-.list__actions{display:flex;gap:6px}
-.chart{width:100%;height:180px;position:relative}
-.chart svg{width:100%;height:100%;overflow:visible}
-.chart__grid{stroke:var(--border);stroke-width:1}
-.chart__area{fill:url(#chartGrad)}
-.chart__line{fill:none;stroke:var(--accent);stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
-.chart__dot{fill:var(--panel);stroke:var(--accent);stroke-width:2}
-.chart__label{fill:var(--text-mute);font-size:10px;font-family:var(--mono)}
-.footprint{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
-.fp{background:var(--panel-2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px;display:flex;flex-direction:column;gap:4px}
-.fp__k{font-size:10.5px;letter-spacing:.12em;color:var(--text-mute);font-weight:700}
-.fp__v{font-size:20px;font-weight:700}
-.fp__bar{height:4px;border-radius:999px;background:var(--panel-3);overflow:hidden;margin-top:6px}
-.fp__bar i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--accent-2))}
-.confidence-legend{display:grid;gap:12px}
-.conf{display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--panel-2);font-size:13px;color:var(--text-dim)}
-.conf b{flex:0 0 72px;font-size:11px;letter-spacing:.12em}
-.conf--high b{color:var(--green)} .conf--med b{color:var(--yellow)} .conf--low b{color:var(--red)}
-
-/* platform rows */
-.platform-row{display:flex;align-items:center;gap:14px;padding:14px 16px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--panel-2);transition:.18s}
-.platform-row + .platform-row{margin-top:10px}
-.platform-row:hover{border-color:var(--border-strong);background:var(--panel-3)}
-.platform-row__ico{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:var(--panel-3);border:1px solid var(--border);font-size:12px;font-weight:700;color:var(--text-dim);flex:0 0 34px}
-.platform-row__main{flex:1;min-width:0}
-.platform-row__name{font-size:13.5px;font-weight:600}
-.platform-row__user{font-size:12px;font-family:var(--mono);color:var(--text-mute)}
-.platform-row__side{display:flex;align-items:center;gap:12px}
-.confbar{width:88px}
-.confbar__track{height:5px;border-radius:999px;background:var(--panel-3);overflow:hidden}
-.confbar__fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent-2))}
-.confbar__num{font-size:11px;font-family:var(--mono);color:var(--text-mute);margin-top:3px;text-align:right}
-
-/* connection chain */
-.chain{display:flex;flex-direction:column;padding:16px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--panel-2)}
-.chain + .chain{margin-top:12px}
-.chain__node{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:var(--radius-xs);background:var(--panel-3);border:1px solid var(--border);font-size:13px}
-.chain__arrow{display:flex;align-items:center;gap:10px;padding:6px 0 6px 16px;font-size:12px;color:var(--text-mute)}
-.chain__arrow span{font-style:italic}
-
-/* report */
-.report{background:var(--panel-2);border:1px solid var(--border);border-radius:var(--radius);padding:28px;font-size:13.5px}
-.report h2{margin:0 0 6px;font-size:18px;letter-spacing:.14em}
-.report h3{margin:24px 0 10px;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--text-mute)}
-.report__meta{font-family:var(--mono);font-size:12px;color:var(--text-mute);margin-bottom:20px}
-.report ul{margin:0;padding-left:18px;color:var(--text-dim)}
-.report li{margin-bottom:6px}
-.report__disclaimer{margin-top:26px;padding-top:16px;border-top:1px solid var(--border);font-size:12px;color:var(--text-mute);font-style:italic}
-.report__actions{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px}
-
-/* profile head */
-.profile-head{display:flex;align-items:center;gap:22px;flex-wrap:wrap;padding:26px;background:linear-gradient(180deg,rgba(21,24,33,.8),rgba(16,18,24,.9));border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-soft);position:relative;overflow:hidden;animation:fadeUp .45s ease both}
-[data-theme="light"] .profile-head{background:linear-gradient(180deg,#fff,#FBFBFE)}
-.profile-head::after{content:"";position:absolute;inset:0;background:radial-gradient(420px 200px at 0% -30%, rgba(108,123,255,.16), transparent 70%);pointer-events:none}
-.profile-head__info{flex:1;min-width:220px;display:flex;flex-direction:column;gap:8px}
-.profile-head__name{margin:0;font-size:24px;font-weight:700;letter-spacing:-.01em}
-.profile-head__user{font-family:var(--mono);font-size:13px;color:var(--text-dim)}
-.profile-head__links{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
-.profile-head__actions{display:flex;gap:8px;flex-wrap:wrap}
-.linkchip{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;border:1px solid var(--border);background:var(--panel-2);font-size:12px;color:var(--text-dim);transition:.18s}
-.linkchip:hover{color:var(--text);border-color:var(--border-strong);background:var(--panel-3)}
-.overview-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
-.overview-card{padding:16px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--panel-2);display:flex;flex-direction:column;gap:6px}
-.overview-card__k{font-size:10.5px;letter-spacing:.14em;color:var(--text-mute);font-weight:700}
-.overview-card__v{font-size:15px;font-weight:600}
-.mention{display:flex;gap:14px;align-items:flex-start;padding:14px 16px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--panel-2);transition:.18s}
-.mention + .mention{margin-top:10px}
-.mention:hover{border-color:var(--border-strong)}
-.mention__ico{width:32px;height:32px;flex:0 0 32px;border-radius:9px;display:grid;place-items:center;background:var(--panel-3);border:1px solid var(--border);color:var(--text-dim)}
-.mention__ico svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-.mention__main{flex:1;min-width:0}
-.mention__text{font-size:13.5px;margin-bottom:5px}
-.mention__meta{display:flex;gap:10px;flex-wrap:wrap;font-size:11.5px;color:var(--text-mute);font-family:var(--mono)}
-.bookmark-btn.is-saved{color:var(--yellow);border-color:rgba(245,196,81,.4);background:rgba(245,196,81,.08)}
-
-/* graph */
-.graph{position:relative;width:100%;height:520px;background:radial-gradient(700px 400px at 50% 50%, rgba(108,123,255,.06), transparent 70%);overflow:hidden;border-radius:0 0 var(--radius) var(--radius);touch-action:none;cursor:grab}
-.graph:active{cursor:grabbing}
-.graph__svg{width:100%;height:100%;display:block}
-.graph__legend{position:absolute;left:16px;bottom:16px;display:flex;gap:14px;flex-wrap:wrap;font-size:11.5px;color:var(--text-dim);background:color-mix(in srgb,var(--panel) 80%,transparent);border:1px solid var(--border);border-radius:999px;padding:8px 14px;backdrop-filter:blur(10px)}
-.graph__legend span{display:inline-flex;align-items:center;gap:6px}
-.graph-tools{display:flex;gap:6px}
-.graph-node circle{transition:.2s}
-.graph-node text{font-family:var(--mono);font-size:11px;fill:var(--text);pointer-events:none;user-select:none}
-.graph-node--target circle{filter:drop-shadow(0 0 12px rgba(108,123,255,.6))}
-.graph-edge{stroke:rgba(140,145,175,.28);stroke-width:1.4;fill:none;transition:.2s}
-.graph-edge:hover{stroke:var(--accent)}
-
-/* footer */
-.footer{margin-top:auto;padding:28px 0 0;border-top:1px solid var(--border);color:var(--text-mute);font-size:11.5px;letter-spacing:.06em;text-align:center}
-
-/* animations */
+/* ============ ANIMATIONS ============ */
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
-@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@keyframes modalIn{from{opacity:0;transform:scale(.96) translateY(10px)}to{opacity:1;transform:none}}
 @keyframes slideIn{from{opacity:0;transform:translateX(30px)}to{opacity:1;transform:none}}
 @keyframes slideOut{to{opacity:0;transform:translateX(30px)}}
-@keyframes scaleIn{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:none}}
 
-/* responsive */
+/* ============ RESPONSIVE ============ */
 @media (max-width:1080px){
-  :root{--sidebar-w:80px}
-  .sidebar{padding:16px 10px;align-items:center}
-  .sidebar__brand{justify-content:center;padding:6px 0 16px}
-  .sidebar__brand .logo__text{display:none}
+  :root{--sidebar:76px}
+  .sidebar{padding:22px 12px;align-items:center}
+  .brand{justify-content:center;padding:0 0 18px;width:100%}
+  .brand__text{display:none}
   .nav{width:100%;align-items:center}
-  .nav__item{justify-content:center;padding:12px;width:100%}
+  .nav__item{justify-content:center;padding:14px;width:100%}
   .nav__item span{display:none}
-  .nav__item.is-active::before{left:-10px}
-  .sidebar__bottom{width:100%}
-  .sidebar__system{justify-content:center;padding:10px 6px}
-  .sidebar__system b{display:none}
-  .sidebar__bottom p{display:none}
-  .grid-2{grid-template-columns:1fr}
+  .nav__item.is-active::before{left:-12px}
+  .sidebar__foot{width:100%}
+  .sidebar__status{justify-content:center;padding:12px 6px}
+  .sidebar__status b{display:none}
+  .sidebar__foot p{display:none}
 }
 @media (max-width:720px){
-  :root{--topbar-h:56px}
-  body{font-size:14.5px}
+  body{font-size:15px}
   .app{flex-direction:column}
   .sidebar{
-    position:fixed;left:0;right:0;bottom:0;top:auto;width:100%;height:64px;flex:0 0 64px;
-    flex-direction:row;align-items:center;justify-content:space-around;padding:6px 8px;
+    position:fixed;left:0;right:0;bottom:0;top:auto;
+    width:100%;height:72px;flex:0 0 72px;flex-direction:row;
+    align-items:center;justify-content:space-around;
+    padding:8px 8px;
+    padding-bottom:calc(8px + env(safe-area-inset-bottom));
     border-right:none;border-top:1px solid var(--border);
-    background:color-mix(in srgb,var(--panel) 92%,transparent);
-    backdrop-filter:blur(18px);z-index:90;
-    padding-bottom:calc(6px + env(safe-area-inset-bottom));
+    background:color-mix(in srgb, var(--panel) 94%, transparent);
+    backdrop-filter:blur(20px);z-index:90;
   }
-  .sidebar__brand,.sidebar__bottom{display:none}
-  .nav{flex-direction:row;width:100%;justify-content:space-around;gap:2px}
-  .nav__item{flex-direction:column;gap:3px;padding:6px 4px;font-size:9.5px;width:auto;flex:1}
+  .brand,.sidebar__foot{display:none}
+  .nav{flex-direction:row;width:100%;justify-content:space-around;gap:4px}
+  .nav__item{
+    flex-direction:column;gap:4px;padding:8px 4px;
+    font-size:10.5px;width:auto;flex:1;border-radius:10px;
+  }
   .nav__item span{display:block;letter-spacing:.02em}
-  .nav__item svg{width:20px;height:20px}
+  .nav__item svg{width:22px;height:22px}
   .nav__item.is-active::before{display:none}
-  .main{padding:0 16px calc(88px + env(safe-area-inset-bottom));gap:18px}
-  .topbar{margin:0 -16px;padding:0 16px}
+  .main{padding:0 20px calc(100px + env(safe-area-inset-bottom));gap:22px}
+  .topbar{margin:0 -20px;padding:0 20px;height:64px}
   .topbar__nav{gap:2px}
-  .topbar__link{font-size:12px;padding:6px 9px}
-  .hero{padding:32px 0 4px}
-  .searchbar{flex-direction:column;align-items:stretch;padding:14px;gap:12px}
+  .topbar__link{font-size:13px;padding:8px 12px}
+  .hero{padding:40px 0 8px}
+  .searchbar{flex-direction:column;align-items:stretch;padding:16px;gap:14px;border-radius:18px}
   .searchbar__icon{display:none}
-  .searchbar__input{padding:4px 0;text-align:center}
-  .searchbar__btn{width:100%;padding:14px}
-  .typechips{width:100%}
-  .chip{flex:1 1 calc(50% - 4px);text-align:center}
-  .statgrid{grid-template-columns:repeat(2,1fr);gap:10px}
-  .stat__value{font-size:22px}
+  .searchbar__input{padding:6px 0;text-align:center;font-size:16px}
+  .searchbar .btn--primary{width:100%;padding:16px}
+  .chips{width:100%}
+  .chip{flex:1 1 calc(50% - 5px);text-align:center;padding:12px 14px}
   .cardgrid{grid-template-columns:1fr}
-  .panel__head{padding:14px 16px;flex-wrap:wrap}
-  .panel__body{padding:16px}
-  .tabs{overflow-x:auto;flex-wrap:nowrap}
-  .tab{white-space:nowrap;padding:10px 13px;font-size:12.5px}
-  .profile-head{padding:18px;gap:16px}
-  .avatar--lg{width:64px;height:64px;border-radius:18px;font-size:22px}
-  .profile-head__name{font-size:19px}
-  .toast-container{left:12px;right:12px;bottom:calc(78px + env(safe-area-inset-bottom))}
+  .panel__head{padding:18px 20px;flex-wrap:wrap}
+  .panel__body{padding:20px}
+  .modal{padding:0;align-items:flex-end}
+  .modal__box{max-width:100%;max-height:94vh;border-radius:24px 24px 0 0}
+  .modal__head{padding:20px 22px}
+  .modal__body{padding:22px}
+  .scan{padding:28px 22px}
+  .setting-row{flex-direction:column;align-items:flex-start;gap:14px}
+  .toast-container{left:16px;right:16px;bottom:calc(88px + env(safe-area-inset-bottom))}
   .toast{max-width:none;width:100%}
-  .setting-row{flex-direction:column;align-items:flex-start;gap:12px}
-  .platform-row{flex-wrap:wrap}
-  .platform-row__side{width:100%;justify-content:space-between}
-  .scan__box{padding:22px 18px}
+  .tg-card{flex-direction:column;text-align:center;padding:22px}
+  .tg-card .avatar--lg{width:90px;height:90px;border-radius:22px}
   .table{min-width:640px}
-  .table th,.table td{padding:12px 14px}
-  .graph{height:400px}
+  .table th,.table td{padding:14px 16px}
+  .hero__brand .brand__mark{width:46px;height:46px;font-size:20px}
 }
 @media (max-width:420px){
-  .statgrid{grid-template-columns:1fr}
+  .chip{flex:1 1 100%}
   .hero__title{letter-spacing:.08em}
-  .typechips .chip{flex:1 1 100%}
 }
-.only-mobile{display:none}
-@media (max-width:720px){.only-mobile{display:inline-flex}}
 </style>
 </head>
 <body>
@@ -491,1123 +625,769 @@ img,svg{display:block;max-width:100%}
   <aside class="sidebar" id="sidebar" aria-label="Навигация"></aside>
   <main class="main" id="main">
     <header class="topbar">
-      <div class="topbar__left">
-        <nav class="topbar__nav" id="topbarNav"></nav>
-      </div>
+      <div class="topbar__nav" id="topbarNav"></div>
       <div class="topbar__right">
-        <button class="icon-btn" id="themeToggle" aria-label="Переключить тему" data-tooltip="LIGHT / DARK"></button>
-        <span class="status"><i class="dot dot--green"></i>Online</span>
+        <button class="icon-btn" id="themeBtn" aria-label="Сменить тему" data-tooltip="Тема"></button>
+        <span class="status"><i class="dot dot--green"></i>Онлайн</span>
       </div>
     </header>
     <div id="view"></div>
   </main>
 </div>
 
-<div class="scan" id="scanOverlay" aria-hidden="true">
-  <div class="scan__box">
-    <div class="scan__title">SCANNING PUBLIC SOURCES…</div>
-    <div class="scan__bar"><i id="scanBar"></i></div>
-    <div class="scan__pct" id="scanPct">0%</div>
-    <ul class="scan__steps" id="scanSteps"></ul>
-  </div>
+<div class="modal" id="modal" aria-hidden="true">
+  <div class="modal__box" id="modalBox"></div>
 </div>
 
-<div class="toast-container" id="toastContainer" aria-live="polite"></div>
+<div class="toast-container" id="toasts" aria-live="polite"></div>
 
 <script>
 /* =========================================================
-   SHERLOCK OSINT — single-file build
-   PUBLIC DATA ONLY. NO LEAKED DATABASES. NO PRIVATE DATA.
+   SHERLOCK OSINT — single file / Russian / Telegram-aware
    ========================================================= */
 (function(){
 'use strict';
 
-/* ---------------- ICONS ---------------- */
-const S = (p) => '<svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+p+'</svg>';
+/* -------- ICONS -------- */
+const S = (p) => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+p+'</svg>';
 const ICONS = {
-  dashboard: S('<rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/>'),
   search:    S('<circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/>'),
   user:      S('<circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-6 8-6s8 2 8 6"/>'),
-  share:     S('<circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="18" cy="18" r="2.5"/><path d="M8.2 10.8l7.6-3.6M8.2 13.2l7.6 3.6"/>'),
   database:  S('<ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v6c0 1.7 3.6 3 8 3s8-1.3 8-3V6"/><path d="M4 12v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/>'),
-  file:      S('<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/>'),
   settings:  S('<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-2.7 1.1V21a2 2 0 1 1-4 0v-.1A1.6 1.6 0 0 0 7 19.4a1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1A1.6 1.6 0 0 0 3 15a1.6 1.6 0 0 0-1.5-1H1a2 2 0 1 1 0-4h.1A1.6 1.6 0 0 0 2.6 9a1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1A1.6 1.6 0 0 0 7 4.6h.1A1.6 1.6 0 0 0 8.6 3V3a2 2 0 1 1 4 0v.1A1.6 1.6 0 0 0 15 4.6a1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1A1.6 1.6 0 0 0 19.4 9v.1a1.6 1.6 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1z"/>'),
   sun:       S('<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>'),
   moon:      S('<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>'),
-  bookmark:  S('<path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z"/>'),
-  trash:     S('<path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/>'),
   external:  S('<path d="M14 4h6v6"/><path d="M20 4l-8 8"/><path d="M18 14v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4"/>'),
-  plus:      S('<path d="M12 5v14M5 12h14"/>'),
-  minus:     S('<path d="M5 12h14"/>'),
-  reset:     S('<path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/>'),
-  target:    S('<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/><path d="M12 1v3M12 20v3M1 12h3M20 12h3"/>'),
-  alert:     S('<path d="M12 3l9.5 17H2.5z"/><path d="M12 9v5M12 17.5v.01"/>'),
-  check:     S('<path d="M4 12.5l5 5L20 6.5"/>'),
   close:     S('<path d="M6 6l12 12M18 6L6 18"/>'),
+  check:     S('<path d="M4 12.5l5 5L20 6.5"/>'),
+  alert:     S('<path d="M12 3l9.5 17H2.5z"/><path d="M12 9v5M12 17.5v.01"/>'),
+  share:     S('<circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="18" cy="18" r="2.5"/><path d="M8.2 10.8l7.6-3.6M8.2 13.2l7.6 3.6"/>'),
   mention:   S('<path d="M21 11.5a8.5 8.5 0 1 1-3.3-6.7"/><circle cx="12" cy="12" r="4"/><path d="M16 8v5a2 2 0 0 0 4 0v-1.5"/>'),
-  globe:     S('<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 3 2.5 15 0 18M12 3c-2.5 3-2.5 15 0 18"/>'),
-  code:      S('<path d="M8 8l-4 4 4 4M16 8l4 4-4 4"/>'),
-  news:      S('<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 8h6M7 12h10M7 16h10"/>')
+  file:      S('<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/>'),
+  send:      S('<path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4z"/>'),
+  tg:        S('<path d="M21.5 4.5L2.5 11.7l5.6 1.9 2 6.2 3.2-3.7 4.7 3.5z"/>')
 };
 
-/* ---------------- STORAGE ---------------- */
-const PREFIX='sherlock_';
+/* -------- STORAGE -------- */
+const PFX='sherlock_';
 const LS={
-  get(k,d){try{const v=localStorage.getItem(PREFIX+k);return v===null?d:JSON.parse(v)}catch(e){return d}},
-  set(k,v){try{localStorage.setItem(PREFIX+k,JSON.stringify(v))}catch(e){}},
-  del(k){try{localStorage.removeItem(PREFIX+k)}catch(e){}}
+  get(k,d){try{const v=localStorage.getItem(PFX+k);return v===null?d:JSON.parse(v)}catch(e){return d}},
+  set(k,v){try{localStorage.setItem(PFX+k,JSON.stringify(v))}catch(e){}},
+  del(k){try{localStorage.removeItem(PFX+k)}catch(e){}}
 };
 
-/* ---------------- SETTINGS ---------------- */
-const DEFAULTS={theme:'dark',lang:'ru',publicOnly:true,noHistory:false};
-function getSettings(){return Object.assign({},DEFAULTS,LS.get('settings',{}))}
-function setSettings(patch){const s=Object.assign(getSettings(),patch);LS.set('settings',s);applySettings(s);return s}
-function applySettings(s){
-  s=s||getSettings();
+/* -------- SETTINGS -------- */
+const DEF={theme:'dark',noHistory:false};
+const getSet=()=>Object.assign({},DEF,LS.get('settings',{}));
+const setSet=(p)=>{const s=Object.assign(getSet(),p);LS.set('settings',s);applySet(s);return s};
+function applySet(s){
+  s=s||getSet();
   document.documentElement.setAttribute('data-theme',s.theme);
-  document.documentElement.setAttribute('lang',s.lang);
-  paintThemeIcon(s.theme);
+  const btn=document.getElementById('themeBtn');
+  if(btn)btn.innerHTML=s.theme==='dark'?ICONS.sun:ICONS.moon;
 }
 
-/* ---------------- I18N ---------------- */
-const I18N={
-  ru:{
-    'nav.dashboard':'Dashboard','nav.search':'Search','nav.profiles':'Profiles',
-    'nav.connections':'Connections','nav.sources':'Sources','nav.reports':'Reports','nav.settings':'Settings',
-    'hero.subtitle':'Поиск информации из открытых источников','hero.search':'ИСКАТЬ',
-    'hero.note':'Поиск выполняется только по публичным источникам.',
-    'dash.title':'DASHBOARD','dash.sources':'TOTAL SOURCES','dash.profiles':'PUBLIC PROFILES',
-    'dash.mentions':'MENTIONS','dash.connections':'POSSIBLE CONNECTIONS','dash.searches':'SEARCHES',
-    'dash.recentSearches':'Recent searches','dash.clear':'Очистить',
-    'dash.mentionsChart':'Public mentions over time','dash.recentSources':'Recent sources',
-    'dash.footprint':'DIGITAL FOOTPRINT','dash.footprintNote':'Только количество публичных материалов',
-    'empty.title':'No public results found','empty.text':'Try another search query.'
-  },
-  en:{
-    'nav.dashboard':'Dashboard','nav.search':'Search','nav.profiles':'Profiles',
-    'nav.connections':'Connections','nav.sources':'Sources','nav.reports':'Reports','nav.settings':'Settings',
-    'hero.subtitle':'Search information from open sources','hero.search':'SEARCH',
-    'hero.note':'Search is performed on public sources only.',
-    'dash.title':'DASHBOARD','dash.sources':'TOTAL SOURCES','dash.profiles':'PUBLIC PROFILES',
-    'dash.mentions':'MENTIONS','dash.connections':'POSSIBLE CONNECTIONS','dash.searches':'SEARCHES',
-    'dash.recentSearches':'Recent searches','dash.clear':'Clear',
-    'dash.mentionsChart':'Public mentions over time','dash.recentSources':'Recent sources',
-    'dash.footprint':'DIGITAL FOOTPRINT','dash.footprintNote':'Count of public materials only',
-    'empty.title':'No public results found','empty.text':'Try another search query.'
-  }
-};
-function t(key){
-  const lang=getSettings().lang||'ru';
-  return (I18N[lang]&&I18N[lang][key])||I18N.ru[key]||key;
+/* -------- HISTORY -------- */
+function getHist(){return LS.get('history',[])}
+function addHist(e){
+  if(getSet().noHistory)return;
+  const l=getHist();
+  l.unshift(Object.assign({id:'h'+Date.now()+Math.random().toString(36).slice(2,6)},e));
+  LS.set('history',l.slice(0,20));
 }
+function clearHist(){LS.set('history',[])}
 
-/* ---------------- HISTORY / BOOKMARKS ---------------- */
-function getHistory(){return LS.get('history',[])}
-function addHistory(entry){
-  if(getSettings().noHistory) return;
-  const list=getHistory();
-  list.unshift(Object.assign({id:'h'+Date.now()+Math.random().toString(36).slice(2,6)},entry));
-  LS.set('history',list.slice(0,30));
-}
-function clearHistory(){LS.set('history',[])}
-function getBookmarks(){return LS.get('bookmarks',[])}
-function isBookmarked(id){return getBookmarks().some(b=>b.id===id)}
-function toggleBookmark(profile){
-  let list=getBookmarks();
-  if(list.some(b=>b.id===profile.id)){
-    list=list.filter(b=>b.id!==profile.id);LS.set('bookmarks',list);return false;
-  }
-  list.unshift({id:profile.id,name:profile.name,username:profile.username,platforms:profile.platforms});
-  LS.set('bookmarks',list);return true;
-}
-
-/* =========================================================
-   MOCK DATA
-   ========================================================= */
-const MOCK_PLATFORMS=['Telegram','Instagram','VK','GitHub','YouTube','TikTok','X','Reddit','Discord'];
-
-const mockProfiles=[
-  {id:'p1',name:'Alex Example',username:'example',bio:'Frontend developer. Open-source contributor. Public bio.',
-   locations:['Berlin, Germany — указано публично в профиле'],tags:['developer','open-source'],
-   platforms:[
-     {name:'Telegram',url:'https://t.me/example',found:true,confidence:92},
-     {name:'GitHub',url:'https://github.com/example',found:true,confidence:94},
-     {name:'Instagram',url:'https://instagram.com/example',found:true,confidence:78},
-     {name:'VK',url:'https://vk.com/example',found:true,confidence:71},
-     {name:'YouTube',url:'https://youtube.com/@example',found:true,confidence:66},
-     {name:'TikTok',url:'https://tiktok.com/@example',found:false,confidence:31},
-     {name:'X',url:'https://x.com/example',found:true,confidence:61}]},
-  {id:'p2',name:'Alexandra Demo',username:'a_demo',bio:'UX researcher. Пишет статьи на публичных платформах.',
-   locations:['Warsaw, Poland — указано публично'],tags:['design','research'],
-   platforms:[
-     {name:'Telegram',url:'https://t.me/a_demo',found:true,confidence:84},
-     {name:'Instagram',url:'https://instagram.com/a_demo',found:true,confidence:80},
-     {name:'GitHub',url:'https://github.com/a_demo',found:true,confidence:69},
-     {name:'Reddit',url:'https://reddit.com/u/a_demo',found:true,confidence:58},
-     {name:'X',url:'https://x.com/a_demo',found:false,confidence:27}]},
-  {id:'p3',name:'Example Studio',username:'examplestudio',bio:'Небольшая публичная студия. Контакты указаны на сайте.',
-   locations:['Lisbon, Portugal — публичный бизнес-адрес'],tags:['organization','studio'],
-   platforms:[
-     {name:'Telegram',url:'https://t.me/examplestudio',found:true,confidence:88},
-     {name:'YouTube',url:'https://youtube.com/@examplestudio',found:true,confidence:82},
-     {name:'Instagram',url:'https://instagram.com/examplestudio',found:true,confidence:76}]},
-  {id:'p4',name:'Alexey Sample',username:'sample',bio:'Backend engineer. Публичные репозитории и доклады.',
-   locations:[],tags:['backend','speaker'],
-   platforms:[
-     {name:'GitHub',url:'https://github.com/sample',found:true,confidence:90},
-     {name:'Telegram',url:'https://t.me/sample',found:true,confidence:74},
-     {name:'Discord',url:'https://discord.com/users/sample',found:true,confidence:52}]},
-  {id:'p5',name:'Demo Collective',username:'democollective',bio:'Публичное сообщество. Открытые мероприятия и анонсы.',
-   locations:[],tags:['community'],
-   platforms:[
-     {name:'Telegram',url:'https://t.me/democollective',found:true,confidence:86},
-     {name:'VK',url:'https://vk.com/democollective',found:true,confidence:79},
-     {name:'Reddit',url:'https://reddit.com/r/democollective',found:true,confidence:55}]},
-  {id:'p6',name:'Alex Ex',username:'alex_ex',bio:'Публичный микроблог. Тематика — технологии.',
-   locations:['Amsterdam, Netherlands — указано публично'],tags:['blogger'],
-   platforms:[
-     {name:'X',url:'https://x.com/alex_ex',found:true,confidence:72},
-     {name:'TikTok',url:'https://tiktok.com/@alex_ex',found:true,confidence:64},
-     {name:'YouTube',url:'https://youtube.com/@alex_ex',found:false,confidence:24}]},
-  {id:'p7',name:'Example News',username:'examplenews',bio:'Публичное новостное издание. Открытая редакция.',
-   locations:[],tags:['media','news'],
-   platforms:[
-     {name:'Telegram',url:'https://t.me/examplenews',found:true,confidence:91},
-     {name:'X',url:'https://x.com/examplenews',found:true,confidence:87},
-     {name:'YouTube',url:'https://youtube.com/@examplenews',found:true,confidence:70}]}
-];
-
-const mockMentions=[
-  {id:'m1',text:'Упоминание в публичном посте о конференции',source:'Public blog',url:'https://example.com/blog/post-1',date:'2025-08-14',type:'Public post',confidence:'high'},
-  {id:'m2',text:'Комментарий в открытом форуме разработчиков',source:'Open forum',url:'https://example.org/thread/204',date:'2025-06-02',type:'Forum',confidence:'medium'},
-  {id:'m3',text:'Автор публичной статьи о фронтенде',source:'example.com',url:'https://example.com/articles/12',date:'2025-03-21',type:'Public website',confidence:'high'},
-  {id:'m4',text:'Участник открытого митапа (список спикеров)',source:'meetup.example',url:'https://meetup.example/events/42',date:'2024-11-09',type:'Event page',confidence:'high'},
-  {id:'m5',text:'Упоминание в публичном changelog проекта',source:'GitHub',url:'https://github.com/example/project/releases',date:'2025-01-30',type:'Repository',confidence:'high'},
-  {id:'m6',text:'Ссылка в открытом каталоге специалистов',source:'Public directory',url:'https://directory.example/p/example',date:'2024-09-12',type:'Directory',confidence:'medium'},
-  {id:'m7',text:'Комментарий под публичным видео',source:'YouTube',url:'https://youtube.com/watch?v=demo',date:'2025-05-18',type:'Public comment',confidence:'low'},
-  {id:'m8',text:'Упоминание в публичной новостной заметке',source:'Example News',url:'https://news.example/article/777',date:'2025-02-05',type:'News',confidence:'medium'},
-  {id:'m9',text:'Публичный пост о совместном проекте',source:'Telegram',url:'https://t.me/demochannel/118',date:'2025-07-22',type:'Public post',confidence:'medium'},
-  {id:'m10',text:'Профиль в открытом реестре участников',source:'Public registry',url:'https://registry.example/u/example',date:'2024-04-03',type:'Registry',confidence:'low'},
-  {id:'m11',text:'Упоминание в публичном подкасте (шоу-ноты)',source:'Podcast',url:'https://podcast.example/ep/33',date:'2025-04-11',type:'Podcast',confidence:'medium'},
-  {id:'m12',text:'Ссылка в открытом списке контрибьюторов',source:'GitHub',url:'https://github.com/example/project/graphs/contributors',date:'2025-09-01',type:'Repository',confidence:'high'}
-];
-
-const mockSources=[
-  {id:'s1',source:'GitHub',url:'https://github.com/example',date:'2025-09-01',type:'Repository',relevance:96,confidence:'high'},
-  {id:'s2',source:'Telegram',url:'https://t.me/example',date:'2025-08-20',type:'Public profile',relevance:92,confidence:'high'},
-  {id:'s3',source:'Public website',url:'https://example.com/about',date:'2025-08-14',type:'Website',relevance:90,confidence:'high'},
-  {id:'s4',source:'Example News',url:'https://news.example/article/777',date:'2025-02-05',type:'News',relevance:74,confidence:'medium'},
-  {id:'s5',source:'Instagram',url:'https://instagram.com/example',date:'2025-07-11',type:'Public profile',relevance:78,confidence:'medium'},
-  {id:'s6',source:'Open forum',url:'https://example.org/thread/204',date:'2025-06-02',type:'Forum',relevance:61,confidence:'medium'},
-  {id:'s7',source:'VK',url:'https://vk.com/example',date:'2025-05-30',type:'Public profile',relevance:71,confidence:'medium'},
-  {id:'s8',source:'YouTube',url:'https://youtube.com/@example',date:'2025-05-18',type:'Public profile',relevance:66,confidence:'medium'},
-  {id:'s9',source:'Meetup page',url:'https://meetup.example/events/42',date:'2024-11-09',type:'Event page',relevance:80,confidence:'high'},
-  {id:'s10',source:'Public directory',url:'https://directory.example/p/example',date:'2024-09-12',type:'Directory',relevance:55,confidence:'low'},
-  {id:'s11',source:'Podcast',url:'https://podcast.example/ep/33',date:'2025-04-11',type:'Podcast',relevance:58,confidence:'medium'},
-  {id:'s12',source:'Public registry',url:'https://registry.example/u/example',date:'2024-04-03',type:'Registry',relevance:38,confidence:'low'},
-  {id:'s13',source:'X',url:'https://x.com/example',date:'2025-09-10',type:'Public profile',relevance:63,confidence:'medium'},
-  {id:'s14',source:'Reddit',url:'https://reddit.com/u/example',date:'2025-03-08',type:'Public profile',relevance:47,confidence:'low'},
-  {id:'s15',source:'TikTok',url:'https://tiktok.com/@example',date:'2025-01-19',type:'Public profile',relevance:34,confidence:'low'},
-  {id:'s16',source:'Public blog',url:'https://example.com/blog/post-1',date:'2025-08-14',type:'Blog',relevance:84,confidence:'high'},
-  {id:'s17',source:'Example Studio',url:'https://studio.example/team',date:'2025-07-02',type:'Organization',relevance:77,confidence:'medium'},
-  {id:'s18',source:'Discord',url:'https://discord.com/users/example',date:'2024-12-15',type:'Public profile',relevance:41,confidence:'low'},
-  {id:'s19',source:'GitHub Releases',url:'https://github.com/example/project/releases',date:'2025-01-30',type:'Repository',relevance:88,confidence:'high'},
-  {id:'s20',source:'Open conference',url:'https://conference.example/speakers',date:'2025-06-22',type:'Event page',relevance:82,confidence:'high'},
-  {id:'s21',source:'Public listing',url:'https://listing.example/ads/5567',date:'2025-02-27',type:'Public ad',relevance:29,confidence:'low'},
-  {id:'s22',source:'Public contacts',url:'https://business.example/contacts',date:'2024-10-08',type:'Business contact',relevance:44,confidence:'medium'},
-  {id:'s23',source:'Open changelog',url:'https://example.dev/changelog',date:'2025-03-14',type:'Website',relevance:68,confidence:'medium'},
-  {id:'s24',source:'Public mention',url:'https://t.me/demochannel/118',date:'2025-07-22',type:'Public post',relevance:73,confidence:'medium'}
-];
-
-const mockConnections=[
-  {id:'c1',a:'Alex Example',b:'Example Studio',label:'Same public organization',evidence:'Публичная страница команды студии',confidence:'high'},
-  {id:'c2',a:'Alex Example',b:'Alexandra Demo',label:'Publicly mentioned together',evidence:'Совместный публичный доклад на конференции',confidence:'medium'},
-  {id:'c3',a:'Alex Example',b:'Demo Collective',label:'Appears in the same public source',evidence:'Общий публичный пост',confidence:'medium'},
-  {id:'c4',a:'Alex Example',b:'Alexey Sample',label:'Possible connection',evidence:'Общий публичный репозиторий',confidence:'low'},
-  {id:'c5',a:'Example Studio',b:'Demo Collective',label:'Public collaboration',evidence:'Совместное открытое мероприятие',confidence:'medium'},
-  {id:'c6',a:'Alexandra Demo',b:'Example News',label:'Publicly mentioned together',evidence:'Публичная новостная заметка',confidence:'low'}
-];
-
-/* ---------------- FORBIDDEN ---------------- */
-const FORBIDDEN_PATTERNS=[
-  /паспорт/i,/passport/i,/снилс/i,/snils/i,
-  /банковск/i,/bank\s*card/i,/cvv/i,/iban/i,/swift/i,
-  /пароль/i,/password/i,/прописк/i,/домашний\s+адрес/i,
-  /утечк/i,/leak/i,/\bdump\b/i,/база\s*данных/i,
-  /закрыт[а-я]*\s+аккаунт/i,/деанон/i
-];
-function detectForbiddenQuery(q){return FORBIDDEN_PATTERNS.some(re=>re.test(String(q||'')))}
-
-/* ---------------- HELPERS ---------------- */
-function slugify(s){return String(s||'').toLowerCase().replace(/[^a-z0-9а-яё]+/gi,'_').replace(/^_+|_+$/g,'').slice(0,24)||'target'}
-function hashCode(s){let h=0;for(let i=0;i<s.length;i++)h=(h*31+s.charCodeAt(i))|0;return Math.abs(h)}
-
-function platformUrl(platform,uname){
-  const map={Telegram:'https://t.me/',Instagram:'https://instagram.com/',VK:'https://vk.com/',
-    GitHub:'https://github.com/',YouTube:'https://youtube.com/@',TikTok:'https://tiktok.com/@',
-    X:'https://x.com/',Reddit:'https://reddit.com/u/',Discord:'https://discord.com/users/'};
-  return (map[platform]||'https://example.com/')+uname;
-}
-
-/* =========================================================
-   searchPublicSources — Future backend/API integration point.
-   Замените тело на:
-     return fetch(`/api/search?q=${encodeURIComponent(query)}&type=${type}`).then(r=>r.json());
-   Формат ответа должен остаться тем же.
-   ========================================================= */
-function searchPublicSources(query,type){
-  const q=String(query||'').trim();
-  const ty=type||'name';
-
-  if(detectForbiddenQuery(q)){
-    return {blocked:true,query:q,type:ty,
-      message:'Этот тип данных недоступен. SHERLOCK OSINT работает только с публичной информацией.'};
-  }
-
-  const emptyTriggers=/^(notfound|none|null|empty|nothing|нет|пусто)$/i;
-  if(!q||q.length<2||emptyTriggers.test(q)){
-    return {query:q,type:ty,timestamp:new Date().toISOString(),
-      summary:{sources:0,profiles:0,mentions:0,connections:0},
-      profiles:[],mentions:[],connections:[],sources:[],usernameResults:[],
-      footprint:{social:0,web:0,posts:0,organizations:0,repositories:0,news:0,level:'LOW'}};
-  }
-
-  const seed=hashCode(q+ty)+q.length*7;
-  const uname=ty==='username'?q.replace(/^@/,''):slugify(q);
-
-  const count=3+(seed%3);
-  const profiles=mockProfiles.slice(0,count).map((p,i)=>{
-    const u=i===0?uname:(uname+'_'+slugify(p.username).slice(0,6));
-    return Object.assign({},p,{
-      username:u,
-      name:i===0?(ty==='name'?q:p.name):p.name,
-      platforms:p.platforms.map(pl=>Object.assign({},pl,{
-        url:pl.url.replace(/example|sample|a_demo|alex_ex|democollective|examplenews|examplestudio/g,u),
-        confidence:Math.max(20,Math.min(98,pl.confidence+((seed+i*13)%9)-4))
-      }))
-    });
-  });
-
-  const mentionCount=6+(seed%7);
-  const mentions=mockMentions.slice(0,mentionCount).map(m=>Object.assign({},m,{text:m.text+' · «'+q+'»'}));
-
-  const sourceCount=14+(seed%11);
-  const sources=mockSources.slice(0,sourceCount).map((s,i)=>Object.assign({},s,{
-    relevance:Math.max(15,Math.min(99,s.relevance+((seed+i*5)%11)-5)),
-    url:s.url.replace(/example|sample|a_demo|alex_ex|democollective|examplenews|examplestudio/g,uname)
-  }));
-
-  const connCount=3+(seed%4);
-  const connections=mockConnections.slice(0,connCount).map(c=>Object.assign({},c,{
-    a:c.a==='Alex Example'?(ty==='name'?q:c.a):c.a
-  }));
-
-  const baseConf=[94,88,83,77,71,65,58,49,41];
-  const usernameResults=MOCK_PLATFORMS.map((plat,i)=>{
-    const conf=Math.max(12,Math.min(97,baseConf[i]+((seed+i*17)%9)-4));
-    const found=conf>=45;
-    return {platform:plat,username:'@'+uname,status:found?'FOUND':'NOT FOUND',
-      url:found?platformUrl(plat,uname):'',confidence:conf};
-  });
-
-  const social=profiles.reduce((n,p)=>n+p.platforms.filter(x=>x.found).length,0);
-  const footprint={
-    social,
-    web:sources.filter(s=>s.type==='Website'||s.type==='Blog').length,
-    posts:mentions.filter(m=>/post|comment/i.test(m.type)).length,
-    organizations:sources.filter(s=>s.type==='Organization').length,
-    repositories:sources.filter(s=>s.type==='Repository').length,
-    news:sources.filter(s=>s.type==='News').length
-  };
-  const total=Object.values(footprint).reduce((a,b)=>typeof b==='number'?a+b:a,0);
-  footprint.level=total>18?'HIGH':total>9?'MEDIUM':'LOW';
-
-  return {query:q,type:ty,timestamp:new Date().toISOString(),
-    summary:{sources:sources.length,profiles:profiles.length,mentions:mentions.length,connections:connections.length},
-    profiles,mentions,connections,sources,usernameResults,footprint};
-}
-
-/* ---------------- STATE ---------------- */
-const state={lastResult:null};
-
-/* =========================================================
-   TOAST
-   ========================================================= */
-function toast(message,type){
-  const box=document.getElementById('toastContainer');
+/* -------- TOAST -------- */
+function toast(msg,type){
+  const box=document.getElementById('toasts');
   if(!box)return;
   const el=document.createElement('div');
   el.className='toast toast--'+(type||'info');
   const icon=type==='success'?ICONS.check:type==='error'?ICONS.close:type==='warn'?ICONS.alert:ICONS.search;
-  el.innerHTML=icon+'<span>'+message+'</span>';
+  el.innerHTML=icon+'<span>'+msg+'</span>';
   box.appendChild(el);
-  setTimeout(()=>{el.classList.add('is-hiding');setTimeout(()=>el.remove(),240)},2800);
+  setTimeout(()=>{el.classList.add('is-hiding');setTimeout(()=>el.remove(),320)},3200);
 }
 
-/* =========================================================
-   SCAN OVERLAY
-   ========================================================= */
-function runScan(onDone){
-  const overlay=document.getElementById('scanOverlay');
-  const bar=document.getElementById('scanBar');
-  const pct=document.getElementById('scanPct');
-  const steps=document.getElementById('scanSteps');
-  const stepNames=[
-    'Проверка публичных профилей',
-    'Поиск упоминаний',
-    'Поиск username',
-    'Проверка публичных сайтов',
-    'Анализ открытых связей',
-    'Формирование отчёта'
-  ];
-  const pcts=[0,20,40,60,80,100];
-  steps.innerHTML=stepNames.map(n=>'<li><span class="tick">✓</span>'+n+'</li>').join('');
-  bar.style.width='0%';pct.textContent='0%';
-  overlay.classList.add('is-open');
-
-  let i=0;
-  function tick(){
-    if(i>=stepNames.length){
-      setTimeout(()=>{overlay.classList.remove('is-open');onDone&&onDone()},260);
-      return;
-    }
-    steps.children[i].classList.add('is-active');
-    setTimeout(()=>{
-      steps.children[i].classList.remove('is-active');
-      steps.children[i].classList.add('is-done');
-      bar.style.width=pcts[i+1]+'%';
-      pct.textContent=pcts[i+1]+'%';
-      i++;
-      setTimeout(tick,220);
-    },340);
-  }
-  tick();
-}
-
-/* =========================================================
-   THEME
-   ========================================================= */
-function paintThemeIcon(theme){
-  const btn=document.getElementById('themeToggle');
-  if(!btn)return;
-  btn.innerHTML=theme==='dark'?ICONS.sun:ICONS.moon;
-}
-function toggleTheme(){
-  const s=getSettings();
-  setSettings({theme:s.theme==='dark'?'light':'dark'});
-  toast(getSettings().theme==='dark'?'Dark mode':'Light mode','info');
-}
-
-/* =========================================================
-   SIDEBAR / TOPBAR
-   ========================================================= */
-const NAV=[
-  {id:'dashboard',href:'#/',icon:'dashboard',key:'nav.dashboard'},
-  {id:'search',href:'#/search',icon:'search',key:'nav.search'},
-  {id:'profile',href:'#/profile/p1',icon:'user',key:'nav.profiles'},
-  {id:'graph',href:'#/graph',icon:'share',key:'nav.connections'},
-  {id:'sources',href:'#/sources',icon:'database',key:'nav.sources'},
-  {id:'report',href:'#/search',icon:'file',key:'nav.reports'},
-  {id:'settings',href:'#/settings',icon:'settings',key:'nav.settings'}
-];
-
-function renderSidebar(active){
-  const el=document.getElementById('sidebar');
-  if(!el)return;
-  el.innerHTML=
-    '<div class="sidebar__brand"><div class="logo"><span class="logo__mark">S</span>'+
-    '<div class="logo__text"><strong>SHERLOCK</strong><small>OPEN SOURCE INTELLIGENCE</small></div></div></div>'+
-    '<nav class="nav">'+NAV.map(n=>
-      '<a class="nav__item '+(n.id===active?'is-active':'')+'" href="'+n.href+'">'+
-      ICONS[n.icon]+'<span>'+t(n.key)+'</span></a>').join('')+'</nav>'+
-    '<div class="sidebar__bottom"><div class="sidebar__system"><i class="dot dot--green"></i><b>System status</b></div><p>PUBLIC DATA ONLY</p></div>';
-}
-
-function renderTopbar(){
-  const el=document.getElementById('topbarNav');
-  if(!el)return;
-  el.innerHTML=
-    '<a class="topbar__link" href="#/search">Search</a>'+
-    '<a class="topbar__link" href="#/search">Reports</a>'+
-    '<a class="topbar__link" href="#/sources">Sources</a>';
-}
-
-/* =========================================================
-   HELPERS
-   ========================================================= */
-function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
-function initial(name){return (String(name||'?').trim()[0]||'?').toUpperCase()}
-function badgeFor(conf){
-  const map={high:'badge--high',medium:'badge--med',low:'badge--low'};
-  return '<span class="badge '+(map[conf]||'badge--muted')+'">'+esc(conf.toUpperCase())+'</span>';
-}
-function confBadge(n){
-  if(n>=80)return '<span class="badge badge--high">HIGH</span>';
-  if(n>=55)return '<span class="badge badge--med">MEDIUM</span>';
-  return '<span class="badge badge--low">LOW</span>';
-}
+/* -------- HELPERS -------- */
+const esc=(s)=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const initial=(n)=>(String(n||'?').trim()[0]||'?').toUpperCase();
 function fmtDate(iso){
   try{const d=new Date(iso);return d.toLocaleDateString('ru-RU',{year:'numeric',month:'short',day:'2-digit'})}catch(e){return iso}
 }
+function badgeFor(c){
+  const m={high:'badge--high',medium:'badge--med',low:'badge--low'};
+  const l={high:'Высокая',medium:'Средняя',low:'Низкая'};
+  return '<span class="badge '+(m[c]||'')+'">'+(l[c]||c)+'</span>';
+}
 
 /* =========================================================
-   VIEW: DASHBOARD
+   TELEGRAM — реальная попытка подтянуть публичные данные
    ========================================================= */
-function viewDashboard(){
-  const history=getHistory();
-  const src=mockSources.slice(0,5);
-  const totalSearches=history.length;
-  return ''+
-  '<section class="hero">'+
-    '<div class="hero__brand"><div class="logo"><span class="logo__mark">S</span>'+
-      '<div class="logo__text"><strong>SHERLOCK</strong><small>OPEN SOURCE INTELLIGENCE</small></div></div></div>'+
-    '<h1 class="hero__title">SHERLOCK OSINT</h1>'+
-    '<p class="hero__subtitle" data-i18n="hero.subtitle">'+t('hero.subtitle')+'</p>'+
-    '<form class="searchbar" id="searchForm" autocomplete="off" role="search">'+
-      '<span class="searchbar__icon" aria-hidden="true"></span>'+
-      '<input type="text" id="searchInput" class="searchbar__input" placeholder="Введите имя и фамилию" aria-label="Поисковый запрос" required>'+
-      '<button type="submit" class="btn btn--primary searchbar__btn">'+t('hero.search')+'</button>'+
-    '</form>'+
-    '<div class="typechips" id="typeChips" role="tablist">'+
-      '<button class="chip is-active" data-type="name" role="tab">ФИО</button>'+
-      '<button class="chip" data-type="username" role="tab">USERNAME</button>'+
-      '<button class="chip" data-type="phone" role="tab">ТЕЛЕФОН</button>'+
-      '<button class="chip" data-type="email" role="tab">E-MAIL</button>'+
-    '</div>'+
-    '<p class="hero__note"><span class="hero__note-icon"></span><span>'+t('hero.note')+'</span></p>'+
-  '</section>'+
+async function tgFetch(username){
+  const clean=String(username||'').replace(/^@/,'').replace(/[^a-zA-Z0-9_]/g,'').toLowerCase();
+  const out={
+    username:clean,
+    name:null,
+    bio:null,
+    avatar:'https://unavatar.io/telegram/'+clean,
+    found:false,
+    url:'https://t.me/'+clean,
+    type:'profile'
+  };
+  if(!clean)return out;
 
-  '<section class="section">'+
-    '<div class="section__head"><h2 class="section__title">'+t('dash.title')+'</h2>'+
-    '<span class="badge badge--muted">Demo result — public-source simulation</span></div>'+
-    '<div class="statgrid">'+
-      statCard('database',t('dash.sources'),24)+
-      statCard('user',t('dash.profiles'),7)+
-      statCard('mention',t('dash.mentions'),12)+
-      statCard('share',t('dash.connections'),4)+
-      statCard('search',t('dash.searches'),totalSearches)+
-    '</div>'+
-  '</section>'+
+  // Попытка получить HTML публичной страницы через CORS-прокси
+  const target='https://t.me/'+clean;
+  const proxies=[
+    u=>'https://api.allorigins.win/raw?url='+encodeURIComponent(u),
+    u=>'https://corsproxy.io/?url='+encodeURIComponent(u),
+    u=>'https://r.jina.ai/'+u
+  ];
 
-  '<section class="grid-2">'+
-    '<div class="panel"><div class="panel__head"><h3 class="panel__title">'+t('dash.recentSearches')+'</h3>'+
-      '<button class="btn btn--ghost btn--sm" id="clearHistoryBtn">'+t('dash.clear')+'</button></div>'+
-      '<div class="panel__body">'+(history.length?historyList(history):emptyMini('История пуста'))+'</div></div>'+
-    '<div class="panel"><div class="panel__head"><h3 class="panel__title">'+t('dash.mentionsChart')+'</h3></div>'+
-      '<div class="panel__body"><div class="chart" id="mentionsChart">'+chartSVG()+'</div></div></div>'+
-  '</section>'+
+  for(const proxy of proxies){
+    try{
+      const controller=new AbortController();
+      const t=setTimeout(()=>controller.abort(),4500);
+      const res=await fetch(proxy(target),{signal:controller.signal});
+      clearTimeout(t);
+      if(!res.ok)continue;
+      const html=await res.text();
+      const parsed=parseTg(html,clean);
+      if(parsed.name||parsed.bio){
+        out.name=parsed.name;
+        out.bio=parsed.bio;
+        if(parsed.avatar)out.avatar=parsed.avatar;
+        out.found=true;
+        break;
+      }
+    }catch(e){continue;}
+  }
+  return out;
+}
 
-  '<section class="panel"><div class="panel__head"><h3 class="panel__title">'+t('dash.recentSources')+'</h3>'+
-    '<a class="btn btn--ghost btn--sm" href="#/sources">Все источники</a></div>'+
-    '<div class="panel__body">'+recentSourcesList(src)+'</div></section>'+
+function parseTg(html,username){
+  const r={name:null,bio:null,avatar:null};
 
-  '<section class="panel"><div class="panel__head"><h3 class="panel__title">'+t('dash.footprint')+'</h3>'+
-    '<span class="badge badge--muted">'+t('dash.footprintNote')+'</span></div>'+
-    '<div class="panel__body"><div class="footprint">'+
-      fpItem('Social profiles',7,12)+
-      fpItem('Web pages',4,12)+
-      fpItem('Public posts',3,12)+
-      fpItem('Organizations',1,12)+
-      fpItem('Repositories',2,12)+
-      fpItem('News',1,12)+
-    '</div></div></section>'+
+  let m=html.match(/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']+)["']/i);
+  if(!m)m=html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:title["']/i);
+  if(m){
+    let t=m[1];
+    // "Имя (@username)" или "Имя – @username"
+    t=t.replace(/\s*[\(–\-]\s*@[^\)\s]+\)?\s*$/,'').trim();
+    t=t.replace(/^Telegram:\s*/i,'');
+    t=t.replace(/^Contact\s*@[^\s]+\s*$/i,'');
+    if(t&&t!=='Telegram')r.name=t;
+  }
 
-  '<footer class="footer"><p>SHERLOCK OSINT — PUBLIC DATA ONLY. NO LEAKED DATABASES. NO PRIVATE PERSONAL DATA.</p></footer>';
+  let d=html.match(/<meta[^>]+property=["']og:description["'][^>]+content=["']([^"']+)["']/i);
+  if(!d)d=html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:description["']/i);
+  if(d){
+    r.bio=d[1].replace(/\s+/g,' ').trim();
+    if(r.bio.length>280)r.bio=r.bio.slice(0,280)+'…';
+  }
+
+  let i=html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i);
+  if(i)r.avatar=i[1];
+
+  return r;
 }
-function statCard(icon,label,value){
-  return '<article class="stat"><span class="stat__ico">'+ICONS[icon]+'</span>'+
-    '<span class="stat__label">'+esc(label)+'</span><strong class="stat__value">'+value+'</strong></article>';
+
+/* =========================================================
+   searchPublicSources — точка интеграции с backend
+   ========================================================= */
+const FORBIDDEN=[
+  /паспорт/i,/passport/i,/снилс/i,/snils/i,
+  /банковск/i,/bank\s*card/i,/cvv/i,/iban/i,
+  /пароль/i,/password/i,/прописк/i,/домашний\s+адрес/i,
+  /утечк/i,/leak/i,/\bdump\b/i,/база\s*данных/i,
+  /деанон/i
+];
+const isForbidden=(q)=>FORBIDDEN.some(r=>r.test(String(q||'')));
+
+async function searchPublicSources(query,type){
+  const q=String(query||'').trim();
+  if(isForbidden(q)){
+    return {blocked:true,message:'Этот тип данных недоступен. Поиск работает только с публичной информацией.'};
+  }
+  if(!q||q.length<2){
+    return {query:q,type,empty:true,profiles:[],sources:[],mentions:[],connections:[]};
+  }
+
+  const uname=q.replace(/^@/,'');
+  const tg=await tgFetch(uname);
+
+  const profile={
+    id:'p_'+uname,
+    name:tg.name||('@'+uname),
+    username:uname,
+    bio:tg.bio||'Описание отсутствует в публичном источнике.',
+    avatar:tg.avatar,
+    locations:[],
+    platforms:[
+      {name:'Telegram',url:tg.url,found:!!tg.found,confidence:tg.found?95:60},
+      {name:'GitHub',url:'https://github.com/'+uname,found:false,confidence:0},
+      {name:'Instagram',url:'https://instagram.com/'+uname,found:false,confidence:0},
+      {name:'X',url:'https://x.com/'+uname,found:false,confidence:0}
+    ]
+  };
+
+  // Собираем другие площадки через OPTIONS запросы имитации — оставим только ТГ как реальный
+  const others=await Promise.all([
+    checkUrl('https://github.com/'+uname),
+    checkUrl('https://instagram.com/'+uname)
+  ]);
+  if(others[0]){ profile.platforms[1].found=true; profile.platforms[1].confidence=90; }
+  if(others[1]){ profile.platforms[2].found=true; profile.platforms[2].confidence=75; }
+
+  return {
+    query:q,type,uname,tg,
+    profiles:[profile],
+    sources:[
+      {source:'Telegram',url:tg.url,date:new Date().toISOString().slice(0,10),type:'Публичный профиль',relevance:tg.found?96:40,confidence:tg.found?'high':'low'}
+    ],
+    mentions:[],
+    connections:[]
+  };
 }
-function emptyMini(text){
-  return '<div class="empty" style="padding:28px 10px"><div class="empty__ico">'+ICONS.search+'</div><div class="empty__text">'+esc(text)+'</div></div>';
+
+async function checkUrl(url){
+  // Эвристика: некоторые сайты отдают 404 для отсутствующих, но CORS не даёт проверить.
+  // Возвращаем false — не выдумываем находки.
+  return false;
 }
-function historyList(list){
-  return '<div class="list">'+list.map(h=>
-    '<div class="list__item">'+
-      '<div class="list__main"><div class="list__title">'+esc(h.query)+'</div>'+
-      '<div class="list__sub">'+fmtDate(h.date)+' · '+esc(h.type)+' · '+h.results+' results</div></div>'+
-      '<div class="list__actions">'+
-        '<button class="btn btn--ghost btn--sm" data-open-history="'+esc(h.query)+'">OPEN</button>'+
-        '<button class="btn btn--ghost btn--sm" data-del-history="'+esc(h.id)+'" aria-label="Удалить">'+ICONS.trash+'</button>'+
-      '</div></div>').join('')+'</div>';
+
+/* =========================================================
+   MODAL
+   ========================================================= */
+const modal=document.getElementById('modal');
+const modalBox=document.getElementById('modalBox');
+let modalLastFocus=null;
+
+function openModal(html,opts){
+  opts=opts||{};
+  modalLastFocus=document.activeElement;
+  modalBox.className='modal__box'+(opts.wide?' modal__box--wide':'')+(opts.narrow?' modal__box--narrow':'');
+  modalBox.innerHTML=html;
+  modal.classList.add('is-open');
+  modal.setAttribute('aria-hidden','false');
+  document.body.style.overflow='hidden';
+  setTimeout(()=>{
+    const btn=modalBox.querySelector('.modal__close');
+    if(btn)btn.focus();
+  },80);
 }
-function recentSourcesList(list){
-  return '<div class="list">'+list.map(s=>
-    '<div class="list__item">'+
-      '<div class="list__main"><div class="list__title">'+esc(s.source)+'</div>'+
-      '<div class="list__sub">'+esc(s.type)+' · '+esc(s.date)+' · relevance '+s.relevance+'%</div></div>'+
-      '<div class="list__actions"><a class="btn btn--ghost btn--sm" href="'+esc(s.url)+'" target="_blank" rel="noopener">OPEN '+ICONS.external+'</a></div>'+
-    '</div>').join('')+'</div>';
+function closeModal(){
+  modal.classList.remove('is-open');
+  modal.setAttribute('aria-hidden','true');
+  document.body.style.overflow='';
+  setTimeout(()=>{modalBox.innerHTML=''},280);
+  if(modalLastFocus&&modalLastFocus.focus)modalLastFocus.focus();
 }
-function fpItem(k,v,max){
-  const pct=Math.min(100,Math.round(v/max*100));
-  return '<div class="fp"><span class="fp__k">'+esc(k)+'</span><span class="fp__v">'+v+'</span>'+
-    '<div class="fp__bar"><i style="width:'+pct+'%"></i></div></div>';
+modal.addEventListener('click',e=>{
+  if(e.target===modal)closeModal();
+});
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'&&modal.classList.contains('is-open'))closeModal();
+});
+
+function modalHead(title){
+  return '<div class="modal__head"><h3 class="modal__title">'+esc(title)+'</h3>'+
+    '<button class="icon-btn modal__close" aria-label="Закрыть">'+ICONS.close+'</button></div>';
 }
-function chartSVG(){
-  const data=[2,4,3,6,5,8,7,10,9,12,11,12];
-  const w=560,h=180,pad=24;
-  const max=Math.max.apply(null,data)*1.1;
-  const step=(w-pad*2)/(data.length-1);
-  const pts=data.map((v,i)=>[pad+i*step,h-pad-(v/max)*(h-pad*2)]);
-  const line=pts.map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' ');
-  const area=line+' L'+pts[pts.length-1][0].toFixed(1)+' '+(h-pad)+' L'+pts[0][0].toFixed(1)+' '+(h-pad)+' Z';
-  const gridY=[0.25,0.5,0.75].map(r=>'<line class="chart__grid" x1="'+pad+'" x2="'+(w-pad)+'" y1="'+(pad+r*(h-pad*2))+'" y2="'+(pad+r*(h-pad*2))+'"/>').join('');
-  const dots=pts.map(p=>'<circle class="chart__dot" cx="'+p[0].toFixed(1)+'" cy="'+p[1].toFixed(1)+'" r="3"/>').join('');
-  const months=['J','F','M','A','M','J','J','A','S','O','N','D'];
-  const labels=pts.map((p,i)=>i%2===0?'<text class="chart__label" x="'+p[0].toFixed(1)+'" y="'+(h-6)+'" text-anchor="middle">'+months[i]+'</text>':'').join('');
-  return '<svg viewBox="0 0 '+w+' '+h+'" preserveAspectRatio="none">'+
-    '<defs><linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">'+
-    '<stop offset="0%" stop-color="rgba(108,123,255,.35)"/><stop offset="100%" stop-color="rgba(108,123,255,0)"/>'+
-    '</linearGradient></defs>'+gridY+'<path class="chart__area" d="'+area+'"/>'+
-    '<path class="chart__line" d="'+line+'"/>'+dots+labels+'</svg>';
+function bindModalClose(){
+  const btn=modalBox.querySelector('.modal__close');
+  if(btn)btn.onclick=closeModal;
+}
+
+/* =========================================================
+   SCAN
+   ========================================================= */
+function runScan(){
+  return new Promise(resolve=>{
+    const steps=[
+      'Проверка публичных профилей',
+      'Запрос к Telegram',
+      'Поиск упоминаний',
+      'Анализ открытых связей',
+      'Формирование отчёта'
+    ];
+    const pcts=[0,22,48,72,90,100];
+
+    openModal(
+      modalHead('Поиск')+
+      '<div class="modal__body scan">'+
+        '<div class="scan__title">СКАНИРОВАНИЕ ПУБЛИЧНЫХ ИСТОЧНИКОВ</div>'+
+        '<div class="scan__bar"><i id="scanBar"></i></div>'+
+        '<div class="scan__pct" id="scanPct">0%</div>'+
+        '<ul class="scan__steps" id="scanSteps">'+
+          steps.map(n=>'<li><span class="tick">✓</span>'+n+'</li>').join('')+
+        '</ul>'+
+      '</div>',
+      {narrow:true}
+    );
+    bindModalClose();
+
+    const bar=document.getElementById('scanBar');
+    const pct=document.getElementById('scanPct');
+    const list=document.getElementById('scanSteps');
+    let i=0;
+
+    function tick(){
+      if(i>=steps.length){
+        setTimeout(resolve,300);
+        return;
+      }
+      list.children[i].classList.add('is-active');
+      setTimeout(()=>{
+        list.children[i].classList.remove('is-active');
+        list.children[i].classList.add('is-done');
+        bar.style.width=pcts[i+1]+'%';
+        pct.textContent=pcts[i+1]+'%';
+        i++;
+        setTimeout(tick,260);
+      },360);
+    }
+    tick();
+  });
 }
 
 /* =========================================================
    VIEW: SEARCH
    ========================================================= */
-function viewSearch(params){
-  const q=params.q||'';
-  const ty=params.type||'name';
+function viewSearch(){
+  const hist=getHist();
+  return ''+
+  '<section class="hero">'+
+    '<div class="hero__brand">'+
+      '<span class="brand__mark">S</span>'+
+      '<div class="brand__text"><strong>SHERLOCK</strong><small>OPEN SOURCE INTELLIGENCE</small></div>'+
+    '</div>'+
+    '<h1 class="hero__title">SHERLOCK OSINT</h1>'+
+    '<p class="hero__sub">Поиск информации из открытых источников</p>'+
+    '<form class="searchbar" id="searchForm" autocomplete="off">'+
+      '<span class="searchbar__icon"></span>'+
+      '<input type="text" id="searchInput" class="searchbar__input" placeholder="Введите имя или @username" aria-label="Поисковый запрос" required>'+
+      '<button type="submit" class="btn btn--primary">Найти</button>'+
+    '</form>'+
+    '<div class="chips" id="typeChips">'+
+      '<button type="button" class="chip is-active" data-type="name">Имя</button>'+
+      '<button type="button" class="chip" data-type="username">Username</button>'+
+      '<button type="button" class="chip" data-type="phone">Телефон</button>'+
+      '<button type="button" class="chip" data-type="email">E-mail</button>'+
+    '</div>'+
+    '<p class="note"><span class="note__i"></span><span>Поиск выполняется только по публичным источникам</span></p>'+
+  '</section>'+
 
-  if(!q){
-    return '<section class="panel panel--search">'+searchBarCompact(q,ty)+
-      '<div style="padding:40px 10px;text-align:center;color:var(--text-mute)">Введите запрос, чтобы начать.</div></section>';
-  }
+  (hist.length?
+  '<section class="panel">'+
+    '<div class="panel__head">'+
+      '<h3 class="panel__title">Недавние запросы</h3>'+
+      '<button class="btn btn--ghost btn--sm" id="clearHist">Очистить</button>'+
+    '</div>'+
+    '<div class="panel__body">'+
+      '<div class="list">'+hist.map(h=>
+        '<div class="list__item">'+
+          '<div class="list__main">'+
+            '<div class="list__title">'+esc(h.query)+'</div>'+
+            '<div class="list__sub">'+fmtDate(h.date)+'</div>'+
+          '</div>'+
+          '<div class="list__actions">'+
+            '<button class="btn btn--sm" data-open-hist="'+esc(h.query)+'">Открыть</button>'+
+          '</div>'+
+        '</div>').join('')+
+      '</div>'+
+    '</div>'+
+  '</section>':'')+
 
-  const res=searchPublicSources(q,ty);
-  state.lastResult=res;
+  '<footer class="footer"><p>Только публичные данные. Никаких утечек, закрытых аккаунтов и персональных данных.</p></footer>';
+}
 
+/* =========================================================
+   RESULTS VIEW (в модалке)
+   ========================================================= */
+function showResults(res){
   if(res.blocked){
-    return '<section class="panel panel--search">'+searchBarCompact(q,ty)+'</section>'+
-      '<section class="panel"><div class="panel__body"><div class="notice notice--error">'+esc(res.message)+'</div></div></section>';
+    openModal(
+      modalHead('Доступ ограничен')+
+      '<div class="modal__body">'+
+        '<div class="notice notice--error">'+esc(res.message)+'</div>'+
+      '</div>',
+      {narrow:true}
+    );
+    bindModalClose();
+    return;
+  }
+  if(res.empty||!res.profiles.length){
+    openModal(
+      modalHead('Результаты поиска')+
+      '<div class="modal__body">'+
+        '<div class="empty">'+
+          '<div class="empty__ico">'+ICONS.search+'</div>'+
+          '<div class="empty__title">Ничего не найдено</div>'+
+          '<div class="empty__text">Попробуйте изменить запрос.</div>'+
+        '</div>'+
+      '</div>',
+      {narrow:true}
+    );
+    bindModalClose();
+    return;
   }
 
-  if(!res.summary.sources && !res.summary.profiles){
-    return '<section class="panel panel--search">'+searchBarCompact(q,ty)+'</section>'+
-      emptyBlock(t('empty.title'),t('empty.text'));
-  }
+  const p=res.profiles[0];
+  const tg=res.tg;
 
-  return '<section class="panel panel--search">'+searchBarCompact(q,ty)+'</section>'+
-    '<section class="section"><div class="section__head"><h2 class="section__title">SEARCH RESULTS</h2>'+
-    '<span class="badge badge--muted">Demo result — public-source simulation</span></div>'+
-    '<div class="panel"><div class="panel__body">'+
-      '<div class="kv" style="margin-bottom:8px"><span class="kv__k">Запрос</span><span class="kv__v" style="font-family:var(--mono)">'+esc(res.query)+'</span></div>'+
-      '<div class="statgrid" style="margin-top:10px">'+
-        statMini('Found',res.summary.sources+' public sources')+
-        statMini('Profiles',res.summary.profiles+' profiles')+
-        statMini('Mentions',res.summary.mentions+' mentions')+
-        statMini('Connections',res.summary.connections+' possible connections')+
+  const tgBlock=tg.found?
+    '<div class="tg-card">'+
+      '<div class="avatar avatar--lg">'+(tg.avatar?'<img src="'+esc(tg.avatar)+'" alt="" onerror="this.parentNode.innerHTML=\''+initial(tg.name||tg.username)+'\'">':initial(tg.name||tg.username))+'</div>'+
+      '<div class="tg-card__info">'+
+        '<div class="tg-card__name">'+esc(tg.name||('@'+tg.username))+'</div>'+
+        '<div class="tg-card__user">@'+esc(tg.username)+'</div>'+
+        (tg.bio?'<div class="tg-card__bio">'+esc(tg.bio)+'</div>':'')+
       '</div>'+
-    '</div></div></section>'+
-    '<div class="tabs" id="resultTabs">'+
-      tabBtn('profiles','Profiles',true)+
-      tabBtn('username','Username search')+
-      tabBtn('mentions','Mentions')+
-      tabBtn('connections','Connections')+
-      tabBtn('sources','Sources')+
-      tabBtn('report','Report')+
-    '</div>'+
-    '<section class="tabpanels">'+
-      panelProfiles(res,true)+
-      panelUsername(res,false)+
-      panelMentions(res,false)+
-      panelConnections(res,false)+
-      panelSources(res,false)+
-      panelReport(res,false)+
-    '</section>';
-}
-function statMini(k,v){
-  return '<article class="stat" style="padding:14px"><span class="stat__label">'+esc(k)+'</span><strong class="stat__value" style="font-size:18px">'+esc(v)+'</strong></article>';
-}
-function tabBtn(id,label,active){
-  return '<button class="tab '+(active?'is-active':'')+'" data-tab="'+id+'" role="tab">'+label+'</button>';
-}
-function searchBarCompact(q,ty){
-  const ph={name:'Введите имя и фамилию',username:'Введите username без @',phone:'Введите номер телефона',email:'Введите e-mail'}[ty];
-  return '<form class="searchbar searchbar--compact" id="searchForm">'+
-    '<span class="searchbar__icon"></span>'+
-    '<input type="text" id="searchInput" class="searchbar__input" value="'+esc(q)+'" placeholder="'+ph+'">'+
-    '<button type="submit" class="btn btn--primary searchbar__btn">'+t('hero.search')+'</button>'+
-  '</form>'+
-  '<div class="typechips" id="typeChips">'+
-    ['name','username','phone','email'].map(k=>{
-      const l={name:'ФИО',username:'USERNAME',phone:'ТЕЛЕФОН',email:'E-MAIL'}[k];
-      return '<button class="chip '+(k===ty?'is-active':'')+'" data-type="'+k+'">'+l+'</button>';
-    }).join('')+
-  '</div>';
-}
-function panelProfiles(res,active){
-  if(!res.profiles.length)return '<div class="tabpanel '+(active?'is-active':'')+'" data-panel="profiles">'+emptyMini('Профили не найдены')+'</div>';
-  return '<div class="tabpanel '+(active?'is-active':'')+'" data-panel="profiles">'+
-    '<div class="cardgrid">'+res.profiles.map(profileCard).join('')+'</div></div>';
-}
-function profileCard(p){
-  const found=p.platforms.filter(x=>x.found);
-  const saved=isBookmarked(p.id);
-  return '<article class="card">'+
-    '<div class="card__top">'+
-      '<div class="avatar">'+initial(p.name)+'</div>'+
-      '<div style="flex:1;min-width:0"><div class="card__name">'+esc(p.name)+'</div>'+
-      '<div class="card__sub">@'+esc(p.username)+'</div></div>'+
-    '</div>'+
-    '<div class="card__meta">'+
-      found.slice(0,6).map(f=>'<a class="linkchip" href="'+esc(f.url)+'" target="_blank" rel="noopener">'+esc(f.name)+' '+ICONS.external+'</a>').join('')+
-      (found.length>6?'<span class="badge">+'+(found.length-6)+'</span>':'')+
-    '</div>'+
-    (p.locations&&p.locations.length?'<div class="kv"><span class="kv__k">Possible locations</span><span class="kv__v">'+esc(p.locations.join(', '))+'</span></div>':'')+
-    '<div style="display:flex;gap:8px;flex-wrap:wrap">'+
-      '<a class="btn btn--sm" href="#/profile/'+esc(p.id)+'">Открыть профиль</a>'+
-      '<button class="btn btn--sm bookmark-btn '+(saved?'is-saved':'')+'" data-bookmark="'+esc(p.id)+'">'+ICONS.bookmark+' '+(saved?'Saved':'Save')+'</button>'+
-    '</div></article>';
-}
-function panelUsername(res,active){
-  return '<div class="tabpanel '+(active?'is-active':'')+'" data-panel="username">'+
-    '<div class="panel"><div class="panel__head"><h3 class="panel__title">USERNAME SEARCH</h3>'+
-    '<span class="badge badge--muted">Demo result — public-source simulation</span></div>'+
-    '<div class="panel__body">'+
-      res.usernameResults.map(u=>
-        '<div class="platform-row">'+
-          '<div class="platform-row__ico">'+esc(u.platform.slice(0,2).toUpperCase())+'</div>'+
-          '<div class="platform-row__main"><div class="platform-row__name">'+esc(u.platform)+'</div>'+
-            '<div class="platform-row__user">'+esc(u.username)+'</div></div>'+
-          '<div class="platform-row__side">'+
-            '<span class="badge '+(u.status==='FOUND'?'badge--high':'badge--low')+'">'+u.status+'</span>'+
-            '<div class="confbar"><div class="confbar__track"><div class="confbar__fill" style="width:'+u.confidence+'%"></div></div>'+
-              '<div class="confbar__num">'+u.confidence+'%</div></div>'+
-            (u.url?'<a class="btn btn--sm" href="'+esc(u.url)+'" target="_blank" rel="noopener">OPEN SOURCE</a>':'')+
-          '</div>'+
-        '</div>').join('')+
-    '</div></div></div>';
-}
-function panelMentions(res,active){
-  return '<div class="tabpanel '+(active?'is-active':'')+'" data-panel="mentions">'+
-    '<div class="panel"><div class="panel__head"><h3 class="panel__title">PUBLIC MENTIONS</h3></div>'+
-    '<div class="panel__body">'+
-      (res.mentions.length?res.mentions.map(m=>
-        '<div class="mention"><div class="mention__ico">'+ICONS.mention+'</div>'+
-        '<div class="mention__main"><div class="mention__text">'+esc(m.text)+'</div>'+
-        '<div class="mention__meta"><span>'+esc(m.source)+'</span><span>'+esc(m.date)+'</span><span>'+esc(m.type)+'</span>'+badgeFor(m.confidence)+'</div>'+
-        '</div><a class="btn btn--sm" href="'+esc(m.url)+'" target="_blank" rel="noopener">OPEN '+ICONS.external+'</a></div>').join('')
-        :emptyMini('Упоминаний не найдено'))+
-    '</div></div></div>';
-}
-function panelConnections(res,active){
-  return '<div class="tabpanel '+(active?'is-active':'')+'" data-panel="connections">'+
-    '<div class="panel"><div class="panel__head"><h3 class="panel__title">CONNECTIONS</h3>'+
-    '<span class="badge badge--muted">Publicly verifiable links only</span></div>'+
-    '<div class="panel__body">'+
-      (res.connections.length?res.connections.map(c=>
-        '<div class="chain">'+
-          '<div class="chain__node"><div class="avatar" style="width:28px;height:28px;border-radius:8px;font-size:12px">'+initial(c.a)+'</div><b>'+esc(c.a)+'</b></div>'+
-          '<div class="chain__arrow">↓ <span>'+esc(c.label)+'</span></div>'+
-          '<div class="chain__node"><div class="avatar" style="width:28px;height:28px;border-radius:8px;font-size:12px">'+initial(c.b)+'</div><b>'+esc(c.b)+'</b></div>'+
-          '<div style="margin-top:12px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">'+
-            '<span style="font-size:12px;color:var(--text-mute)">'+esc(c.evidence)+'</span>'+badgeFor(c.confidence)+
-          '</div>'+
-        '</div>').join('')
-        :emptyMini('Связей не найдено'))+
-    '</div></div>'+
-    '<div class="notice notice--info" style="margin-top:14px">Возможные связи подтверждаются только публичными источниками. Совпадение имени не доказывает родство или личные отношения.</div></div>';
-}
-function panelSources(res,active){
-  return '<div class="tabpanel '+(active?'is-active':'')+'" data-panel="sources">'+
-    '<div class="panel"><div class="panel__head"><h3 class="panel__title">SOURCES</h3></div>'+
-    '<div class="panel__body panel__body--flush"><div class="table-wrap"><table class="table">'+
-      '<thead><tr><th>Source</th><th>URL</th><th>Date</th><th>Type</th><th>Relevance</th><th>Confidence</th><th></th></tr></thead>'+
-      '<tbody>'+res.sources.map(s=>
-        '<tr><td><b>'+esc(s.source)+'</b></td>'+
-        '<td class="mono">'+esc(s.url)+'</td>'+
-        '<td>'+esc(s.date)+'</td>'+
-        '<td>'+esc(s.type)+'</td>'+
-        '<td>'+s.relevance+'%</td>'+
-        '<td>'+badgeFor(s.confidence)+'</td>'+
-        '<td><a class="btn btn--sm" href="'+esc(s.url)+'" target="_blank" rel="noopener">OPEN '+ICONS.external+'</a></td></tr>').join('')+
-      '</tbody></table></div></div></div></div>';
-}
-function panelReport(res,active){
-  const ts=new Date(res.timestamp).toLocaleString('ru-RU');
-  return '<div class="tabpanel '+(active?'is-active':'')+'" data-panel="report">'+
-    '<div class="report">'+
-      '<div class="report__actions">'+
-        '<button class="btn btn--primary" id="genReportBtn">GENERATE REPORT</button>'+
-        '<button class="btn" id="exportTxtBtn">EXPORT TXT</button>'+
-        '<button class="btn" id="exportJsonBtn">EXPORT JSON</button>'+
+      '<a class="btn btn--sm" href="'+esc(tg.url)+'" target="_blank" rel="noopener">Открыть '+ICONS.external+'</a>'+
+    '</div>':'';
+
+  const html=
+    modalHead('Результаты поиска')+
+    '<div class="modal__body">'+
+      '<div class="kv" style="margin-bottom:18px">'+
+        '<span class="kv__k">Запрос</span>'+
+        '<span class="kv__v" style="font-family:ui-monospace,monospace">'+esc(res.query)+'</span>'+
       '</div>'+
-      '<h2>SHERLOCK OSINT REPORT</h2>'+
-      '<div class="report__meta">Search query: <b>'+esc(res.query)+'</b><br>Generated: '+esc(ts)+'<br>Type: '+esc(res.type)+'</div>'+
-      '<h3>Summary</h3>'+
-      '<ul><li>Public sources: '+res.summary.sources+'</li>'+
-      '<li>Public profiles: '+res.summary.profiles+'</li>'+
-      '<li>Public mentions: '+res.summary.mentions+'</li>'+
-      '<li>Possible connections: '+res.summary.connections+'</li>'+
-      '<li>Public footprint: '+res.footprint.level+'</li></ul>'+
-      '<h3>Public profiles</h3><ul>'+res.profiles.map(p=>'<li>'+esc(p.name)+' — @'+esc(p.username)+' ('+p.platforms.filter(x=>x.found).length+' platforms)</li>').join('')+'</ul>'+
-      '<h3>Sources</h3><ul>'+res.sources.slice(0,10).map(s=>'<li>'+esc(s.source)+' — '+esc(s.url)+'</li>').join('')+'</ul>'+
-      '<div class="report__disclaimer">This report contains information collected from publicly available sources. Results may be incomplete or inaccurate.</div>'+
-    '</div></div>';
+      tgBlock+
+      '<div style="margin-top:22px;display:flex;gap:12px;flex-wrap:wrap">'+
+        '<button class="btn btn--primary" id="openProfileBtn">Открыть профиль</button>'+
+        '<button class="btn" id="openGraphBtn">'+ICONS.share+' Граф связей</button>'+
+        '<button class="btn" id="openReportBtn">'+ICONS.file+' Отчёт</button>'+
+      '</div>'+
+    '</div>';
+
+  openModal(html);
+  bindModalClose();
+
+  document.getElementById('openProfileBtn').onclick=()=>{
+    closeModal();
+    setTimeout(()=>showProfile(res),200);
+  };
+  document.getElementById('openGraphBtn').onclick=()=>{
+    closeModal();
+    setTimeout(()=>showGraph(res),200);
+  };
+  document.getElementById('openReportBtn').onclick=()=>{
+    closeModal();
+    setTimeout(()=>showReport(res),200);
+  };
 }
 
 /* =========================================================
-   VIEW: PROFILE
+   PROFILE (в модалке)
    ========================================================= */
-function viewProfile(id){
-  const p=mockProfiles.find(x=>x.id===id)||mockProfiles[0];
-  const saved=isBookmarked(p.id);
-  const found=p.platforms.filter(x=>x.found);
-  const relatedMentions=mockMentions.slice(0,4);
-  const relatedConnections=mockConnections.filter(c=>c.a===p.name||c.b===p.name).slice(0,4);
-  const relatedSources=mockSources.slice(0,6);
-  const tabs=['overview','profiles','mentions','connections','sources'];
+function showProfile(res){
+  const p=res.profiles[0];
+  const tg=res.tg;
 
-  return '<section class="profile-head">'+
-    '<div class="avatar avatar--lg">'+initial(p.name)+'</div>'+
-    '<div class="profile-head__info">'+
-      '<h1 class="profile-head__name">'+esc(p.name)+'</h1>'+
-      '<div class="profile-head__user">@'+esc(p.username)+'</div>'+
-      '<div class="profile-head__links">'+found.slice(0,7).map(f=>'<a class="linkchip" href="'+esc(f.url)+'" target="_blank" rel="noopener">'+esc(f.name)+' '+ICONS.external+'</a>').join('')+'</div>'+
-    '</div>'+
-    '<div class="profile-head__actions">'+
-      '<button class="btn bookmark-btn '+(saved?'is-saved':'')+'" data-bookmark="'+esc(p.id)+'">'+ICONS.bookmark+' '+(saved?'Saved':'Save')+'</button>'+
-      '<a class="btn" href="#/graph">'+ICONS.share+' Graph</a>'+
-    '</div>'+
-  '</section>'+
+  const links=p.platforms.filter(x=>x.found).map(x=>
+    '<a class="linkchip" href="'+esc(x.url)+'" target="_blank" rel="noopener">'+esc(x.name)+' '+ICONS.external+'</a>'
+  ).join('');
 
-  '<div class="tabs" id="profileTabs">'+tabs.map((k,i)=>
-    '<button class="tab '+(i===0?'is-active':'')+'" data-tab="'+k+'">'+k.charAt(0).toUpperCase()+k.slice(1)+'</button>').join('')+'</div>'+
+  const html=
+    modalHead('Профиль')+
+    '<div class="modal__body">'+
+      '<div class="tg-card" style="margin-bottom:22px">'+
+        '<div class="avatar avatar--lg">'+(tg.avatar?'<img src="'+esc(tg.avatar)+'" alt="" onerror="this.parentNode.innerHTML=\''+initial(tg.name||tg.username)+'\'">':initial(tg.name||tg.username))+'</div>'+
+        '<div class="tg-card__info">'+
+          '<div class="tg-card__name">'+esc(tg.name||('@'+tg.username))+'</div>'+
+          '<div class="tg-card__user">@'+esc(tg.username)+'</div>'+
+          (tg.bio?'<div class="tg-card__bio">'+esc(tg.bio)+'</div>':'')+
+        '</div>'+
+      '</div>'+
 
-  '<section class="tabpanels">'+
-    '<div class="tabpanel is-active" data-panel="overview"><div class="overview-grid">'+
-      ovCard('Bio',p.bio)+
-      ovCard('Platforms',found.length+' public profiles')+
-      ovCard('Mentions',relatedMentions.length)+
-      ovCard('Connections',relatedConnections.length)+
-      (p.locations.length?ovCard('Possible locations',p.locations.join(', ')):ovCard('Possible locations','Не указано публично'))+
-      ovCard('Tags',(p.tags||[]).join(', ')||'—')+
-    '</div></div>'+
-    '<div class="tabpanel" data-panel="profiles"><div class="panel"><div class="panel__body">'+
-      p.platforms.map(pl=>
-        '<div class="platform-row">'+
-          '<div class="platform-row__ico">'+esc(pl.name.slice(0,2).toUpperCase())+'</div>'+
-          '<div class="platform-row__main"><div class="platform-row__name">'+esc(pl.name)+'</div>'+
-          '<div class="platform-row__user">@'+esc(p.username)+'</div></div>'+
-          '<div class="platform-row__side">'+
-            '<span class="badge '+(pl.found?'badge--high':'badge--low')+'">'+(pl.found?'FOUND':'NOT FOUND')+'</span>'+
-            '<div class="confbar"><div class="confbar__track"><div class="confbar__fill" style="width:'+pl.confidence+'%"></div></div>'+
-            '<div class="confbar__num">'+pl.confidence+'%</div></div>'+
-            (pl.found?'<a class="btn btn--sm" href="'+esc(pl.url)+'" target="_blank" rel="noopener">OPEN '+ICONS.external+'</a>':'')+
-          '</div></div>').join('')+
-    '</div></div></div>'+
-    '<div class="tabpanel" data-panel="mentions"><div class="panel"><div class="panel__body">'+
-      relatedMentions.map(m=>'<div class="mention"><div class="mention__ico">'+ICONS.mention+'</div>'+
-        '<div class="mention__main"><div class="mention__text">'+esc(m.text)+'</div>'+
-        '<div class="mention__meta"><span>'+esc(m.source)+'</span><span>'+esc(m.date)+'</span>'+badgeFor(m.confidence)+'</div></div>'+
-        '<a class="btn btn--sm" href="'+esc(m.url)+'" target="_blank" rel="noopener">OPEN '+ICONS.external+'</a></div>').join('')+
-    '</div></div></div>'+
-    '<div class="tabpanel" data-panel="connections"><div class="panel"><div class="panel__body">'+
-      (relatedConnections.length?relatedConnections.map(c=>
-        '<div class="chain">'+
-          '<div class="chain__node"><div class="avatar" style="width:28px;height:28px;border-radius:8px;font-size:12px">'+initial(c.a)+'</div><b>'+esc(c.a)+'</b></div>'+
-          '<div class="chain__arrow">↓ <span>'+esc(c.label)+'</span></div>'+
-          '<div class="chain__node"><div class="avatar" style="width:28px;height:28px;border-radius:8px;font-size:12px">'+initial(c.b)+'</div><b>'+esc(c.b)+'</b></div>'+
-          '<div style="margin-top:12px;font-size:12px;color:var(--text-mute)">'+esc(c.evidence)+' '+badgeFor(c.confidence)+'</div>'+
-        '</div>').join('')
-        :emptyMini('Связей не найдено'))+
-    '</div></div></div>'+
-    '<div class="tabpanel" data-panel="sources"><div class="panel"><div class="panel__body panel__body--flush">'+
-      '<div class="table-wrap"><table class="table"><thead><tr><th>Source</th><th>URL</th><th>Date</th><th>Type</th><th></th></tr></thead><tbody>'+
-      relatedSources.map(s=>'<tr><td><b>'+esc(s.source)+'</b></td><td class="mono">'+esc(s.url)+'</td><td>'+esc(s.date)+'</td><td>'+esc(s.type)+'</td><td><a class="btn btn--sm" href="'+esc(s.url)+'" target="_blank" rel="noopener">OPEN</a></td></tr>').join('')+
-      '</tbody></table></div></div></div></div>'+
-  '</section>'+
-  '<div class="notice notice--warn" style="margin-top:14px">Совпадение имени не доказывает, что найденный профиль принадлежит этому человеку.</div>';
+      '<div class="kv" style="margin-bottom:20px">'+
+        '<span class="kv__k">Публичные ссылки</span>'+
+        '<span class="kv__v" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:6px">'+links+'</span>'+
+      '</div>'+
+
+      '<div class="kv" style="margin-bottom:20px">'+
+        '<span class="kv__k">Источник</span>'+
+        '<span class="kv__v">'+esc(tg.url)+'</span>'+
+      '</div>'+
+
+      '<div class="notice notice--info" style="font-size:13.5px">'+
+        'Совпадение имени и username не доказывает принадлежность профиля конкретному человеку. Проверяйте первоисточники.'+
+      '</div>'+
+    '</div>';
+
+  openModal(html);
+  bindModalClose();
 }
-function ovCard(k,v){return '<div class="overview-card"><div class="overview-card__k">'+esc(k)+'</div><div class="overview-card__v">'+esc(v)+'</div></div>'}
 
 /* =========================================================
-   VIEW: GRAPH
+   GRAPH (в модалке, без zoom)
    ========================================================= */
-function viewGraph(){
-  return '<section class="section"><div class="section__head">'+
-    '<h2 class="section__title">CONNECTIONS GRAPH</h2>'+
-    '<span class="badge badge--muted">Publicly verifiable links only</span></div></section>'+
-    '<section class="panel"><div class="panel__head">'+
-      '<h3 class="panel__title" id="graphQuery">TARGET: @example</h3>'+
-      '<div class="graph-tools">'+
-        '<button class="icon-btn" id="zoomIn" data-tooltip="Zoom +">'+ICONS.plus+'</button>'+
-        '<button class="icon-btn" id="zoomOut" data-tooltip="Zoom −">'+ICONS.minus+'</button>'+
-        '<button class="icon-btn" id="zoomReset" data-tooltip="Reset">'+ICONS.reset+'</button>'+
-        '<button class="icon-btn" id="zoomCenter" data-tooltip="Center">'+ICONS.target+'</button>'+
-      '</div>'+
-    '</div><div class="panel__body panel__body--flush">'+
-      '<div class="graph" id="graphWrap"><svg id="graphSvg" class="graph__svg"></svg>'+
-      '<div class="graph__legend"><span><i class="dot dot--accent"></i>Target</span><span><i class="dot dot--green"></i>Platform</span><span><i class="dot dot--yellow"></i>Mention / Org</span></div>'+
-      '</div></div></section>'+
-    '<section class="panel"><div class="panel__head"><h3 class="panel__title">Possible connections</h3></div>'+
-    '<div class="panel__body">'+
-      mockConnections.map(c=>
-        '<div class="chain">'+
-          '<div class="chain__node"><b>'+esc(c.a)+'</b></div>'+
-          '<div class="chain__arrow">↓ <span>'+esc(c.label)+'</span></div>'+
-          '<div class="chain__node"><b>'+esc(c.b)+'</b></div>'+
-          '<div style="margin-top:10px;font-size:12px;color:var(--text-mute)">'+esc(c.evidence)+' '+badgeFor(c.confidence)+'</div>'+
-        '</div>').join('')+
-    '</div></section>';
-}
+function showGraph(res){
+  const target=res.uname||'target';
 
-let graphState={scale:1,tx:0,ty:0};
-function initGraph(){
-  const svg=document.getElementById('graphSvg');
-  if(!svg)return;
-  const wrap=document.getElementById('graphWrap');
   const nodes=[
-    {id:'target',label:'TARGET',type:'target'},
-    {id:'instagram',label:'Instagram',type:'platform'},
-    {id:'github',label:'GitHub',type:'platform'},
-    {id:'website',label:'Website',type:'platform'},
-    {id:'mention',label:'Public mention',type:'mention'},
-    {id:'org',label:'Organization',type:'mention'},
-    {id:'username',label:'Username',type:'platform'}
+    {id:'t',label:'TARGET',type:'target'},
+    {id:'tg',label:'Telegram',type:'platform'},
+    {id:'gh',label:'GitHub',type:'platform'},
+    {id:'ig',label:'Instagram',type:'platform'},
+    {id:'x',label:'X',type:'platform'},
+    {id:'men',label:'Упоминание',type:'mention'},
+    {id:'org',label:'Организация',type:'mention'}
   ];
   const edges=[
-    {a:'target',b:'instagram'},{a:'target',b:'github'},{a:'target',b:'website'},
-    {a:'target',b:'mention'},{a:'target',b:'org'},{a:'target',b:'username'}
+    ['t','tg'],['t','gh'],['t','ig'],['t','x'],['t','men'],['t','org']
   ];
 
-  const W=wrap.clientWidth||800, H=wrap.clientHeight||520;
-  const cx=W/2, cy=H/2;
-  const R=Math.min(W,H)*0.32;
-
-  nodes[0].x=cx; nodes[0].y=cy;
+  // фиксированные координаты, без интерактива
+  const W=900,H=520,cx=W/2,cy=H/2,R=180;
+  nodes[0].x=cx;nodes[0].y=cy;
   for(let i=1;i<nodes.length;i++){
-    const a=(i-1)/(nodes.length-1)*Math.PI*2 - Math.PI/2;
+    const a=(i-1)/(nodes.length-1)*Math.PI*2-Math.PI/2;
     nodes[i].x=cx+Math.cos(a)*R;
     nodes[i].y=cy+Math.sin(a)*R;
   }
-  const nMap={};nodes.forEach(n=>nMap[n.id]=n);
+  const map={};nodes.forEach(n=>map[n.id]=n);
+  const colorFor=t=>t==='target'?'var(--accent)':t==='platform'?'var(--green)':'var(--yellow)';
 
-  function draw(){
-    const g=graphState;
-    const colorFor=t=>t==='target'?'var(--accent)':t==='platform'?'var(--green)':'var(--yellow)';
+  let svg='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto;display:block">';
+  edges.forEach(e=>{
+    const a=map[e[0]],b=map[e[1]];
+    svg+='<line x1="'+a.x+'" y1="'+a.y+'" x2="'+b.x+'" y2="'+b.y+'" stroke="rgba(140,145,175,.28)" stroke-width="1.4"/>';
+  });
+  nodes.forEach(n=>{
+    const r=n.type==='target'?28:20;
+    svg+='<g>'+
+      '<circle cx="'+n.x+'" cy="'+n.y+'" r="'+r+'" fill="'+colorFor(n.type)+'" opacity="'+(n.type==='target'?'.92':'.85')+'"/>'+
+      '<text x="'+n.x+'" y="'+(n.y+r+18)+'" text-anchor="middle" fill="var(--text)" font-size="11" font-family="ui-monospace,monospace">'+esc(n.label)+'</text>'+
+    '</g>';
+  });
+  svg+='</svg>';
 
-    let s='<g transform="translate('+g.tx+','+g.ty+') scale('+g.scale+')">';
-    edges.forEach(e=>{
-      const a=nMap[e.a],b=nMap[e.b];
-      s+='<line class="graph-edge" x1="'+a.x+'" y1="'+a.y+'" x2="'+b.x+'" y2="'+b.y+'"/>';
-    });
-    nodes.forEach(n=>{
-      const r=n.type==='target'?26:18;
-      const col=colorFor(n.type);
-      s+='<g class="graph-node '+(n.type==='target'?'graph-node--target':'')+'">'+
-         '<circle cx="'+n.x+'" cy="'+n.y+'" r="'+r+'" fill="'+col+'" opacity="'+(n.type==='target'?'.9':'.85')+'"/>'+
-         '<text x="'+n.x+'" y="'+(n.y+r+16)+'" text-anchor="middle">'+esc(n.label)+'</text>'+
-         '</g>';
-    });
-    s+='</g>';
-    svg.setAttribute('viewBox','0 0 '+W+' '+H);
-    svg.innerHTML=s;
+  const html=
+    modalHead('Граф связей: @'+esc(target))+
+    '<div class="modal__body" style="padding:0">'+
+      '<div style="padding:20px 24px 0;color:var(--dim);font-size:13.5px">'+
+        'Отображаются только связи, подтверждаемые публичными источниками.'+
+      '</div>'+
+      '<div style="padding:16px 12px 24px">'+svg+'</div>'+
+    '</div>';
+
+  openModal(html,{wide:true});
+  bindModalClose();
+}
+
+/* =========================================================
+   REPORT (в модалке)
+   ========================================================= */
+function showReport(res){
+  const ts=new Date().toLocaleString('ru-RU');
+  const tg=res.tg;
+
+  const html=
+    modalHead('Отчёт')+
+    '<div class="modal__body">'+
+      '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:24px">'+
+        '<button class="btn btn--primary" id="expTxt">Экспорт TXT</button>'+
+        '<button class="btn" id="expJson">Экспорт JSON</button>'+
+      '</div>'+
+
+      '<div style="background:var(--panel-2);border:1px solid var(--border);border-radius:14px;padding:26px">'+
+        '<h2 style="margin:0 0 8px;font-size:20px;letter-spacing:.14em">SHERLOCK OSINT</h2>'+
+        '<div style="font-family:ui-monospace,monospace;font-size:12.5px;color:var(--mute);margin-bottom:22px">'+
+          'Запрос: <b style="color:var(--text)">'+esc(res.query)+'</b><br>'+
+          'Сформирован: '+esc(ts)+'<br>'+
+          'Тип: '+esc(res.type)+
+        '</div>'+
+
+        '<div style="font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--mute);font-weight:700;margin:20px 0 10px">Сводка</div>'+
+        '<ul style="margin:0;padding-left:20px;color:var(--dim);line-height:1.8">'+
+          '<li>Публичных источников: '+res.sources.length+'</li>'+
+          '<li>Публичных профилей: '+res.profiles.length+'</li>'+
+          '<li>Упоминаний: '+res.mentions.length+'</li>'+
+          '<li>Возможных связей: '+res.connections.length+'</li>'+
+        '</ul>'+
+
+        (tg.found?
+          '<div style="font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--mute);font-weight:700;margin:20px 0 10px">Telegram</div>'+
+          '<ul style="margin:0;padding-left:20px;color:var(--dim);line-height:1.8">'+
+            '<li>Имя: '+esc(tg.name||'—')+'</li>'+
+            '<li>Username: @'+esc(tg.username)+'</li>'+
+            '<li>Био: '+esc(tg.bio||'—')+'</li>'+
+            '<li>Ссылка: '+esc(tg.url)+'</li>'+
+          '</ul>':'')+
+
+        '<div style="margin-top:24px;padding-top:16px;border-top:1px solid var(--border);font-size:12px;color:var(--mute);font-style:italic;line-height:1.6">'+
+          'Отчёт содержит информацию из публично доступных источников. Результаты могут быть неполными или неточными.'+
+        '</div>'+
+      '</div>'+
+    '</div>';
+
+  openModal(html);
+  bindModalClose();
+
+  document.getElementById('expTxt').onclick=()=>exportReport(res,'txt');
+  document.getElementById('expJson').onclick=()=>exportReport(res,'json');
+}
+
+function exportReport(res,fmt){
+  let blob,ext;
+  if(fmt==='json'){
+    blob=new Blob([JSON.stringify(res,null,2)],{type:'application/json'});
+    ext='json';
+  }else{
+    const l=[];
+    l.push('SHERLOCK OSINT — ОТЧЁТ');
+    l.push('========================');
+    l.push('Запрос: '+res.query);
+    l.push('Сформирован: '+new Date().toLocaleString('ru-RU'));
+    l.push('');
+    if(res.tg&&res.tg.found){
+      l.push('TELEGRAM');
+      l.push('  Имя: '+(res.tg.name||'—'));
+      l.push('  Username: @'+res.tg.username);
+      l.push('  Био: '+(res.tg.bio||'—'));
+      l.push('  Ссылка: '+res.tg.url);
+      l.push('');
+    }
+    l.push('ИСТОЧНИКИ');
+    res.sources.forEach(s=>l.push('  - '+s.source+' — '+s.url));
+    l.push('');
+    l.push('Отчёт содержит информацию из публично доступных источников.');
+    l.push('Результаты могут быть неполными или неточными.');
+    blob=new Blob([l.join('\n')],{type:'text/plain;charset=utf-8'});
+    ext='txt';
   }
-  function reset(){graphState={scale:1,tx:0,ty:0};draw()}
-  function center(){reset()}
-
-  draw();
-
-  // controls
-  document.getElementById('zoomIn').onclick=()=>{graphState.scale=Math.min(3,graphState.scale*1.2);draw()};
-  document.getElementById('zoomOut').onclick=()=>{graphState.scale=Math.max(0.4,graphState.scale/1.2);draw()};
-  document.getElementById('zoomReset').onclick=reset;
-  document.getElementById('zoomCenter').onclick=center;
-
-  // pan
-  let dragging=false,lastX=0,lastY=0;
-  wrap.addEventListener('pointerdown',e=>{dragging=true;lastX=e.clientX;lastY=e.clientY;wrap.setPointerCapture(e.pointerId)});
-  wrap.addEventListener('pointermove',e=>{
-    if(!dragging)return;
-    graphState.tx+=e.clientX-lastX;
-    graphState.ty+=e.clientY-lastY;
-    lastX=e.clientX;lastY=e.clientY;draw();
-  });
-  wrap.addEventListener('pointerup',()=>dragging=false);
-  wrap.addEventListener('pointercancel',()=>dragging=false);
-
-  // zoom wheel
-  wrap.addEventListener('wheel',e=>{
-    e.preventDefault();
-    const d=e.deltaY<0?1.1:0.9;
-    graphState.scale=Math.max(0.4,Math.min(3,graphState.scale*d));
-    draw();
-  },{passive:false});
-
-  // touch pinch
-  let pinchDist=0;
-  wrap.addEventListener('touchstart',e=>{
-    if(e.touches.length===2){
-      pinchDist=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
-    }
-  });
-  wrap.addEventListener('touchmove',e=>{
-    if(e.touches.length===2&&pinchDist){
-      const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
-      graphState.scale=Math.max(0.4,Math.min(3,graphState.scale*(d/pinchDist)));
-      pinchDist=d;draw();
-    }
-  },{passive:true});
-  wrap.addEventListener('touchend',()=>pinchDist=0);
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download='sherlock-'+Date.now()+'.'+ext;
+  document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),600);
+  toast('Отчёт сохранён','success');
 }
 
 /* =========================================================
    VIEW: SOURCES
    ========================================================= */
 function viewSources(){
-  return '<section class="section"><div class="section__head">'+
-    '<h2 class="section__title">SOURCES</h2>'+
-    '<div class="sorter"><label class="sorter__label" for="sortSelect">Sort:</label>'+
-    '<select id="sortSelect" class="select"><option value="newest">Newest</option><option value="oldest">Oldest</option><option value="relevant">Most relevant</option></select></div>'+
-    '</div></section>'+
-    '<section class="panel"><div class="panel__head"><h3 class="panel__title">Confidence levels</h3></div>'+
-    '<div class="panel__body"><div class="confidence-legend">'+
-      '<div class="conf conf--high"><b>HIGH</b><span>Информация подтверждается несколькими независимыми публичными источниками.</span></div>'+
-      '<div class="conf conf--med"><b>MEDIUM</b><span>Есть один достаточно надёжный источник.</span></div>'+
-      '<div class="conf conf--low"><b>LOW</b><span>Возможное совпадение, требующее дополнительной проверки.</span></div>'+
-    '</div></div></section>'+
+  const src=[
+    {s:'Telegram',u:'https://t.me/',d:'Публичные профили и каналы'},
+    {s:'GitHub',u:'https://github.com/',d:'Публичные репозитории и профили'},
+    {s:'Instagram',u:'https://instagram.com/',d:'Публичные профили'},
+    {s:'X',u:'https://x.com/',d:'Публичные аккаунты'},
+    {s:'VK',u:'https://vk.com/',d:'Публичные страницы'},
+    {s:'YouTube',u:'https://youtube.com/',d:'Публичные каналы'},
+    {s:'Reddit',u:'https://reddit.com/',d:'Публичные обсуждения'},
+    {s:'Веб-сайты',u:'',d:'Открытые страницы и публичные упоминания'}
+  ];
+  return '<section class="section"><div class="section__head"><h2 class="section__title">Источники</h2></div>'+
     '<section class="panel"><div class="panel__body panel__body--flush">'+
-      '<div class="table-wrap"><table class="table"><thead><tr>'+
-        '<th>Source</th><th>URL</th><th>Date</th><th>Type</th><th>Relevance</th><th>Confidence</th><th></th>'+
-      '</tr></thead><tbody id="sourcesBody"></tbody></table></div>'+
+      '<div class="table-wrap"><table class="table">'+
+        '<thead><tr><th>Источник</th><th>Описание</th><th></th></tr></thead>'+
+        '<tbody>'+src.map(x=>
+          '<tr><td><b>'+esc(x.s)+'</b></td><td style="color:var(--dim)">'+esc(x.d)+'</td>'+
+          '<td>'+(x.u?'<a class="btn btn--sm" href="'+esc(x.u)+'" target="_blank" rel="noopener">Открыть '+ICONS.external+'</a>':'')+'</td></tr>'
+        ).join('')+'</tbody>'+
+      '</table></div>'+
     '</div></section>'+
-    '<footer class="footer"><p>Все ссылки ведут на публично доступные страницы. Demo result — public-source simulation.</p></footer>';
-}
-function renderSourcesList(sort){
-  const list=mockSources.slice();
-  if(sort==='newest')list.sort((a,b)=>b.date.localeCompare(a.date));
-  else if(sort==='oldest')list.sort((a,b)=>a.date.localeCompare(b.date));
-  else list.sort((a,b)=>b.relevance-a.relevance);
-  const tbody=document.getElementById('sourcesBody');
-  if(!tbody)return;
-  tbody.innerHTML=list.map(s=>
-    '<tr><td><b>'+esc(s.source)+'</b></td>'+
-    '<td class="mono">'+esc(s.url)+'</td>'+
-    '<td>'+esc(s.date)+'</td>'+
-    '<td>'+esc(s.type)+'</td>'+
-    '<td>'+s.relevance+'%</td>'+
-    '<td>'+badgeFor(s.confidence)+'</td>'+
-    '<td><a class="btn btn--sm" href="'+esc(s.url)+'" target="_blank" rel="noopener">OPEN '+ICONS.external+'</a></td></tr>').join('');
+    '<section class="panel"><div class="panel__head"><h3 class="panel__title">Уровни достоверности</h3></div>'+
+    '<div class="panel__body" style="display:grid;gap:12px">'+
+      '<div style="padding:16px 18px;border-radius:12px;border:1px solid rgba(51,214,159,.3);background:rgba(51,214,159,.08)"><b style="color:var(--green);letter-spacing:.1em">ВЫСОКАЯ</b><div style="color:var(--dim);font-size:13.5px;margin-top:6px">Информация подтверждается несколькими независимыми публичными источниками.</div></div>'+
+      '<div style="padding:16px 18px;border-radius:12px;border:1px solid rgba(245,196,81,.3);background:rgba(245,196,81,.08)"><b style="color:var(--yellow);letter-spacing:.1em">СРЕДНЯЯ</b><div style="color:var(--dim);font-size:13.5px;margin-top:6px">Есть один достаточно надёжный источник.</div></div>'+
+      '<div style="padding:16px 18px;border-radius:12px;border:1px solid rgba(255,92,108,.3);background:rgba(255,92,108,.08)"><b style="color:var(--red);letter-spacing:.1em">НИЗКАЯ</b><div style="color:var(--dim);font-size:13.5px;margin-top:6px">Возможное совпадение, требующее дополнительной проверки.</div></div>'+
+    '</div></section>'+
+    '<footer class="footer"><p>Все ссылки ведут на публично доступные страницы.</p></footer>';
 }
 
 /* =========================================================
    VIEW: SETTINGS
    ========================================================= */
 function viewSettings(){
-  const s=getSettings();
-  return '<section class="section"><div class="section__head"><h2 class="section__title">SETTINGS</h2></div></section>'+
-    '<section class="panel"><div class="panel__head"><h3 class="panel__title">Appearance</h3></div><div class="panel__body">'+
-      '<div class="setting-row"><div><div class="setting-row__title">Theme</div><div class="setting-row__desc">Основной режим — DARK.</div></div>'+
-      '<div class="segmented" id="themeSeg">'+
-        '<button class="segmented__btn '+(s.theme==='dark'?'is-active':'')+'" data-theme-value="dark">Dark</button>'+
-        '<button class="segmented__btn '+(s.theme==='light'?'is-active':'')+'" data-theme-value="light">Light</button>'+
-      '</div></div>'+
-      '<div class="setting-row"><div><div class="setting-row__title">Language</div><div class="setting-row__desc">Язык интерфейса.</div></div>'+
-      '<div class="segmented" id="langSeg">'+
-        '<button class="segmented__btn '+(s.lang==='ru'?'is-active':'')+'" data-lang="ru">Russian</button>'+
-        '<button class="segmented__btn '+(s.lang==='en'?'is-active':'')+'" data-lang="en">English</button>'+
-      '</div></div>'+
+  const s=getSet();
+  return '<section class="section"><div class="section__head"><h2 class="section__title">Настройки</h2></div></section>'+
+    '<section class="panel"><div class="panel__head"><h3 class="panel__title">Оформление</h3></div><div class="panel__body">'+
+      '<div class="setting-row">'+
+        '<div><div class="setting-row__title">Тема</div><div class="setting-row__desc">Основной режим — тёмный.</div></div>'+
+        '<div class="segmented" id="themeSeg">'+
+          '<button class="segmented__btn '+(s.theme==='dark'?'is-active':'')+'" data-tv="dark">Тёмная</button>'+
+          '<button class="segmented__btn '+(s.theme==='light'?'is-active':'')+'" data-tv="light">Светлая</button>'+
+        '</div>'+
+      '</div>'+
     '</div></section>'+
-    '<section class="panel"><div class="panel__head"><h3 class="panel__title">Search</h3></div><div class="panel__body">'+
-      '<div class="setting-row"><div><div class="setting-row__title">Public sources only</div><div class="setting-row__desc">Ограничивать поиск исключительно публично доступными источниками.</div></div>'+
-      '<label class="switch"><input type="checkbox" id="optPublicOnly" '+(s.publicOnly?'checked':'')+'><span class="switch__track"><span class="switch__thumb"></span></span></label></div>'+
+    '<section class="panel"><div class="panel__head"><h3 class="panel__title">Приватность</h3></div><div class="panel__body">'+
+      '<div class="setting-row">'+
+        '<div><div class="setting-row__title">Не сохранять историю</div><div class="setting-row__desc">Если включено, история поиска не сохраняется в браузере.</div></div>'+
+        '<label class="switch"><input type="checkbox" id="noHist" '+(s.noHistory?'checked':'')+'><span class="switch__track"><span class="switch__thumb"></span></span></label>'+
+      '</div>'+
+      '<div class="setting-row">'+
+        '<div><div class="setting-row__title">История</div><div class="setting-row__desc">Удалить все сохранённые запросы.</div></div>'+
+        '<button class="btn btn--sm" id="clearH">Очистить</button>'+
+      '</div>'+
     '</div></section>'+
-    '<section class="panel"><div class="panel__head"><h3 class="panel__title">Privacy</h3></div><div class="panel__body">'+
-      '<div class="setting-row"><div><div class="setting-row__title">Do not store search history</div><div class="setting-row__desc">Если включено — история поиска не сохраняется в localStorage.</div></div>'+
-      '<label class="switch"><input type="checkbox" id="optNoHistory" '+(s.noHistory?'checked':'')+'><span class="switch__track"><span class="switch__thumb"></span></span></label></div>'+
-      '<div class="setting-row"><div><div class="setting-row__title">Bookmarks</div><div class="setting-row__desc">Сохранённые профили хранятся локально в браузере.</div></div>'+
-      '<button class="btn btn--ghost btn--sm" id="clearBookmarks">Очистить закладки</button></div>'+
-      '<div class="setting-row"><div><div class="setting-row__title">History</div><div class="setting-row__desc">Удалить все сохранённые запросы.</div></div>'+
-      '<button class="btn btn--ghost btn--sm" id="clearHistoryBtn">Очистить историю</button></div>'+
-    '</div></section>'+
-    '<section class="panel"><div class="panel__head"><h3 class="panel__title">Security notice</h3></div><div class="panel__body">'+
+    '<section class="panel"><div class="panel__head"><h3 class="panel__title">Уведомление о безопасности</h3></div><div class="panel__body" style="display:grid;gap:12px">'+
       '<div class="notice notice--info">SHERLOCK OSINT работает только с публично доступной информацией. Сервис не предназначен для получения конфиденциальных персональных данных.</div>'+
-      '<div class="notice notice--warn" style="margin-top:12px">Недоступно: паспортные данные, СНИЛС, банковские данные, пароли, приватные адреса, закрытые аккаунты, данные из утечек, скрытые родственные связи.</div>'+
+      '<div class="notice notice--warn">Недоступно: паспортные данные, СНИЛС, банковские данные, пароли, приватные адреса, закрытые аккаунты, данные из утечек.</div>'+
     '</div></section>'+
-    '<footer class="footer"><p>PUBLIC DATA ONLY. NO LEAKED DATABASES. NO PRIVATE PERSONAL DATA.</p></footer>';
-}
-
-/* =========================================================
-   EMPTY BLOCK
-   ========================================================= */
-function emptyBlock(title,text){
-  return '<section class="panel"><div class="empty">'+
-    '<div class="empty__ico">'+ICONS.search+'</div>'+
-    '<div class="empty__title">'+esc(title)+'</div>'+
-    '<div class="empty__text">'+esc(text)+'</div>'+
-    '</div></section>';
+    '<footer class="footer"><p>Только публичные данные.</p></footer>';
 }
 
 /* =========================================================
    ROUTER
    ========================================================= */
-function parseHash(){
-  const raw=location.hash.replace(/^#\/?/,'');
-  const [path,qs]=raw.split('?');
-  const parts=path.split('/').filter(Boolean);
-  const params={};
-  if(qs)qs.split('&').forEach(p=>{
-    const [k,v]=p.split('=');
-    params[decodeURIComponent(k)]=decodeURIComponent(v||'');
-  });
-  return {view:parts[0]||'dashboard',args:parts.slice(1),params};
+const NAV=[
+  {id:'search',href:'#/',icon:'search',label:'Поиск'},
+  {id:'sources',href:'#/sources',icon:'database',label:'Источники'},
+  {id:'settings',href:'#/settings',icon:'settings',label:'Настройки'}
+];
+
+function currentRoute(){
+  const h=location.hash.replace(/^#\/?/,'');
+  return h.split('/')[0]||'search';
+}
+function renderSidebar(){
+  const cur=currentRoute();
+  const el=document.getElementById('sidebar');
+  el.innerHTML=
+    '<div class="brand"><span class="brand__mark">S</span>'+
+    '<div class="brand__text"><strong>SHERLOCK</strong><small>OPEN SOURCE INTELLIGENCE</small></div></div>'+
+    '<nav class="nav">'+NAV.map(n=>
+      '<a class="nav__item '+(n.id===cur?'is-active':'')+'" href="'+n.href+'">'+ICONS[n.icon]+'<span>'+n.label+'</span></a>'
+    ).join('')+'</nav>'+
+    '<div class="sidebar__foot">'+
+      '<div class="sidebar__status"><i class="dot dot--green"></i><b>Система в сети</b></div>'+
+      '<p>Только публичные данные</p>'+
+    '</div>';
+}
+function renderTopbar(){
+  const cur=currentRoute();
+  const el=document.getElementById('topbarNav');
+  el.innerHTML=NAV.map(n=>
+    '<a class="topbar__link '+(n.id===cur?'is-active':'')+'" href="'+n.href+'">'+n.label+'</a>'
+  ).join('');
 }
 
 function render(){
-  const {view,args,params}=parseHash();
-  const el=document.getElementById('view');
-  if(!el)return;
-
+  const cur=currentRoute();
+  const view=document.getElementById('view');
   let html='';
-  let activeNav='dashboard';
+  if(cur==='sources')html=viewSources();
+  else if(cur==='settings')html=viewSettings();
+  else html=viewSearch();
 
-  switch(view){
-    case 'search':   html=viewSearch(params); activeNav='search'; break;
-    case 'profile':  html=viewProfile(args[0]||'p1'); activeNav='profile'; break;
-    case 'graph':    html=viewGraph(); activeNav='graph'; break;
-    case 'sources':  html=viewSources(); activeNav='sources'; break;
-    case 'settings': html=viewSettings(); activeNav='settings'; break;
-    default:         html=viewDashboard(); activeNav='dashboard';
-  }
-
-  el.innerHTML=html;
-  renderSidebar(activeNav);
+  view.innerHTML=html;
+  renderSidebar();
   renderTopbar();
-
-  // topbar active
-  document.querySelectorAll('.topbar__link').forEach(a=>{
-    const h=a.getAttribute('href')||'';
-    a.classList.toggle('is-active', h.includes(view));
-  });
-
-  // view-specific init
-  if(view==='graph') initGraph();
-  if(view==='sources') renderSourcesList('newest');
-
-  bindCommon();
+  bind();
+  window.scrollTo({top:0,behavior:'smooth'});
 }
 
-function bindCommon(){
-  // tabs
-  document.querySelectorAll('.tabs').forEach(tabs=>{
-    tabs.querySelectorAll('.tab').forEach(tab=>{
-      tab.onclick=()=>{
-        tabs.querySelectorAll('.tab').forEach(x=>x.classList.remove('is-active'));
-        tab.classList.add('is-active');
-        const panels=tabs.parentElement.querySelector('.tabpanels');
-        if(panels){
-          panels.querySelectorAll('.tabpanel').forEach(p=>p.classList.remove('is-active'));
-          const target=panels.querySelector('[data-panel="'+tab.dataset.tab+'"]');
-          if(target)target.classList.add('is-active');
-        }
-      };
-    });
-  });
-
-  // chips (type switch)
+/* =========================================================
+   BIND
+   ========================================================= */
+function bind(){
+  // chips
   const chips=document.getElementById('typeChips');
   if(chips){
     chips.querySelectorAll('.chip').forEach(c=>{
@@ -1616,182 +1396,109 @@ function bindCommon(){
         c.classList.add('is-active');
         const inp=document.getElementById('searchInput');
         if(!inp)return;
-        const ph={name:'Введите имя и фамилию',username:'Введите username без @',
-          phone:'Введите номер телефона',email:'Введите e-mail'}[c.dataset.type];
+        const ph={
+          name:'Введите имя и фамилию',
+          username:'Введите @username',
+          phone:'Введите номер телефона',
+          email:'Введите e-mail'
+        }[c.dataset.type];
         inp.placeholder=ph;
         inp.focus();
       };
     });
   }
 
-  // search form
+  // search
   const form=document.getElementById('searchForm');
   if(form){
-    form.onsubmit=e=>{
+    form.onsubmit=async(e)=>{
       e.preventDefault();
       const inp=document.getElementById('searchInput');
       const q=(inp&&inp.value||'').trim();
       if(!q)return;
-      const activeChip=document.querySelector('#typeChips .chip.is-active');
-      const ty=activeChip?activeChip.dataset.type:'name';
+      const chip=document.querySelector('#typeChips .chip.is-active');
+      const type=chip?chip.dataset.type:'name';
 
-      if(detectForbiddenQuery(q)){
-        toast('Этот тип данных недоступен', 'error');
-        location.hash='#/search?q='+encodeURIComponent(q)+'&type='+ty;
+      toast('Запуск поиска','info');
+      await runScan();
+
+      let res;
+      try{
+        res=await searchPublicSources(q,type);
+      }catch(err){
+        closeModal();
+        toast('Ошибка поиска','error');
+        openModal(modalHead('Ошибка')+
+          '<div class="modal__body"><div class="notice notice--error">Не удалось выполнить поиск. Попробуйте ещё раз.</div></div>',
+          {narrow:true});
+        bindModalClose();
         return;
       }
-      runScan(()=>{
-        addHistory({query:q,type:ty,date:new Date().toISOString(),results:'—'});
-        location.hash='#/search?q='+encodeURIComponent(q)+'&type='+ty;
-        toast('Search complete', 'success');
-      });
-      toast('Search started', 'info');
+
+      closeModal();
+      setTimeout(()=>{
+        showResults(res);
+        addHist({query:q,type,date:new Date().toISOString()});
+      },200);
     };
   }
 
-  // history buttons on dashboard
-  document.querySelectorAll('[data-open-history]').forEach(b=>{
-    b.onclick=()=>{
-      const q=b.dataset.openHistory;
-      location.hash='#/search?q='+encodeURIComponent(q)+'&type=name';
+  // history
+  document.querySelectorAll('[data-open-hist]').forEach(b=>{
+    b.onclick=async()=>{
+      const q=b.dataset.openHist;
+      const inp=document.getElementById('searchInput');
+      if(inp)inp.value=q;
+      const form=document.getElementById('searchForm');
+      if(form)form.dispatchEvent(new Event('submit'));
     };
   });
-  document.querySelectorAll('[data-del-history]').forEach(b=>{
-    b.onclick=()=>{
-      const id=b.dataset.delHistory;
-      const list=getHistory().filter(h=>h.id!==id);
-      LS.set('history',list);
-      toast('Запись удалена','success');
-      render();
-    };
-  });
-
-  // clear history
-  document.querySelectorAll('#clearHistoryBtn').forEach(b=>{
-    b.onclick=()=>{
-      clearHistory();
-      toast('История очищена','success');
-      render();
-    };
-  });
-
-  // bookmarks
-  document.querySelectorAll('[data-bookmark]').forEach(b=>{
-    b.onclick=()=>{
-      const id=b.dataset.bookmark;
-      const p=mockProfiles.find(x=>x.id===id);
-      if(!p)return;
-      const saved=toggleBookmark(p);
-      b.classList.toggle('is-saved',saved);
-      b.innerHTML=ICONS.bookmark+' '+(saved?'Saved':'Save');
-      toast(saved?'Profile saved':'Removed from saved','success');
-    };
-  });
-
-  // report export
-  const genBtn=document.getElementById('genReportBtn');
-  if(genBtn)genBtn.onclick=()=>{
-    toast('Report generated','success');
-    window.scrollTo({top:document.body.scrollHeight,behavior:'smooth'});
-  };
-  const txtBtn=document.getElementById('exportTxtBtn');
-  if(txtBtn)txtBtn.onclick=()=>exportReport('txt');
-  const jsonBtn=document.getElementById('exportJsonBtn');
-  if(jsonBtn)jsonBtn.onclick=()=>exportReport('json');
-
-  // settings handlers
-  const themeSeg=document.getElementById('themeSeg');
-  if(themeSeg)themeSeg.onclick=e=>{
-    const b=e.target.closest('[data-theme-value]');if(!b)return;
-    setSettings({theme:b.dataset.themeValue});
+  const clr=document.getElementById('clearHist');
+  if(clr)clr.onclick=()=>{
+    clearHist();
+    toast('История очищена','success');
     render();
-    toast('Theme updated','success');
   };
-  const langSeg=document.getElementById('langSeg');
-  if(langSeg)langSeg.onclick=e=>{
-    const b=e.target.closest('[data-lang]');if(!b)return;
-    setSettings({lang:b.dataset.lang});
+
+  // settings
+  const seg=document.getElementById('themeSeg');
+  if(seg)seg.onclick=e=>{
+    const b=e.target.closest('[data-tv]');if(!b)return;
+    setSet({theme:b.dataset.tv});
+    toast('Тема обновлена','success');
     render();
-    toast('Language updated','success');
   };
-  const po=document.getElementById('optPublicOnly');
-  if(po)po.onchange=e=>{
-    setSettings({publicOnly:e.target.checked});
-    toast(e.target.checked?'Public sources only: ON':'Public sources only: OFF','info');
-  };
-  const nh=document.getElementById('optNoHistory');
+  const nh=document.getElementById('noHist');
   if(nh)nh.onchange=e=>{
-    setSettings({noHistory:e.target.checked});
-    if(e.target.checked)clearHistory();
+    setSet({noHistory:e.target.checked});
+    if(e.target.checked)clearHist();
     toast(e.target.checked?'История не сохраняется':'История сохраняется','info');
   };
-  const cb=document.getElementById('clearBookmarks');
-  if(cb)cb.onclick=()=>{LS.set('bookmarks',[]);toast('Закладки очищены','success')};
-
-  // sort sources
-  const sortSel=document.getElementById('sortSelect');
-  if(sortSel)sortSel.onchange=e=>renderSourcesList(e.target.value);
-}
-
-/* ---------------- REPORT EXPORT ---------------- */
-function exportReport(fmt){
-  const res=state.lastResult||searchPublicSources('demo','name');
-  let blob,ext;
-  if(fmt==='json'){
-    blob=new Blob([JSON.stringify(res,null,2)],{type:'application/json'});
-    ext='json';
-  }else{
-    const lines=[];
-    lines.push('SHERLOCK OSINT REPORT');
-    lines.push('=====================');
-    lines.push('Search query: '+res.query);
-    lines.push('Generated: '+new Date().toLocaleString('ru-RU'));
-    lines.push('');
-    lines.push('SUMMARY');
-    lines.push('  Public sources: '+res.summary.sources);
-    lines.push('  Public profiles: '+res.summary.profiles);
-    lines.push('  Public mentions: '+res.summary.mentions);
-    lines.push('  Possible connections: '+res.summary.connections);
-    lines.push('  Public footprint: '+(res.footprint&&res.footprint.level||'—'));
-    lines.push('');
-    lines.push('PUBLIC PROFILES');
-    res.profiles.forEach(p=>lines.push('  - '+p.name+' (@'+p.username+')'));
-    lines.push('');
-    lines.push('SOURCES');
-    res.sources.forEach(s=>lines.push('  - '+s.source+' — '+s.url));
-    lines.push('');
-    lines.push('This report contains information collected from publicly available sources. Results may be incomplete or inaccurate.');
-    blob=new Blob([lines.join('\n')],{type:'text/plain'});
-    ext='txt';
-  }
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement('a');
-  a.href=url;a.download='sherlock-report-'+Date.now()+'.'+ext;
-  document.body.appendChild(a);a.click();a.remove();
-  setTimeout(()=>URL.revokeObjectURL(url),500);
-  toast('Report exported ('+ext.toUpperCase()+')','success');
+  const ch=document.getElementById('clearH');
+  if(ch)ch.onclick=()=>{
+    clearHist();
+    toast('История очищена','success');
+  };
 }
 
 /* =========================================================
    INIT
    ========================================================= */
 function init(){
-  applySettings();
-
-  const themeBtn=document.getElementById('themeToggle');
-  if(themeBtn)themeBtn.onclick=toggleTheme;
-
+  applySet();
+  const btn=document.getElementById('themeBtn');
+  if(btn)btn.onclick=()=>{
+    const s=getSet();
+    setSet({theme:s.theme==='dark'?'light':'dark'});
+    toast(getSet().theme==='dark'?'Тёмная тема':'Светлая тема','info');
+  };
   window.addEventListener('hashchange',render);
-
   if(!location.hash)location.hash='#/';
   render();
 }
 
-if(document.readyState==='loading'){
-  document.addEventListener('DOMContentLoaded',init);
-}else{
-  init();
-}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);
+else init();
 
 })();
 </script>
