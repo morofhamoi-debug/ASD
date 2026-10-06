@@ -1,1506 +1,507 @@
 <!DOCTYPE html>
-<html lang="ru" data-theme="dark">
+<html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no, maximum-scale=1">
-<meta name="description" content="SHERLOCK OSINT — поиск по открытым источникам">
-<title>SHERLOCK OSINT</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Камера</title>
+<script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.13/dist/hls.min.js"></script>
 <style>
-:root{
-  --bg:#08090D; --panel:#101218; --panel-2:#151821; --panel-3:#1B1F2B;
-  --border:rgba(255,255,255,.08); --border-2:rgba(255,255,255,.16);
-  --text:#E8EAF2; --dim:#8B90A6; --mute:#5C6178;
-  --accent:#6C7BFF; --accent-2:#9A6CFF; --soft:rgba(108,123,255,.14);
-  --green:#33D69F; --yellow:#F5C451; --red:#FF5C6C;
-  --r:16px; --r2:12px; --r3:10px;
-  --shadow:0 24px 60px rgba(0,0,0,.55);
-  --ease:cubic-bezier(.4,0,.2,1);
-  --t:340ms;
-  --sidebar:230px;
-}
-[data-theme="light"]{
-  --bg:#F4F5FA; --panel:#FFFFFF; --panel-2:#F7F8FC; --panel-3:#EFF1F8;
-  --border:rgba(12,14,28,.10); --border-2:rgba(12,14,28,.20);
-  --text:#0E1020; --dim:#5A5F76; --mute:#878CA3;
-  --accent:#4E5DF0; --accent-2:#7C4DF0; --soft:rgba(78,93,240,.10);
-  --shadow:0 18px 44px rgba(20,25,60,.12);
-}
-*,*::before,*::after{box-sizing:border-box}
-html,body{height:100%}
-body{
-  margin:0;color:var(--text);
-  font-family:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
-  font-size:16px;line-height:1.55;
-  background:
-    radial-gradient(1100px 620px at 12% -10%, rgba(108,123,255,.10), transparent 60%),
-    radial-gradient(900px 520px at 92% 0%, rgba(154,108,255,.08), transparent 60%),
-    var(--bg);
-  -webkit-font-smoothing:antialiased;
-  overflow-x:hidden;
-  transition:background var(--t) var(--ease), color var(--t) var(--ease);
-}
-a{color:inherit;text-decoration:none}
-button{font-family:inherit;cursor:pointer}
-img,svg{display:block;max-width:100%}
-::selection{background:var(--soft)}
-::-webkit-scrollbar{width:10px;height:10px}
-::-webkit-scrollbar-track{background:transparent}
-::-webkit-scrollbar-thumb{background:rgba(140,145,175,.25);border-radius:20px;border:3px solid transparent;background-clip:content-box}
-::-webkit-scrollbar-thumb:hover{background:rgba(140,145,175,.45);background-clip:content-box}
-
-.app{display:flex;min-height:100vh;width:100%}
-
-/* ============ SIDEBAR ============ */
-.sidebar{
-  width:var(--sidebar);flex:0 0 var(--sidebar);
-  background:linear-gradient(180deg, rgba(21,24,33,.86), rgba(16,18,24,.94));
-  border-right:1px solid var(--border);
-  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
-  display:flex;flex-direction:column;padding:26px 16px;
-  position:sticky;top:0;height:100vh;z-index:40;
-  transition:width var(--t) var(--ease), padding var(--t) var(--ease);
-}
-[data-theme="light"] .sidebar{background:linear-gradient(180deg, rgba(255,255,255,.94), rgba(247,248,252,.98))}
-
-.brand{display:flex;align-items:center;gap:12px;padding:0 8px 22px;border-bottom:1px solid var(--border);margin-bottom:20px}
-.brand__mark{
-  width:42px;height:42px;border-radius:13px;display:grid;place-items:center;
-  font-weight:800;font-size:19px;color:#fff;
-  background:linear-gradient(135deg,var(--accent),var(--accent-2));
-  box-shadow:0 10px 26px rgba(108,123,255,.35);
-  transition:transform var(--t) var(--ease);
-}
-.brand:hover .brand__mark{transform:scale(1.06) rotate(-3deg)}
-.brand__text{display:flex;flex-direction:column;line-height:1.15}
-.brand__text strong{font-size:14px;letter-spacing:.16em;font-weight:800}
-.brand__text small{font-size:8.5px;letter-spacing:.22em;color:var(--mute);margin-top:2px}
-
-.nav{display:flex;flex-direction:column;gap:6px}
-.nav__item{
-  display:flex;align-items:center;gap:14px;
-  padding:14px 16px;border-radius:var(--r3);
-  color:var(--dim);font-size:15px;font-weight:500;
-  border:1px solid transparent;
-  transition:all var(--t) var(--ease);
-  position:relative;
-}
-.nav__item svg{width:20px;height:20px;flex:0 0 20px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;transition:transform var(--t) var(--ease)}
-.nav__item:hover{background:var(--panel-2);color:var(--text);transform:translateX(3px)}
-.nav__item:hover svg{transform:scale(1.08)}
-.nav__item.is-active{
-  background:var(--soft);color:var(--text);
-  border-color:rgba(108,123,255,.28);
-  box-shadow:0 0 0 3px rgba(108,123,255,.06);
-}
-.nav__item.is-active::before{
-  content:"";position:absolute;left:-16px;top:14px;bottom:14px;width:3px;
-  background:linear-gradient(180deg,var(--accent),var(--accent-2));
-  border-radius:0 3px 3px 0;
-}
-
-.sidebar__foot{
-  margin-top:auto;padding-top:18px;border-top:1px solid var(--border);
-  font-size:12px;color:var(--mute);
-  display:flex;flex-direction:column;gap:8px;
-}
-.sidebar__status{
-  display:flex;align-items:center;gap:9px;
-  padding:11px 14px;background:var(--panel-2);
-  border:1px solid var(--border);border-radius:var(--r3);
-  transition:border-color var(--t) var(--ease);
-}
-.sidebar__status:hover{border-color:var(--border-2)}
-.sidebar__status b{color:var(--text);font-weight:600;font-size:12.5px}
-.dot{width:8px;height:8px;border-radius:50%;display:inline-block;flex:0 0 8px}
-.dot--green{background:var(--green);box-shadow:0 0 10px var(--green);animation:pulse 2.4s infinite var(--ease)}
-.dot--accent{background:var(--accent);box-shadow:0 0 10px var(--accent)}
-.dot--yellow{background:var(--yellow);box-shadow:0 0 10px var(--yellow)}
-@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.82)}}
-
-/* ============ MAIN ============ */
-.main{
-  flex:1;min-width:0;
-  padding:0 32px 80px;
-  display:flex;flex-direction:column;gap:26px;
-  max-width:1200px;margin:0 auto;width:100%;
-}
-
-.topbar{
-  height:72px;display:flex;align-items:center;justify-content:space-between;gap:16px;
-  position:sticky;top:0;z-index:30;
-  background:color-mix(in srgb, var(--bg) 85%, transparent);
-  backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
-  margin:0 -32px;padding:0 32px;
-  border-bottom:1px solid var(--border);
-  transition:background var(--t) var(--ease);
-}
-.topbar__nav{display:flex;gap:6px}
-.topbar__link{
-  font-size:14px;font-weight:500;color:var(--dim);
-  padding:9px 16px;border-radius:999px;
-  transition:all var(--t) var(--ease);
-}
-.topbar__link:hover{background:var(--panel-2);color:var(--text)}
-.topbar__link.is-active{background:var(--soft);color:var(--text)}
-.topbar__right{display:flex;align-items:center;gap:12px}
-
-.icon-btn{
-  width:44px;height:44px;
-  display:inline-flex;align-items:center;justify-content:center;
-  background:var(--panel-2);border:1px solid var(--border);border-radius:var(--r3);
-  color:var(--dim);transition:all var(--t) var(--ease);position:relative;padding:0;
-}
-.icon-btn svg{width:19px;height:19px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;transition:transform var(--t) var(--ease)}
-.icon-btn:hover{color:var(--text);border-color:var(--border-2);background:var(--panel-3);transform:translateY(-1px)}
-.icon-btn:hover svg{transform:scale(1.1)}
-.icon-btn:active{transform:translateY(0) scale(.97)}
-
-.status{
-  display:inline-flex;align-items:center;gap:8px;
-  font-size:13px;color:var(--dim);
-  padding:9px 14px;border:1px solid var(--border);border-radius:999px;
-  background:var(--panel-2);
-  transition:border-color var(--t) var(--ease);
-}
-
-/* ============ HERO / SEARCH ============ */
-.hero{
-  padding:70px 0 20px;text-align:center;
-  display:flex;flex-direction:column;align-items:center;gap:20px;
-  animation:fadeUp 600ms var(--ease) both;
-}
-.hero__brand{
-  display:flex;align-items:center;gap:14px;margin-bottom:8px;
-  animation:fadeUp 600ms var(--ease) 100ms both;
-}
-.hero__brand .brand__mark{width:52px;height:52px;font-size:22px;border-radius:15px}
-.hero__brand .brand__text strong{font-size:16px;letter-spacing:.2em}
-.hero__brand .brand__text small{font-size:9.5px;letter-spacing:.26em}
-.hero__title{
-  margin:0;font-size:clamp(30px,5.5vw,52px);
-  letter-spacing:.14em;font-weight:800;
-  background:linear-gradient(120deg, #fff 10%, var(--accent) 55%, var(--accent-2) 95%);
-  -webkit-background-clip:text;background-clip:text;color:transparent;
-  animation:fadeUp 600ms var(--ease) 180ms both;
-}
-[data-theme="light"] .hero__title{background:linear-gradient(120deg,#141830 10%,var(--accent) 55%,var(--accent-2) 95%);-webkit-background-clip:text;background-clip:text;color:transparent}
-.hero__sub{margin:0;color:var(--dim);font-size:16.5px;animation:fadeUp 600ms var(--ease) 240ms both}
-
-.searchbar{
-  display:flex;align-items:center;gap:12px;
-  width:100%;max-width:860px;padding:10px 10px 10px 22px;
-  background:linear-gradient(180deg, rgba(21,24,33,.92), rgba(16,18,24,.94));
-  border:1px solid var(--border-2);border-radius:20px;
-  box-shadow:var(--shadow);
-  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
-  transition:all var(--t) var(--ease);
-  animation:fadeUp 600ms var(--ease) 300ms both;
-}
-[data-theme="light"] .searchbar{background:linear-gradient(180deg,#fff,#F7F8FC)}
-.searchbar:focus-within{
-  border-color:rgba(108,123,255,.55);
-  box-shadow:0 0 0 5px var(--soft), var(--shadow);
-  transform:translateY(-1px);
-}
-.searchbar__icon{
-  width:22px;height:22px;flex:0 0 22px;
-  background:currentColor;color:var(--mute);
-  -webkit-mask:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'><circle cx='11' cy='11' r='7'/><path d='M20 20l-3.5-3.5'/></svg>") center/contain no-repeat;
-  mask:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'><circle cx='11' cy='11' r='7'/><path d='M20 20l-3.5-3.5'/></svg>") center/contain no-repeat;
-}
-.searchbar__input{
-  flex:1;min-width:0;background:transparent;border:none;outline:none;
-  color:var(--text);font-size:17px;padding:14px 4px;font-family:inherit;
-}
-.searchbar__input::placeholder{color:var(--mute)}
-
-.chips{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;animation:fadeUp 600ms var(--ease) 380ms both}
-.chip{
-  padding:11px 22px;border-radius:999px;
-  border:1px solid var(--border);
-  background:var(--panel-2);color:var(--dim);
-  font-size:13px;font-weight:600;letter-spacing:.06em;
-  transition:all var(--t) var(--ease);
-}
-.chip:hover{color:var(--text);border-color:var(--border-2);transform:translateY(-2px)}
-.chip.is-active{
-  color:var(--text);border-color:rgba(108,123,255,.5);
-  background:var(--soft);box-shadow:0 0 0 3px rgba(108,123,255,.08);
-}
-
-.note{
-  display:inline-flex;align-items:center;gap:9px;
-  margin:4px 0 0;font-size:13px;color:var(--mute);
-  animation:fadeUp 600ms var(--ease) 460ms both;
-}
-.note__i{
-  width:16px;height:16px;border-radius:50%;
-  background:var(--soft);border:1px solid rgba(108,123,255,.4);
-  display:inline-block;
-}
-
-/* ============ BUTTONS ============ */
-.btn{
-  display:inline-flex;align-items:center;justify-content:center;gap:10px;
-  padding:14px 26px;border-radius:var(--r2);
-  border:1px solid var(--border);
-  background:var(--panel-2);color:var(--text);
-  font-size:15px;font-weight:600;
-  transition:all var(--t) var(--ease);
-  white-space:nowrap;
-}
-.btn svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;transition:transform var(--t) var(--ease)}
-.btn:hover{border-color:var(--border-2);background:var(--panel-3);transform:translateY(-2px)}
-.btn:hover svg{transform:scale(1.1)}
-.btn:active{transform:translateY(0) scale(.98)}
-.btn:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
-.btn--primary{
-  background:linear-gradient(135deg,var(--accent),var(--accent-2));
-  border-color:transparent;color:#fff;
-  box-shadow:0 12px 30px rgba(108,123,255,.32);
-}
-.btn--primary:hover{filter:brightness(1.08);background:linear-gradient(135deg,var(--accent),var(--accent-2))}
-.btn--sm{padding:10px 18px;font-size:13.5px}
-.btn--ghost{background:transparent}
-.btn--icon{padding:12px;width:44px;height:44px}
-.searchbar .btn--primary{padding:14px 32px;letter-spacing:.08em;font-size:15px}
-
-/* ============ SECTION / PANEL ============ */
-.section{display:flex;flex-direction:column;gap:16px;animation:fadeUp 520ms var(--ease) both}
-.section__head{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap}
-.section__title{
-  margin:0;font-size:13px;font-weight:700;
-  letter-spacing:.22em;color:var(--dim);text-transform:uppercase;
-}
-.panel{
-  background:linear-gradient(180deg, rgba(21,24,33,.72), rgba(16,18,24,.88));
-  border:1px solid var(--border);border-radius:var(--r);
-  box-shadow:0 8px 30px rgba(0,0,0,.35);
-  backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
-  overflow:hidden;animation:fadeUp 520ms var(--ease) both;
-  transition:border-color var(--t) var(--ease);
-}
-[data-theme="light"] .panel{background:linear-gradient(180deg,#fff,#FBFBFE)}
-.panel:hover{border-color:var(--border-2)}
-.panel__head{
-  display:flex;align-items:center;justify-content:space-between;gap:12px;
-  padding:20px 24px;border-bottom:1px solid var(--border);
-}
-.panel__title{margin:0;font-size:15.5px;font-weight:600}
-.panel__body{padding:22px 24px}
-.panel__body--flush{padding:0}
-
-.badge{
-  display:inline-flex;align-items:center;gap:6px;
-  padding:5px 12px;border-radius:999px;
-  font-size:11.5px;font-weight:600;letter-spacing:.04em;
-  border:1px solid var(--border);background:var(--panel-2);color:var(--dim);
-}
-.badge--high{color:var(--green);border-color:rgba(51,214,159,.35);background:rgba(51,214,159,.10)}
-.badge--med{color:var(--yellow);border-color:rgba(245,196,81,.35);background:rgba(245,196,81,.10)}
-.badge--low{color:var(--red);border-color:rgba(255,92,108,.35);background:rgba(255,92,108,.10)}
-.badge--accent{color:var(--accent);border-color:rgba(108,123,255,.35);background:var(--soft)}
-
-.notice{
-  padding:18px 20px;border-radius:var(--r2);
-  font-size:14.5px;line-height:1.65;
-  border:1px solid var(--border);
-}
-.notice--info{background:var(--soft);border-color:rgba(108,123,255,.28)}
-.notice--warn{background:rgba(245,196,81,.08);border-color:rgba(245,196,81,.3)}
-.notice--error{background:rgba(255,92,108,.08);border-color:rgba(255,92,108,.32)}
-
-/* ============ CARDS ============ */
-.cardgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:18px}
-.card{
-  background:var(--panel-2);border:1px solid var(--border);border-radius:var(--r);
-  padding:22px;display:flex;flex-direction:column;gap:16px;
-  transition:all var(--t) var(--ease);
-  animation:fadeUp 460ms var(--ease) both;
-}
-.card:hover{border-color:var(--border-2);transform:translateY(-3px);box-shadow:0 20px 40px rgba(0,0,0,.4)}
-[data-theme="light"] .card:hover{box-shadow:0 20px 40px rgba(20,25,60,.08)}
-.card__top{display:flex;align-items:center;gap:16px}
-.card__name{font-size:17px;font-weight:600;line-height:1.3}
-.card__sub{font-size:13.5px;color:var(--mute);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;margin-top:2px}
-.card__meta{display:flex;flex-wrap:wrap;gap:8px}
-
-.avatar{
-  width:56px;height:56px;border-radius:16px;flex:0 0 auto;
-  display:grid;place-items:center;overflow:hidden;position:relative;
-  font-weight:700;font-size:20px;color:#fff;
-  background:linear-gradient(135deg,var(--accent),var(--accent-2));
-  box-shadow:0 8px 22px rgba(108,123,255,.28);
-  transition:transform var(--t) var(--ease);
-}
-.avatar img{width:100%;height:100%;object-fit:cover;display:block}
-.card:hover .avatar{transform:scale(1.05)}
-.avatar--lg{width:110px;height:110px;border-radius:26px;font-size:38px;box-shadow:0 14px 40px rgba(108,123,255,.35)}
-
-.kv{display:flex;flex-direction:column;gap:4px}
-.kv__k{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--mute);font-weight:600}
-.kv__v{font-size:14.5px;color:var(--text)}
-
-.linkchip{
-  display:inline-flex;align-items:center;gap:7px;
-  padding:8px 14px;border-radius:999px;
-  border:1px solid var(--border);background:var(--panel);
-  font-size:12.5px;color:var(--dim);
-  transition:all var(--t) var(--ease);
-}
-.linkchip:hover{color:var(--text);border-color:var(--border-2);background:var(--panel-3);transform:translateY(-1px)}
-.linkchip svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;opacity:.65}
-
-/* ============ LISTS ============ */
-.list{display:flex;flex-direction:column}
-.list__item{
-  display:flex;align-items:center;gap:16px;
-  padding:16px 0;border-bottom:1px solid var(--border);
-  transition:padding var(--t) var(--ease);
-}
-.list__item:last-child{border-bottom:none}
-.list__main{flex:1;min-width:0}
-.list__title{font-size:15px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.list__sub{font-size:13px;color:var(--mute);margin-top:3px}
-.list__actions{display:flex;gap:8px}
-
-/* ============ MODAL ============ */
-.modal{
-  position:fixed;inset:0;z-index:100;
-  display:none;align-items:center;justify-content:center;
-  background:rgba(4,5,8,.7);
-  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
-  padding:24px;overflow-y:auto;
-}
-.modal.is-open{display:flex;animation:fadeIn 240ms var(--ease) both}
-.modal__box{
-  width:100%;max-width:880px;max-height:90vh;overflow-y:auto;
-  background:linear-gradient(180deg, rgba(21,24,33,.98), rgba(16,18,24,.99));
-  border:1px solid var(--border-2);border-radius:24px;
-  box-shadow:var(--shadow);
-  animation:modalIn 360ms var(--ease) both;
-}
-[data-theme="light"] .modal__box{background:linear-gradient(180deg,#fff,#F7F8FC)}
-.modal__box--narrow{max-width:560px}
-.modal__box--wide{max-width:1100px}
-.modal__head{
-  display:flex;align-items:center;justify-content:space-between;gap:16px;
-  padding:22px 28px;border-bottom:1px solid var(--border);
-  position:sticky;top:0;background:inherit;z-index:2;
-  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
-}
-.modal__title{margin:0;font-size:17px;font-weight:600;letter-spacing:.02em}
-.modal__body{padding:28px}
-.modal__body--flush{padding:0}
-
-/* ============ SCAN ============ */
-.scan{padding:36px 32px}
-.scan__title{
-  font-size:13px;letter-spacing:.26em;font-weight:700;
-  color:var(--dim);margin-bottom:22px;
-}
-.scan__bar{
-  height:6px;border-radius:999px;background:var(--panel-3);
-  overflow:hidden;border:1px solid var(--border);
-}
-.scan__bar i{
-  display:block;height:100%;width:0%;
-  background:linear-gradient(90deg,var(--accent),var(--accent-2));
-  box-shadow:0 0 18px rgba(108,123,255,.7);
-  transition:width 380ms var(--ease);
-}
-.scan__pct{
-  margin-top:12px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
-  font-size:13px;color:var(--mute);text-align:right;
-}
-.scan__steps{list-style:none;margin:26px 0 0;padding:0;display:flex;flex-direction:column;gap:14px}
-.scan__steps li{
-  display:flex;align-items:center;gap:14px;font-size:14.5px;
-  color:var(--mute);opacity:.35;
-  transition:all 380ms var(--ease);
-}
-.scan__steps li.is-active{opacity:1;color:var(--text);transform:translateX(4px)}
-.scan__steps li.is-done{opacity:1;color:var(--dim);transform:translateX(0)}
-.scan__steps .tick{
-  width:22px;height:22px;border-radius:50%;flex:0 0 22px;
-  border:1px solid var(--border-2);display:grid;place-items:center;
-  font-size:12px;color:transparent;transition:all 380ms var(--ease);
-}
-.scan__steps li.is-done .tick{
-  background:rgba(51,214,159,.14);border-color:rgba(51,214,159,.55);color:var(--green);
-}
-
-/* ============ TELEGRAM CARD ============ */
-.tg-card{
-  background:linear-gradient(135deg, rgba(41,182,246,.10), rgba(108,123,255,.10));
-  border:1px solid rgba(108,123,255,.25);
-  border-radius:var(--r);padding:22px;
-  display:flex;gap:20px;align-items:center;
-  animation:fadeUp 460ms var(--ease) both;
-}
-.tg-card__info{flex:1;min-width:0}
-.tg-card__name{font-size:19px;font-weight:600;line-height:1.3}
-.tg-card__user{font-size:13.5px;color:var(--mute);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;margin-top:3px}
-.tg-card__bio{font-size:14px;color:var(--dim);margin-top:10px;line-height:1.6}
-
-/* ============ TABLE ============ */
-.table-wrap{overflow-x:auto}
-.table{width:100%;border-collapse:collapse;font-size:14px;min-width:720px}
-.table th{
-  text-align:left;font-size:11px;letter-spacing:.16em;text-transform:uppercase;
-  color:var(--mute);font-weight:700;padding:16px 20px;
-  border-bottom:1px solid var(--border);white-space:nowrap;
-}
-.table td{padding:16px 20px;border-bottom:1px solid var(--border);vertical-align:middle}
-.table tbody tr{transition:background var(--t) var(--ease)}
-.table tbody tr:hover{background:var(--panel-2)}
-.table .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13px;color:var(--dim)}
-
-/* ============ FORMS / SETTINGS ============ */
-.setting-row{
-  display:flex;align-items:center;justify-content:space-between;gap:22px;
-  padding:20px 0;border-bottom:1px solid var(--border);
-}
-.setting-row:last-child{border-bottom:none}
-.setting-row__title{font-size:15px;font-weight:600;margin-bottom:4px}
-.setting-row__desc{font-size:13.5px;color:var(--mute);max-width:520px;line-height:1.6}
-
-.switch{position:relative;display:inline-block;cursor:pointer}
-.switch input{position:absolute;opacity:0;width:0;height:0}
-.switch__track{
-  display:block;width:52px;height:30px;border-radius:999px;
-  background:var(--panel-3);border:1px solid var(--border);
-  transition:all var(--t) var(--ease);position:relative;
-}
-.switch__thumb{
-  position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;
-  background:var(--dim);transition:all var(--t) var(--ease);
-}
-.switch input:checked + .switch__track{background:var(--soft);border-color:rgba(108,123,255,.5)}
-.switch input:checked + .switch__track .switch__thumb{
-  left:25px;background:linear-gradient(135deg,var(--accent),var(--accent-2));
-}
-.switch input:focus-visible + .switch__track{outline:2px solid var(--accent);outline-offset:3px}
-
-.segmented{
-  display:inline-flex;padding:4px;gap:4px;
-  background:var(--panel-3);border:1px solid var(--border);border-radius:var(--r3);
-}
-.segmented__btn{
-  padding:10px 20px;border:none;background:transparent;cursor:pointer;
-  color:var(--dim);font-size:13.5px;font-weight:600;border-radius:8px;
-  transition:all var(--t) var(--ease);font-family:inherit;
-}
-.segmented__btn:hover{color:var(--text)}
-.segmented__btn.is-active{background:var(--panel);color:var(--text);box-shadow:0 4px 14px rgba(0,0,0,.25)}
-[data-theme="light"] .segmented__btn.is-active{box-shadow:0 4px 14px rgba(20,25,60,.08)}
-
-/* ============ EMPTY ============ */
-.empty{
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
-  gap:14px;padding:60px 24px;text-align:center;color:var(--dim);
-}
-.empty__ico{
-  width:64px;height:64px;border-radius:20px;
-  display:grid;place-items:center;
-  background:var(--panel-2);border:1px solid var(--border);color:var(--mute);
-}
-.empty__ico svg{width:28px;height:28px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-.empty__title{font-size:17px;font-weight:600;color:var(--text)}
-.empty__text{font-size:14.5px;color:var(--mute);max-width:360px}
-
-/* ============ TOAST ============ */
-.toast-container{
-  position:fixed;right:24px;bottom:24px;
-  display:flex;flex-direction:column;gap:12px;
-  z-index:200;pointer-events:none;
-}
-.toast{
-  pointer-events:auto;
-  display:flex;align-items:center;gap:12px;
-  min-width:260px;max-width:380px;
-  padding:16px 20px;
-  background:var(--panel-3);
-  border:1px solid var(--border-2);
-  border-left:3px solid var(--accent);
-  border-radius:var(--r2);
-  box-shadow:var(--shadow);
-  font-size:14.5px;color:var(--text);
-  animation:slideIn 380ms var(--ease) both;
-}
-.toast.is-hiding{animation:slideOut 300ms var(--ease) both}
-.toast--success{border-left-color:var(--green)}
-.toast--warn{border-left-color:var(--yellow)}
-.toast--error{border-left-color:var(--red)}
-.toast svg{width:18px;height:18px;flex:0 0 18px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-
-/* ============ FOOTER ============ */
-.footer{
-  margin-top:auto;padding:32px 0 0;
-  border-top:1px solid var(--border);
-  color:var(--mute);font-size:12.5px;letter-spacing:.06em;text-align:center;
-}
-
-/* ============ ANIMATIONS ============ */
-@keyframes fadeIn{from{opacity:0}to{opacity:1}}
-@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
-@keyframes modalIn{from{opacity:0;transform:scale(.96) translateY(10px)}to{opacity:1;transform:none}}
-@keyframes slideIn{from{opacity:0;transform:translateX(30px)}to{opacity:1;transform:none}}
-@keyframes slideOut{to{opacity:0;transform:translateX(30px)}}
-
-/* ============ RESPONSIVE ============ */
-@media (max-width:1080px){
-  :root{--sidebar:76px}
-  .sidebar{padding:22px 12px;align-items:center}
-  .brand{justify-content:center;padding:0 0 18px;width:100%}
-  .brand__text{display:none}
-  .nav{width:100%;align-items:center}
-  .nav__item{justify-content:center;padding:14px;width:100%}
-  .nav__item span{display:none}
-  .nav__item.is-active::before{left:-12px}
-  .sidebar__foot{width:100%}
-  .sidebar__status{justify-content:center;padding:12px 6px}
-  .sidebar__status b{display:none}
-  .sidebar__foot p{display:none}
-}
-@media (max-width:720px){
-  body{font-size:15px}
-  .app{flex-direction:column}
-  .sidebar{
-    position:fixed;left:0;right:0;bottom:0;top:auto;
-    width:100%;height:72px;flex:0 0 72px;flex-direction:row;
-    align-items:center;justify-content:space-around;
-    padding:8px 8px;
-    padding-bottom:calc(8px + env(safe-area-inset-bottom));
-    border-right:none;border-top:1px solid var(--border);
-    background:color-mix(in srgb, var(--panel) 94%, transparent);
-    backdrop-filter:blur(20px);z-index:90;
+  :root {
+    --bg: #0a0c10;
+    --panel: rgba(18, 21, 27, 0.72);
+    --panel-solid: #12151b;
+    --border: rgba(255, 255, 255, 0.08);
+    --text: #e8ecf1;
+    --muted: #7c8798;
+    --accent: #3ea6ff;
+    --accent-glow: rgba(62, 166, 255, 0.35);
+    --danger: #ff4757;
+    --ok: #2ed573;
+    --radius: 14px;
+    --blur: 20px;
   }
-  .brand,.sidebar__foot{display:none}
-  .nav{flex-direction:row;width:100%;justify-content:space-around;gap:4px}
-  .nav__item{
-    flex-direction:column;gap:4px;padding:8px 4px;
-    font-size:10.5px;width:auto;flex:1;border-radius:10px;
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  html, body {
+    height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Roboto, sans-serif;
+    overflow: hidden;
+    user-select: none;
   }
-  .nav__item span{display:block;letter-spacing:.02em}
-  .nav__item svg{width:22px;height:22px}
-  .nav__item.is-active::before{display:none}
-  .main{padding:0 20px calc(100px + env(safe-area-inset-bottom));gap:22px}
-  .topbar{margin:0 -20px;padding:0 20px;height:64px}
-  .topbar__nav{gap:2px}
-  .topbar__link{font-size:13px;padding:8px 12px}
-  .hero{padding:40px 0 8px}
-  .searchbar{flex-direction:column;align-items:stretch;padding:16px;gap:14px;border-radius:18px}
-  .searchbar__icon{display:none}
-  .searchbar__input{padding:6px 0;text-align:center;font-size:16px}
-  .searchbar .btn--primary{width:100%;padding:16px}
-  .chips{width:100%}
-  .chip{flex:1 1 calc(50% - 5px);text-align:center;padding:12px 14px}
-  .cardgrid{grid-template-columns:1fr}
-  .panel__head{padding:18px 20px;flex-wrap:wrap}
-  .panel__body{padding:20px}
-  .modal{padding:0;align-items:flex-end}
-  .modal__box{max-width:100%;max-height:94vh;border-radius:24px 24px 0 0}
-  .modal__head{padding:20px 22px}
-  .modal__body{padding:22px}
-  .scan{padding:28px 22px}
-  .setting-row{flex-direction:column;align-items:flex-start;gap:14px}
-  .toast-container{left:16px;right:16px;bottom:calc(88px + env(safe-area-inset-bottom))}
-  .toast{max-width:none;width:100%}
-  .tg-card{flex-direction:column;text-align:center;padding:22px}
-  .tg-card .avatar--lg{width:90px;height:90px;border-radius:22px}
-  .table{min-width:640px}
-  .table th,.table td{padding:14px 16px}
-  .hero__brand .brand__mark{width:46px;height:46px;font-size:20px}
-}
-@media (max-width:420px){
-  .chip{flex:1 1 100%}
-  .hero__title{letter-spacing:.08em}
-}
+
+  #stage {
+    position: fixed;
+    inset: 0;
+    background: #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  video {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    background: #000;
+    display: block;
+  }
+
+  /* ---------- Верхняя панель ---------- */
+  .topbar {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    background: linear-gradient(to bottom, rgba(0,0,0,0.75), transparent);
+    z-index: 30;
+    transition: opacity .35s ease, transform .35s ease;
+    pointer-events: none;
+  }
+  .topbar > * { pointer-events: auto; }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-weight: 600;
+    font-size: 15px;
+    letter-spacing: .2px;
+  }
+  .brand .dot {
+    width: 9px; height: 9px;
+    border-radius: 50%;
+    background: var(--muted);
+    box-shadow: 0 0 0 0 transparent;
+    transition: background .3s, box-shadow .3s;
+  }
+  .brand .dot.live {
+    background: var(--ok);
+    box-shadow: 0 0 12px 2px rgba(46, 213, 115, .5);
+    animation: pulse 2s infinite;
+  }
+  .brand .dot.err { background: var(--danger); box-shadow: 0 0 12px 2px rgba(255,71,87,.5); }
+  @keyframes pulse {
+    0%,100% { opacity: 1; }
+    50% { opacity: .55; }
+  }
+
+  .clock {
+    font-variant-numeric: tabular-nums;
+    font-size: 14px;
+    color: var(--muted);
+    font-weight: 500;
+    letter-spacing: .5px;
+  }
+
+  /* ---------- Нижняя панель ---------- */
+  .bottombar {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    padding: 20px;
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+    z-index: 30;
+    transition: opacity .35s ease, transform .35s ease;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    height: 46px;
+    min-width: 46px;
+    padding: 0 16px;
+    border: 1px solid var(--border);
+    background: var(--panel);
+    color: var(--text);
+    backdrop-filter: blur(var(--blur));
+    -webkit-backdrop-filter: blur(var(--blur));
+    border-radius: var(--radius);
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: background .18s, transform .12s, border-color .18s, color .18s;
+    outline: none;
+  }
+  .btn:hover { background: rgba(35, 40, 50, 0.85); border-color: rgba(255,255,255,.14); }
+  .btn:active { transform: scale(.94); }
+  .btn svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  .btn.active { background: var(--accent); border-color: var(--accent); color: #04121f; box-shadow: 0 0 22px var(--accent-glow); }
+
+  /* ---------- PTZ панель ---------- */
+  .ptz {
+    position: fixed;
+    right: 20px;
+    top: 50%;
+    transform: translateY(-50%) translateX(30px);
+    opacity: 0;
+    pointer-events: none;
+    z-index: 40;
+    transition: opacity .3s ease, transform .3s ease;
+    display: grid;
+    grid-template-columns: repeat(3, 52px);
+    grid-template-rows: repeat(3, 52px);
+    gap: 8px;
+    padding: 14px;
+    background: var(--panel);
+    backdrop-filter: blur(var(--blur));
+    -webkit-backdrop-filter: blur(var(--blur));
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    box-shadow: 0 20px 60px rgba(0,0,0,.6);
+  }
+  .ptz.show { opacity: 1; transform: translateY(-50%) translateX(0); pointer-events: auto; }
+
+  .ptz button {
+    width: 52px; height: 52px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: rgba(255,255,255,.03);
+    color: var(--text);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background .15s, transform .1s, color .15s, border-color .15s;
+    outline: none;
+  }
+  .ptz button:hover { background: rgba(62,166,255,.12); border-color: rgba(62,166,255,.4); color: var(--accent); }
+  .ptz button:active { transform: scale(.9); background: var(--accent); color: #04121f; }
+  .ptz button svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .ptz .center {
+    background: rgba(62,166,255,.08);
+    border-color: rgba(62,166,255,.25);
+    color: var(--accent);
+  }
+
+  /* ---------- Оверлей загрузки / ошибки ---------- */
+  .overlay {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 18px;
+    background: rgba(10, 12, 16, 0.92);
+    backdrop-filter: blur(8px);
+    z-index: 50;
+    transition: opacity .4s ease;
+    text-align: center;
+    padding: 24px;
+  }
+  .overlay.hidden { opacity: 0; pointer-events: none; }
+
+  .spinner {
+    width: 46px; height: 46px;
+    border-radius: 50%;
+    border: 3px solid rgba(255,255,255,.1);
+    border-top-color: var(--accent);
+    animation: spin 0.9s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .overlay .msg { color: var(--muted); font-size: 14px; max-width: 380px; line-height: 1.5; }
+  .overlay .msg strong { color: var(--text); display: block; margin-bottom: 6px; font-size: 15px; font-weight: 600; }
+
+  /* ---------- Скрытие UI ---------- */
+  body.idle .topbar { opacity: 0; transform: translateY(-10px); pointer-events: none; }
+  body.idle .bottombar { opacity: 0; transform: translateY(10px); pointer-events: none; }
+  body.idle { cursor: none; }
+
+  /* ---------- Мобильные ---------- */
+  @media (max-width: 640px) {
+    .btn span { display: none; }
+    .btn { padding: 0; width: 46px; }
+    .topbar { padding: 12px 14px; }
+    .bottombar { padding: 14px; gap: 8px; }
+    .ptz { right: 12px; grid-template-columns: repeat(3, 46px); grid-template-rows: repeat(3, 46px); padding: 10px; gap: 6px; }
+    .ptz button { width: 46px; height: 46px; }
+  }
 </style>
 </head>
 <body>
 
-<div class="app">
-  <aside class="sidebar" id="sidebar" aria-label="Навигация"></aside>
-  <main class="main" id="main">
-    <header class="topbar">
-      <div class="topbar__nav" id="topbarNav"></div>
-      <div class="topbar__right">
-        <button class="icon-btn" id="themeBtn" aria-label="Сменить тему" data-tooltip="Тема"></button>
-        <span class="status"><i class="dot dot--green"></i>Онлайн</span>
-      </div>
-    </header>
-    <div id="view"></div>
-  </main>
+<div id="stage">
+  <video id="video" playsinline autoplay muted></video>
 </div>
 
-<div class="modal" id="modal" aria-hidden="true">
-  <div class="modal__box" id="modalBox"></div>
+<!-- Верхняя панель -->
+<div class="topbar">
+  <div class="brand">
+    <div class="dot" id="statusDot"></div>
+    <div id="title">Камера</div>
+  </div>
+  <div class="clock" id="clock">--:--:--</div>
 </div>
 
-<div class="toast-container" id="toasts" aria-live="polite"></div>
+<!-- Нижняя панель -->
+<div class="bottombar">
+  <button class="btn" id="btnPtz" title="Управление (P)">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 3v18M3 12h18"/></svg>
+    <span>PTZ</span>
+  </button>
+  <button class="btn" id="btnSnap" title="Снимок (S)">
+    <svg viewBox="0 0 24 24"><path d="M3 8a2 2 0 0 1 2-2h2l1.5-2h7L17 6h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><circle cx="12" cy="12.5" r="3.5"/></svg>
+    <span>Снимок</span>
+  </button>
+  <button class="btn" id="btnAudio" title="Звук (M)">
+    <svg viewBox="0 0 24 24" id="audioIcon"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="M16 9a4 4 0 0 1 0 6"/></svg>
+    <span>Звук</span>
+  </button>
+  <button class="btn" id="btnFull" title="Полный экран (F)">
+    <svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
+    <span>Экран</span>
+  </button>
+</div>
+
+<!-- PTZ -->
+<div class="ptz" id="ptz">
+  <button data-cmd="upleft"><svg viewBox="0 0 24 24"><path d="M17 7 7 17M7 11V7h4"/></svg></button>
+  <button data-cmd="up"><svg viewBox="0 0 24 24"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button>
+  <button data-cmd="upright"><svg viewBox="0 0 24 24"><path d="M7 7l10 10M17 13v4h-4"/></svg></button>
+
+  <button data-cmd="left"><svg viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7"/></svg></button>
+  <button class="center" data-cmd="home"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2" fill="currentColor" stroke="none"/></svg></button>
+  <button data-cmd="right"><svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg></button>
+
+  <button data-cmd="downleft"><svg viewBox="0 0 24 24"><path d="M7 17 17 7M7 13v4h4"/></svg></button>
+  <button data-cmd="down"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12l7 7 7-7"/></svg></button>
+  <button data-cmd="downright"><svg viewBox="0 0 24 24"><path d="M17 17 7 7M13 17h4v-4"/></svg></button>
+
+  <button data-cmd="zoomin" style="grid-column: span 1.5;"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M11 8v6M8 11h6M21 21l-4.5-4.5"/></svg></button>
+  <button data-cmd="zoomout" style="grid-column: span 1.5;"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M8 11h6M21 21l-4.5-4.5"/></svg></button>
+</div>
+
+<!-- Оверлей состояния -->
+<div class="overlay" id="overlay">
+  <div class="spinner" id="spinner"></div>
+  <div class="msg" id="overlayMsg"><strong>Подключение к камере…</strong>Ожидание видеопотока</div>
+</div>
 
 <script>
 /* =========================================================
-   SHERLOCK OSINT — single file / Russian / Telegram-aware
+   НАСТРОЙКА — поменяй только эти значения
    ========================================================= */
-(function(){
-'use strict';
+const CONFIG = {
+  // Название камеры в шапке
+  title: 'Камера',
 
-/* -------- ICONS -------- */
-const S = (p) => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+p+'</svg>';
-const ICONS = {
-  search:    S('<circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/>'),
-  user:      S('<circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-6 8-6s8 2 8 6"/>'),
-  database:  S('<ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v6c0 1.7 3.6 3 8 3s8-1.3 8-3V6"/><path d="M4 12v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/>'),
-  settings:  S('<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-2.7 1.1V21a2 2 0 1 1-4 0v-.1A1.6 1.6 0 0 0 7 19.4a1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1A1.6 1.6 0 0 0 3 15a1.6 1.6 0 0 0-1.5-1H1a2 2 0 1 1 0-4h.1A1.6 1.6 0 0 0 2.6 9a1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1A1.6 1.6 0 0 0 7 4.6h.1A1.6 1.6 0 0 0 8.6 3V3a2 2 0 1 1 4 0v.1A1.6 1.6 0 0 0 15 4.6a1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1A1.6 1.6 0 0 0 19.4 9v.1a1.6 1.6 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1z"/>'),
-  sun:       S('<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>'),
-  moon:      S('<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>'),
-  external:  S('<path d="M14 4h6v6"/><path d="M20 4l-8 8"/><path d="M18 14v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4"/>'),
-  close:     S('<path d="M6 6l12 12M18 6L6 18"/>'),
-  check:     S('<path d="M4 12.5l5 5L20 6.5"/>'),
-  alert:     S('<path d="M12 3l9.5 17H2.5z"/><path d="M12 9v5M12 17.5v.01"/>'),
-  share:     S('<circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="18" cy="18" r="2.5"/><path d="M8.2 10.8l7.6-3.6M8.2 13.2l7.6 3.6"/>'),
-  mention:   S('<path d="M21 11.5a8.5 8.5 0 1 1-3.3-6.7"/><circle cx="12" cy="12" r="4"/><path d="M16 8v5a2 2 0 0 0 4 0v-1.5"/>'),
-  file:      S('<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/>'),
-  send:      S('<path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4z"/>'),
-  tg:        S('<path d="M21.5 4.5L2.5 11.7l5.6 1.9 2 6.2 3.2-3.7 4.7 3.5z"/>')
+  // HLS-поток из go2rtc (или другого сервера).
+  // Пример: http://192.168.1.50:1984/api/stream.m3u8?src=my_camera
+  streamUrl: 'http://localhost:1984/api/stream.m3u8?src=my_camera',
+
+  // Необязательно: URL, куда будут уходить PTZ-команды.
+  // Оставь пустым — кнопки PTZ просто ничего не будут делать.
+  // Пример: http://192.168.1.50:8090/ptz
+  ptzUrl: '',
+
+  // Начинать со звуком или без
+  startMuted: true
 };
+/* ========================================================= */
 
-/* -------- STORAGE -------- */
-const PFX='sherlock_';
-const LS={
-  get(k,d){try{const v=localStorage.getItem(PFX+k);return v===null?d:JSON.parse(v)}catch(e){return d}},
-  set(k,v){try{localStorage.setItem(PFX+k,JSON.stringify(v))}catch(e){}},
-  del(k){try{localStorage.removeItem(PFX+k)}catch(e){}}
-};
+const video     = document.getElementById('video');
+const overlay   = document.getElementById('overlay');
+const overlayMsg= document.getElementById('overlayMsg');
+const spinner   = document.getElementById('spinner');
+const statusDot = document.getElementById('statusDot');
+const titleEl   = document.getElementById('title');
+const clockEl   = document.getElementById('clock');
+const ptzPanel  = document.getElementById('ptz');
+const btnPtz    = document.getElementById('btnPtz');
+const btnSnap   = document.getElementById('btnSnap');
+const btnAudio  = document.getElementById('btnAudio');
+const btnFull   = document.getElementById('btnFull');
 
-/* -------- SETTINGS -------- */
-const DEF={theme:'dark',noHistory:false};
-const getSet=()=>Object.assign({},DEF,LS.get('settings',{}));
-const setSet=(p)=>{const s=Object.assign(getSet(),p);LS.set('settings',s);applySet(s);return s};
-function applySet(s){
-  s=s||getSet();
-  document.documentElement.setAttribute('data-theme',s.theme);
-  const btn=document.getElementById('themeBtn');
-  if(btn)btn.innerHTML=s.theme==='dark'?ICONS.sun:ICONS.moon;
+titleEl.textContent = CONFIG.title;
+video.muted = CONFIG.startMuted;
+updateAudioBtn();
+
+/* ---------- Часы ---------- */
+setInterval(() => {
+  const d = new Date();
+  clockEl.textContent = d.toLocaleTimeString('ru-RU', { hour12: false });
+}, 1000);
+
+/* ---------- Поток ---------- */
+let hls = null;
+
+function showOverlay(title, text, spinning = true) {
+  overlay.classList.remove('hidden');
+  spinner.style.display = spinning ? 'block' : 'none';
+  overlayMsg.innerHTML = `<strong>${title}</strong>${text}`;
+}
+function hideOverlay() { overlay.classList.add('hidden'); }
+function setStatus(state) {
+  statusDot.className = 'dot' + (state === 'live' ? ' live' : state === 'err' ? ' err' : '');
 }
 
-/* -------- HISTORY -------- */
-function getHist(){return LS.get('history',[])}
-function addHist(e){
-  if(getSet().noHistory)return;
-  const l=getHist();
-  l.unshift(Object.assign({id:'h'+Date.now()+Math.random().toString(36).slice(2,6)},e));
-  LS.set('history',l.slice(0,20));
-}
-function clearHist(){LS.set('history',[])}
+function startStream() {
+  setStatus('wait');
+  showOverlay('Подключение к камере…', 'Ожидание видеопотока');
 
-/* -------- TOAST -------- */
-function toast(msg,type){
-  const box=document.getElementById('toasts');
-  if(!box)return;
-  const el=document.createElement('div');
-  el.className='toast toast--'+(type||'info');
-  const icon=type==='success'?ICONS.check:type==='error'?ICONS.close:type==='warn'?ICONS.alert:ICONS.search;
-  el.innerHTML=icon+'<span>'+msg+'</span>';
-  box.appendChild(el);
-  setTimeout(()=>{el.classList.add('is-hiding');setTimeout(()=>el.remove(),320)},3200);
-}
+  if (hls) { hls.destroy(); hls = null; }
 
-/* -------- HELPERS -------- */
-const esc=(s)=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const initial=(n)=>(String(n||'?').trim()[0]||'?').toUpperCase();
-function fmtDate(iso){
-  try{const d=new Date(iso);return d.toLocaleDateString('ru-RU',{year:'numeric',month:'short',day:'2-digit'})}catch(e){return iso}
-}
-function badgeFor(c){
-  const m={high:'badge--high',medium:'badge--med',low:'badge--low'};
-  const l={high:'Высокая',medium:'Средняя',low:'Низкая'};
-  return '<span class="badge '+(m[c]||'')+'">'+(l[c]||c)+'</span>';
-}
-
-/* =========================================================
-   TELEGRAM — реальная попытка подтянуть публичные данные
-   ========================================================= */
-async function tgFetch(username){
-  const clean=String(username||'').replace(/^@/,'').replace(/[^a-zA-Z0-9_]/g,'').toLowerCase();
-  const out={
-    username:clean,
-    name:null,
-    bio:null,
-    avatar:'https://unavatar.io/telegram/'+clean,
-    found:false,
-    url:'https://t.me/'+clean,
-    type:'profile'
-  };
-  if(!clean)return out;
-
-  // Попытка получить HTML публичной страницы через CORS-прокси
-  const target='https://t.me/'+clean;
-  const proxies=[
-    u=>'https://api.allorigins.win/raw?url='+encodeURIComponent(u),
-    u=>'https://corsproxy.io/?url='+encodeURIComponent(u),
-    u=>'https://r.jina.ai/'+u
-  ];
-
-  for(const proxy of proxies){
-    try{
-      const controller=new AbortController();
-      const t=setTimeout(()=>controller.abort(),4500);
-      const res=await fetch(proxy(target),{signal:controller.signal});
-      clearTimeout(t);
-      if(!res.ok)continue;
-      const html=await res.text();
-      const parsed=parseTg(html,clean);
-      if(parsed.name||parsed.bio){
-        out.name=parsed.name;
-        out.bio=parsed.bio;
-        if(parsed.avatar)out.avatar=parsed.avatar;
-        out.found=true;
-        break;
-      }
-    }catch(e){continue;}
-  }
-  return out;
-}
-
-function parseTg(html,username){
-  const r={name:null,bio:null,avatar:null};
-
-  let m=html.match(/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']+)["']/i);
-  if(!m)m=html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:title["']/i);
-  if(m){
-    let t=m[1];
-    // "Имя (@username)" или "Имя – @username"
-    t=t.replace(/\s*[\(–\-]\s*@[^\)\s]+\)?\s*$/,'').trim();
-    t=t.replace(/^Telegram:\s*/i,'');
-    t=t.replace(/^Contact\s*@[^\s]+\s*$/i,'');
-    if(t&&t!=='Telegram')r.name=t;
-  }
-
-  let d=html.match(/<meta[^>]+property=["']og:description["'][^>]+content=["']([^"']+)["']/i);
-  if(!d)d=html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:description["']/i);
-  if(d){
-    r.bio=d[1].replace(/\s+/g,' ').trim();
-    if(r.bio.length>280)r.bio=r.bio.slice(0,280)+'…';
-  }
-
-  let i=html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i);
-  if(i)r.avatar=i[1];
-
-  return r;
-}
-
-/* =========================================================
-   searchPublicSources — точка интеграции с backend
-   ========================================================= */
-const FORBIDDEN=[
-  /паспорт/i,/passport/i,/снилс/i,/snils/i,
-  /банковск/i,/bank\s*card/i,/cvv/i,/iban/i,
-  /пароль/i,/password/i,/прописк/i,/домашний\s+адрес/i,
-  /утечк/i,/leak/i,/\bdump\b/i,/база\s*данных/i,
-  /деанон/i
-];
-const isForbidden=(q)=>FORBIDDEN.some(r=>r.test(String(q||'')));
-
-async function searchPublicSources(query,type){
-  const q=String(query||'').trim();
-  if(isForbidden(q)){
-    return {blocked:true,message:'Этот тип данных недоступен. Поиск работает только с публичной информацией.'};
-  }
-  if(!q||q.length<2){
-    return {query:q,type,empty:true,profiles:[],sources:[],mentions:[],connections:[]};
-  }
-
-  const uname=q.replace(/^@/,'');
-  const tg=await tgFetch(uname);
-
-  const profile={
-    id:'p_'+uname,
-    name:tg.name||('@'+uname),
-    username:uname,
-    bio:tg.bio||'Описание отсутствует в публичном источнике.',
-    avatar:tg.avatar,
-    locations:[],
-    platforms:[
-      {name:'Telegram',url:tg.url,found:!!tg.found,confidence:tg.found?95:60},
-      {name:'GitHub',url:'https://github.com/'+uname,found:false,confidence:0},
-      {name:'Instagram',url:'https://instagram.com/'+uname,found:false,confidence:0},
-      {name:'X',url:'https://x.com/'+uname,found:false,confidence:0}
-    ]
-  };
-
-  // Собираем другие площадки через OPTIONS запросы имитации — оставим только ТГ как реальный
-  const others=await Promise.all([
-    checkUrl('https://github.com/'+uname),
-    checkUrl('https://instagram.com/'+uname)
-  ]);
-  if(others[0]){ profile.platforms[1].found=true; profile.platforms[1].confidence=90; }
-  if(others[1]){ profile.platforms[2].found=true; profile.platforms[2].confidence=75; }
-
-  return {
-    query:q,type,uname,tg,
-    profiles:[profile],
-    sources:[
-      {source:'Telegram',url:tg.url,date:new Date().toISOString().slice(0,10),type:'Публичный профиль',relevance:tg.found?96:40,confidence:tg.found?'high':'low'}
-    ],
-    mentions:[],
-    connections:[]
-  };
-}
-
-async function checkUrl(url){
-  // Эвристика: некоторые сайты отдают 404 для отсутствующих, но CORS не даёт проверить.
-  // Возвращаем false — не выдумываем находки.
-  return false;
-}
-
-/* =========================================================
-   MODAL
-   ========================================================= */
-const modal=document.getElementById('modal');
-const modalBox=document.getElementById('modalBox');
-let modalLastFocus=null;
-
-function openModal(html,opts){
-  opts=opts||{};
-  modalLastFocus=document.activeElement;
-  modalBox.className='modal__box'+(opts.wide?' modal__box--wide':'')+(opts.narrow?' modal__box--narrow':'');
-  modalBox.innerHTML=html;
-  modal.classList.add('is-open');
-  modal.setAttribute('aria-hidden','false');
-  document.body.style.overflow='hidden';
-  setTimeout(()=>{
-    const btn=modalBox.querySelector('.modal__close');
-    if(btn)btn.focus();
-  },80);
-}
-function closeModal(){
-  modal.classList.remove('is-open');
-  modal.setAttribute('aria-hidden','true');
-  document.body.style.overflow='';
-  setTimeout(()=>{modalBox.innerHTML=''},280);
-  if(modalLastFocus&&modalLastFocus.focus)modalLastFocus.focus();
-}
-modal.addEventListener('click',e=>{
-  if(e.target===modal)closeModal();
-});
-document.addEventListener('keydown',e=>{
-  if(e.key==='Escape'&&modal.classList.contains('is-open'))closeModal();
-});
-
-function modalHead(title){
-  return '<div class="modal__head"><h3 class="modal__title">'+esc(title)+'</h3>'+
-    '<button class="icon-btn modal__close" aria-label="Закрыть">'+ICONS.close+'</button></div>';
-}
-function bindModalClose(){
-  const btn=modalBox.querySelector('.modal__close');
-  if(btn)btn.onclick=closeModal;
-}
-
-/* =========================================================
-   SCAN
-   ========================================================= */
-function runScan(){
-  return new Promise(resolve=>{
-    const steps=[
-      'Проверка публичных профилей',
-      'Запрос к Telegram',
-      'Поиск упоминаний',
-      'Анализ открытых связей',
-      'Формирование отчёта'
-    ];
-    const pcts=[0,22,48,72,90,100];
-
-    openModal(
-      modalHead('Поиск')+
-      '<div class="modal__body scan">'+
-        '<div class="scan__title">СКАНИРОВАНИЕ ПУБЛИЧНЫХ ИСТОЧНИКОВ</div>'+
-        '<div class="scan__bar"><i id="scanBar"></i></div>'+
-        '<div class="scan__pct" id="scanPct">0%</div>'+
-        '<ul class="scan__steps" id="scanSteps">'+
-          steps.map(n=>'<li><span class="tick">✓</span>'+n+'</li>').join('')+
-        '</ul>'+
-      '</div>',
-      {narrow:true}
-    );
-    bindModalClose();
-
-    const bar=document.getElementById('scanBar');
-    const pct=document.getElementById('scanPct');
-    const list=document.getElementById('scanSteps');
-    let i=0;
-
-    function tick(){
-      if(i>=steps.length){
-        setTimeout(resolve,300);
-        return;
-      }
-      list.children[i].classList.add('is-active');
-      setTimeout(()=>{
-        list.children[i].classList.remove('is-active');
-        list.children[i].classList.add('is-done');
-        bar.style.width=pcts[i+1]+'%';
-        pct.textContent=pcts[i+1]+'%';
-        i++;
-        setTimeout(tick,260);
-      },360);
-    }
-    tick();
-  });
-}
-
-/* =========================================================
-   VIEW: SEARCH
-   ========================================================= */
-function viewSearch(){
-  const hist=getHist();
-  return ''+
-  '<section class="hero">'+
-    '<div class="hero__brand">'+
-      '<span class="brand__mark">S</span>'+
-      '<div class="brand__text"><strong>SHERLOCK</strong><small>OPEN SOURCE INTELLIGENCE</small></div>'+
-    '</div>'+
-    '<h1 class="hero__title">SHERLOCK OSINT</h1>'+
-    '<p class="hero__sub">Поиск информации из открытых источников</p>'+
-    '<form class="searchbar" id="searchForm" autocomplete="off">'+
-      '<span class="searchbar__icon"></span>'+
-      '<input type="text" id="searchInput" class="searchbar__input" placeholder="Введите имя или @username" aria-label="Поисковый запрос" required>'+
-      '<button type="submit" class="btn btn--primary">Найти</button>'+
-    '</form>'+
-    '<div class="chips" id="typeChips">'+
-      '<button type="button" class="chip is-active" data-type="name">Имя</button>'+
-      '<button type="button" class="chip" data-type="username">Username</button>'+
-      '<button type="button" class="chip" data-type="phone">Телефон</button>'+
-      '<button type="button" class="chip" data-type="email">E-mail</button>'+
-    '</div>'+
-    '<p class="note"><span class="note__i"></span><span>Поиск выполняется только по публичным источникам</span></p>'+
-  '</section>'+
-
-  (hist.length?
-  '<section class="panel">'+
-    '<div class="panel__head">'+
-      '<h3 class="panel__title">Недавние запросы</h3>'+
-      '<button class="btn btn--ghost btn--sm" id="clearHist">Очистить</button>'+
-    '</div>'+
-    '<div class="panel__body">'+
-      '<div class="list">'+hist.map(h=>
-        '<div class="list__item">'+
-          '<div class="list__main">'+
-            '<div class="list__title">'+esc(h.query)+'</div>'+
-            '<div class="list__sub">'+fmtDate(h.date)+'</div>'+
-          '</div>'+
-          '<div class="list__actions">'+
-            '<button class="btn btn--sm" data-open-hist="'+esc(h.query)+'">Открыть</button>'+
-          '</div>'+
-        '</div>').join('')+
-      '</div>'+
-    '</div>'+
-  '</section>':'')+
-
-  '<footer class="footer"><p>Только публичные данные. Никаких утечек, закрытых аккаунтов и персональных данных.</p></footer>';
-}
-
-/* =========================================================
-   RESULTS VIEW (в модалке)
-   ========================================================= */
-function showResults(res){
-  if(res.blocked){
-    openModal(
-      modalHead('Доступ ограничен')+
-      '<div class="modal__body">'+
-        '<div class="notice notice--error">'+esc(res.message)+'</div>'+
-      '</div>',
-      {narrow:true}
-    );
-    bindModalClose();
-    return;
-  }
-  if(res.empty||!res.profiles.length){
-    openModal(
-      modalHead('Результаты поиска')+
-      '<div class="modal__body">'+
-        '<div class="empty">'+
-          '<div class="empty__ico">'+ICONS.search+'</div>'+
-          '<div class="empty__title">Ничего не найдено</div>'+
-          '<div class="empty__text">Попробуйте изменить запрос.</div>'+
-        '</div>'+
-      '</div>',
-      {narrow:true}
-    );
-    bindModalClose();
-    return;
-  }
-
-  const p=res.profiles[0];
-  const tg=res.tg;
-
-  const tgBlock=tg.found?
-    '<div class="tg-card">'+
-      '<div class="avatar avatar--lg">'+(tg.avatar?'<img src="'+esc(tg.avatar)+'" alt="" onerror="this.parentNode.innerHTML=\''+initial(tg.name||tg.username)+'\'">':initial(tg.name||tg.username))+'</div>'+
-      '<div class="tg-card__info">'+
-        '<div class="tg-card__name">'+esc(tg.name||('@'+tg.username))+'</div>'+
-        '<div class="tg-card__user">@'+esc(tg.username)+'</div>'+
-        (tg.bio?'<div class="tg-card__bio">'+esc(tg.bio)+'</div>':'')+
-      '</div>'+
-      '<a class="btn btn--sm" href="'+esc(tg.url)+'" target="_blank" rel="noopener">Открыть '+ICONS.external+'</a>'+
-    '</div>':'';
-
-  const html=
-    modalHead('Результаты поиска')+
-    '<div class="modal__body">'+
-      '<div class="kv" style="margin-bottom:18px">'+
-        '<span class="kv__k">Запрос</span>'+
-        '<span class="kv__v" style="font-family:ui-monospace,monospace">'+esc(res.query)+'</span>'+
-      '</div>'+
-      tgBlock+
-      '<div style="margin-top:22px;display:flex;gap:12px;flex-wrap:wrap">'+
-        '<button class="btn btn--primary" id="openProfileBtn">Открыть профиль</button>'+
-        '<button class="btn" id="openGraphBtn">'+ICONS.share+' Граф связей</button>'+
-        '<button class="btn" id="openReportBtn">'+ICONS.file+' Отчёт</button>'+
-      '</div>'+
-    '</div>';
-
-  openModal(html);
-  bindModalClose();
-
-  document.getElementById('openProfileBtn').onclick=()=>{
-    closeModal();
-    setTimeout(()=>showProfile(res),200);
-  };
-  document.getElementById('openGraphBtn').onclick=()=>{
-    closeModal();
-    setTimeout(()=>showGraph(res),200);
-  };
-  document.getElementById('openReportBtn').onclick=()=>{
-    closeModal();
-    setTimeout(()=>showReport(res),200);
-  };
-}
-
-/* =========================================================
-   PROFILE (в модалке)
-   ========================================================= */
-function showProfile(res){
-  const p=res.profiles[0];
-  const tg=res.tg;
-
-  const links=p.platforms.filter(x=>x.found).map(x=>
-    '<a class="linkchip" href="'+esc(x.url)+'" target="_blank" rel="noopener">'+esc(x.name)+' '+ICONS.external+'</a>'
-  ).join('');
-
-  const html=
-    modalHead('Профиль')+
-    '<div class="modal__body">'+
-      '<div class="tg-card" style="margin-bottom:22px">'+
-        '<div class="avatar avatar--lg">'+(tg.avatar?'<img src="'+esc(tg.avatar)+'" alt="" onerror="this.parentNode.innerHTML=\''+initial(tg.name||tg.username)+'\'">':initial(tg.name||tg.username))+'</div>'+
-        '<div class="tg-card__info">'+
-          '<div class="tg-card__name">'+esc(tg.name||('@'+tg.username))+'</div>'+
-          '<div class="tg-card__user">@'+esc(tg.username)+'</div>'+
-          (tg.bio?'<div class="tg-card__bio">'+esc(tg.bio)+'</div>':'')+
-        '</div>'+
-      '</div>'+
-
-      '<div class="kv" style="margin-bottom:20px">'+
-        '<span class="kv__k">Публичные ссылки</span>'+
-        '<span class="kv__v" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:6px">'+links+'</span>'+
-      '</div>'+
-
-      '<div class="kv" style="margin-bottom:20px">'+
-        '<span class="kv__k">Источник</span>'+
-        '<span class="kv__v">'+esc(tg.url)+'</span>'+
-      '</div>'+
-
-      '<div class="notice notice--info" style="font-size:13.5px">'+
-        'Совпадение имени и username не доказывает принадлежность профиля конкретному человеку. Проверяйте первоисточники.'+
-      '</div>'+
-    '</div>';
-
-  openModal(html);
-  bindModalClose();
-}
-
-/* =========================================================
-   GRAPH (в модалке, без zoom)
-   ========================================================= */
-function showGraph(res){
-  const target=res.uname||'target';
-
-  const nodes=[
-    {id:'t',label:'TARGET',type:'target'},
-    {id:'tg',label:'Telegram',type:'platform'},
-    {id:'gh',label:'GitHub',type:'platform'},
-    {id:'ig',label:'Instagram',type:'platform'},
-    {id:'x',label:'X',type:'platform'},
-    {id:'men',label:'Упоминание',type:'mention'},
-    {id:'org',label:'Организация',type:'mention'}
-  ];
-  const edges=[
-    ['t','tg'],['t','gh'],['t','ig'],['t','x'],['t','men'],['t','org']
-  ];
-
-  // фиксированные координаты, без интерактива
-  const W=900,H=520,cx=W/2,cy=H/2,R=180;
-  nodes[0].x=cx;nodes[0].y=cy;
-  for(let i=1;i<nodes.length;i++){
-    const a=(i-1)/(nodes.length-1)*Math.PI*2-Math.PI/2;
-    nodes[i].x=cx+Math.cos(a)*R;
-    nodes[i].y=cy+Math.sin(a)*R;
-  }
-  const map={};nodes.forEach(n=>map[n.id]=n);
-  const colorFor=t=>t==='target'?'var(--accent)':t==='platform'?'var(--green)':'var(--yellow)';
-
-  let svg='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto;display:block">';
-  edges.forEach(e=>{
-    const a=map[e[0]],b=map[e[1]];
-    svg+='<line x1="'+a.x+'" y1="'+a.y+'" x2="'+b.x+'" y2="'+b.y+'" stroke="rgba(140,145,175,.28)" stroke-width="1.4"/>';
-  });
-  nodes.forEach(n=>{
-    const r=n.type==='target'?28:20;
-    svg+='<g>'+
-      '<circle cx="'+n.x+'" cy="'+n.y+'" r="'+r+'" fill="'+colorFor(n.type)+'" opacity="'+(n.type==='target'?'.92':'.85')+'"/>'+
-      '<text x="'+n.x+'" y="'+(n.y+r+18)+'" text-anchor="middle" fill="var(--text)" font-size="11" font-family="ui-monospace,monospace">'+esc(n.label)+'</text>'+
-    '</g>';
-  });
-  svg+='</svg>';
-
-  const html=
-    modalHead('Граф связей: @'+esc(target))+
-    '<div class="modal__body" style="padding:0">'+
-      '<div style="padding:20px 24px 0;color:var(--dim);font-size:13.5px">'+
-        'Отображаются только связи, подтверждаемые публичными источниками.'+
-      '</div>'+
-      '<div style="padding:16px 12px 24px">'+svg+'</div>'+
-    '</div>';
-
-  openModal(html,{wide:true});
-  bindModalClose();
-}
-
-/* =========================================================
-   REPORT (в модалке)
-   ========================================================= */
-function showReport(res){
-  const ts=new Date().toLocaleString('ru-RU');
-  const tg=res.tg;
-
-  const html=
-    modalHead('Отчёт')+
-    '<div class="modal__body">'+
-      '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:24px">'+
-        '<button class="btn btn--primary" id="expTxt">Экспорт TXT</button>'+
-        '<button class="btn" id="expJson">Экспорт JSON</button>'+
-      '</div>'+
-
-      '<div style="background:var(--panel-2);border:1px solid var(--border);border-radius:14px;padding:26px">'+
-        '<h2 style="margin:0 0 8px;font-size:20px;letter-spacing:.14em">SHERLOCK OSINT</h2>'+
-        '<div style="font-family:ui-monospace,monospace;font-size:12.5px;color:var(--mute);margin-bottom:22px">'+
-          'Запрос: <b style="color:var(--text)">'+esc(res.query)+'</b><br>'+
-          'Сформирован: '+esc(ts)+'<br>'+
-          'Тип: '+esc(res.type)+
-        '</div>'+
-
-        '<div style="font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--mute);font-weight:700;margin:20px 0 10px">Сводка</div>'+
-        '<ul style="margin:0;padding-left:20px;color:var(--dim);line-height:1.8">'+
-          '<li>Публичных источников: '+res.sources.length+'</li>'+
-          '<li>Публичных профилей: '+res.profiles.length+'</li>'+
-          '<li>Упоминаний: '+res.mentions.length+'</li>'+
-          '<li>Возможных связей: '+res.connections.length+'</li>'+
-        '</ul>'+
-
-        (tg.found?
-          '<div style="font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--mute);font-weight:700;margin:20px 0 10px">Telegram</div>'+
-          '<ul style="margin:0;padding-left:20px;color:var(--dim);line-height:1.8">'+
-            '<li>Имя: '+esc(tg.name||'—')+'</li>'+
-            '<li>Username: @'+esc(tg.username)+'</li>'+
-            '<li>Био: '+esc(tg.bio||'—')+'</li>'+
-            '<li>Ссылка: '+esc(tg.url)+'</li>'+
-          '</ul>':'')+
-
-        '<div style="margin-top:24px;padding-top:16px;border-top:1px solid var(--border);font-size:12px;color:var(--mute);font-style:italic;line-height:1.6">'+
-          'Отчёт содержит информацию из публично доступных источников. Результаты могут быть неполными или неточными.'+
-        '</div>'+
-      '</div>'+
-    '</div>';
-
-  openModal(html);
-  bindModalClose();
-
-  document.getElementById('expTxt').onclick=()=>exportReport(res,'txt');
-  document.getElementById('expJson').onclick=()=>exportReport(res,'json');
-}
-
-function exportReport(res,fmt){
-  let blob,ext;
-  if(fmt==='json'){
-    blob=new Blob([JSON.stringify(res,null,2)],{type:'application/json'});
-    ext='json';
-  }else{
-    const l=[];
-    l.push('SHERLOCK OSINT — ОТЧЁТ');
-    l.push('========================');
-    l.push('Запрос: '+res.query);
-    l.push('Сформирован: '+new Date().toLocaleString('ru-RU'));
-    l.push('');
-    if(res.tg&&res.tg.found){
-      l.push('TELEGRAM');
-      l.push('  Имя: '+(res.tg.name||'—'));
-      l.push('  Username: @'+res.tg.username);
-      l.push('  Био: '+(res.tg.bio||'—'));
-      l.push('  Ссылка: '+res.tg.url);
-      l.push('');
-    }
-    l.push('ИСТОЧНИКИ');
-    res.sources.forEach(s=>l.push('  - '+s.source+' — '+s.url));
-    l.push('');
-    l.push('Отчёт содержит информацию из публично доступных источников.');
-    l.push('Результаты могут быть неполными или неточными.');
-    blob=new Blob([l.join('\n')],{type:'text/plain;charset=utf-8'});
-    ext='txt';
-  }
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement('a');
-  a.href=url;a.download='sherlock-'+Date.now()+'.'+ext;
-  document.body.appendChild(a);a.click();a.remove();
-  setTimeout(()=>URL.revokeObjectURL(url),600);
-  toast('Отчёт сохранён','success');
-}
-
-/* =========================================================
-   VIEW: SOURCES
-   ========================================================= */
-function viewSources(){
-  const src=[
-    {s:'Telegram',u:'https://t.me/',d:'Публичные профили и каналы'},
-    {s:'GitHub',u:'https://github.com/',d:'Публичные репозитории и профили'},
-    {s:'Instagram',u:'https://instagram.com/',d:'Публичные профили'},
-    {s:'X',u:'https://x.com/',d:'Публичные аккаунты'},
-    {s:'VK',u:'https://vk.com/',d:'Публичные страницы'},
-    {s:'YouTube',u:'https://youtube.com/',d:'Публичные каналы'},
-    {s:'Reddit',u:'https://reddit.com/',d:'Публичные обсуждения'},
-    {s:'Веб-сайты',u:'',d:'Открытые страницы и публичные упоминания'}
-  ];
-  return '<section class="section"><div class="section__head"><h2 class="section__title">Источники</h2></div>'+
-    '<section class="panel"><div class="panel__body panel__body--flush">'+
-      '<div class="table-wrap"><table class="table">'+
-        '<thead><tr><th>Источник</th><th>Описание</th><th></th></tr></thead>'+
-        '<tbody>'+src.map(x=>
-          '<tr><td><b>'+esc(x.s)+'</b></td><td style="color:var(--dim)">'+esc(x.d)+'</td>'+
-          '<td>'+(x.u?'<a class="btn btn--sm" href="'+esc(x.u)+'" target="_blank" rel="noopener">Открыть '+ICONS.external+'</a>':'')+'</td></tr>'
-        ).join('')+'</tbody>'+
-      '</table></div>'+
-    '</div></section>'+
-    '<section class="panel"><div class="panel__head"><h3 class="panel__title">Уровни достоверности</h3></div>'+
-    '<div class="panel__body" style="display:grid;gap:12px">'+
-      '<div style="padding:16px 18px;border-radius:12px;border:1px solid rgba(51,214,159,.3);background:rgba(51,214,159,.08)"><b style="color:var(--green);letter-spacing:.1em">ВЫСОКАЯ</b><div style="color:var(--dim);font-size:13.5px;margin-top:6px">Информация подтверждается несколькими независимыми публичными источниками.</div></div>'+
-      '<div style="padding:16px 18px;border-radius:12px;border:1px solid rgba(245,196,81,.3);background:rgba(245,196,81,.08)"><b style="color:var(--yellow);letter-spacing:.1em">СРЕДНЯЯ</b><div style="color:var(--dim);font-size:13.5px;margin-top:6px">Есть один достаточно надёжный источник.</div></div>'+
-      '<div style="padding:16px 18px;border-radius:12px;border:1px solid rgba(255,92,108,.3);background:rgba(255,92,108,.08)"><b style="color:var(--red);letter-spacing:.1em">НИЗКАЯ</b><div style="color:var(--dim);font-size:13.5px;margin-top:6px">Возможное совпадение, требующее дополнительной проверки.</div></div>'+
-    '</div></section>'+
-    '<footer class="footer"><p>Все ссылки ведут на публично доступные страницы.</p></footer>';
-}
-
-/* =========================================================
-   VIEW: SETTINGS
-   ========================================================= */
-function viewSettings(){
-  const s=getSet();
-  return '<section class="section"><div class="section__head"><h2 class="section__title">Настройки</h2></div></section>'+
-    '<section class="panel"><div class="panel__head"><h3 class="panel__title">Оформление</h3></div><div class="panel__body">'+
-      '<div class="setting-row">'+
-        '<div><div class="setting-row__title">Тема</div><div class="setting-row__desc">Основной режим — тёмный.</div></div>'+
-        '<div class="segmented" id="themeSeg">'+
-          '<button class="segmented__btn '+(s.theme==='dark'?'is-active':'')+'" data-tv="dark">Тёмная</button>'+
-          '<button class="segmented__btn '+(s.theme==='light'?'is-active':'')+'" data-tv="light">Светлая</button>'+
-        '</div>'+
-      '</div>'+
-    '</div></section>'+
-    '<section class="panel"><div class="panel__head"><h3 class="panel__title">Приватность</h3></div><div class="panel__body">'+
-      '<div class="setting-row">'+
-        '<div><div class="setting-row__title">Не сохранять историю</div><div class="setting-row__desc">Если включено, история поиска не сохраняется в браузере.</div></div>'+
-        '<label class="switch"><input type="checkbox" id="noHist" '+(s.noHistory?'checked':'')+'><span class="switch__track"><span class="switch__thumb"></span></span></label>'+
-      '</div>'+
-      '<div class="setting-row">'+
-        '<div><div class="setting-row__title">История</div><div class="setting-row__desc">Удалить все сохранённые запросы.</div></div>'+
-        '<button class="btn btn--sm" id="clearH">Очистить</button>'+
-      '</div>'+
-    '</div></section>'+
-    '<section class="panel"><div class="panel__head"><h3 class="panel__title">Уведомление о безопасности</h3></div><div class="panel__body" style="display:grid;gap:12px">'+
-      '<div class="notice notice--info">SHERLOCK OSINT работает только с публично доступной информацией. Сервис не предназначен для получения конфиденциальных персональных данных.</div>'+
-      '<div class="notice notice--warn">Недоступно: паспортные данные, СНИЛС, банковские данные, пароли, приватные адреса, закрытые аккаунты, данные из утечек.</div>'+
-    '</div></section>'+
-    '<footer class="footer"><p>Только публичные данные.</p></footer>';
-}
-
-/* =========================================================
-   ROUTER
-   ========================================================= */
-const NAV=[
-  {id:'search',href:'#/',icon:'search',label:'Поиск'},
-  {id:'sources',href:'#/sources',icon:'database',label:'Источники'},
-  {id:'settings',href:'#/settings',icon:'settings',label:'Настройки'}
-];
-
-function currentRoute(){
-  const h=location.hash.replace(/^#\/?/,'');
-  return h.split('/')[0]||'search';
-}
-function renderSidebar(){
-  const cur=currentRoute();
-  const el=document.getElementById('sidebar');
-  el.innerHTML=
-    '<div class="brand"><span class="brand__mark">S</span>'+
-    '<div class="brand__text"><strong>SHERLOCK</strong><small>OPEN SOURCE INTELLIGENCE</small></div></div>'+
-    '<nav class="nav">'+NAV.map(n=>
-      '<a class="nav__item '+(n.id===cur?'is-active':'')+'" href="'+n.href+'">'+ICONS[n.icon]+'<span>'+n.label+'</span></a>'
-    ).join('')+'</nav>'+
-    '<div class="sidebar__foot">'+
-      '<div class="sidebar__status"><i class="dot dot--green"></i><b>Система в сети</b></div>'+
-      '<p>Только публичные данные</p>'+
-    '</div>';
-}
-function renderTopbar(){
-  const cur=currentRoute();
-  const el=document.getElementById('topbarNav');
-  el.innerHTML=NAV.map(n=>
-    '<a class="topbar__link '+(n.id===cur?'is-active':'')+'" href="'+n.href+'">'+n.label+'</a>'
-  ).join('');
-}
-
-function render(){
-  const cur=currentRoute();
-  const view=document.getElementById('view');
-  let html='';
-  if(cur==='sources')html=viewSources();
-  else if(cur==='settings')html=viewSettings();
-  else html=viewSearch();
-
-  view.innerHTML=html;
-  renderSidebar();
-  renderTopbar();
-  bind();
-  window.scrollTo({top:0,behavior:'smooth'});
-}
-
-/* =========================================================
-   BIND
-   ========================================================= */
-function bind(){
-  // chips
-  const chips=document.getElementById('typeChips');
-  if(chips){
-    chips.querySelectorAll('.chip').forEach(c=>{
-      c.onclick=()=>{
-        chips.querySelectorAll('.chip').forEach(x=>x.classList.remove('is-active'));
-        c.classList.add('is-active');
-        const inp=document.getElementById('searchInput');
-        if(!inp)return;
-        const ph={
-          name:'Введите имя и фамилию',
-          username:'Введите @username',
-          phone:'Введите номер телефона',
-          email:'Введите e-mail'
-        }[c.dataset.type];
-        inp.placeholder=ph;
-        inp.focus();
-      };
+  if (Hls.isSupported()) {
+    hls = new Hls({
+      lowLatencyMode: true,
+      enableWorker: true,
+      liveSyncDurationCount: 2,
+      backBufferLength: 30
     });
-  }
+    hls.loadSource(CONFIG.streamUrl);
+    hls.attachMedia(video);
 
-  // search
-  const form=document.getElementById('searchForm');
-  if(form){
-    form.onsubmit=async(e)=>{
-      e.preventDefault();
-      const inp=document.getElementById('searchInput');
-      const q=(inp&&inp.value||'').trim();
-      if(!q)return;
-      const chip=document.querySelector('#typeChips .chip.is-active');
-      const type=chip?chip.dataset.type:'name';
+    hls.on(Hls.Events.MANIFEST_PARSED, () => {
+      setStatus('live');
+      hideOverlay();
+      video.play().catch(() => {});
+    });
 
-      toast('Запуск поиска','info');
-      await runScan();
-
-      let res;
-      try{
-        res=await searchPublicSources(q,type);
-      }catch(err){
-        closeModal();
-        toast('Ошибка поиска','error');
-        openModal(modalHead('Ошибка')+
-          '<div class="modal__body"><div class="notice notice--error">Не удалось выполнить поиск. Попробуйте ещё раз.</div></div>',
-          {narrow:true});
-        bindModalClose();
-        return;
+    hls.on(Hls.Events.ERROR, (_, data) => {
+      if (data.fatal) {
+        setStatus('err');
+        switch (data.type) {
+          case Hls.ErrorTypes.NETWORK_ERROR:
+            showOverlay('Нет связи с потоком', 'Проверь адрес в CONFIG.streamUrl и доступность сервера');
+            hls.startLoad();
+            break;
+          case Hls.ErrorTypes.MEDIA_ERROR:
+            hls.recoverMediaError();
+            break;
+          default:
+            showOverlay('Ошибка воспроизведения', 'Поток недоступен. Перезагрузка через 5 секунд…');
+            setTimeout(startStream, 5000);
+            break;
+        }
       }
-
-      closeModal();
-      setTimeout(()=>{
-        showResults(res);
-        addHist({query:q,type,date:new Date().toISOString()});
-      },200);
-    };
+    });
+  } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+    // Safari / iOS — нативный HLS
+    video.src = CONFIG.streamUrl;
+    video.addEventListener('loadedmetadata', () => {
+      setStatus('live'); hideOverlay(); video.play().catch(() => {});
+    }, { once: true });
+    video.addEventListener('error', () => {
+      setStatus('err');
+      showOverlay('Нет связи с потоком', 'Проверь адрес потока');
+    }, { once: true });
+  } else {
+    setStatus('err');
+    showOverlay('Браузер не поддерживает HLS', 'Открой страницу в современном браузере', false);
   }
-
-  // history
-  document.querySelectorAll('[data-open-hist]').forEach(b=>{
-    b.onclick=async()=>{
-      const q=b.dataset.openHist;
-      const inp=document.getElementById('searchInput');
-      if(inp)inp.value=q;
-      const form=document.getElementById('searchForm');
-      if(form)form.dispatchEvent(new Event('submit'));
-    };
-  });
-  const clr=document.getElementById('clearHist');
-  if(clr)clr.onclick=()=>{
-    clearHist();
-    toast('История очищена','success');
-    render();
-  };
-
-  // settings
-  const seg=document.getElementById('themeSeg');
-  if(seg)seg.onclick=e=>{
-    const b=e.target.closest('[data-tv]');if(!b)return;
-    setSet({theme:b.dataset.tv});
-    toast('Тема обновлена','success');
-    render();
-  };
-  const nh=document.getElementById('noHist');
-  if(nh)nh.onchange=e=>{
-    setSet({noHistory:e.target.checked});
-    if(e.target.checked)clearHist();
-    toast(e.target.checked?'История не сохраняется':'История сохраняется','info');
-  };
-  const ch=document.getElementById('clearH');
-  if(ch)ch.onclick=()=>{
-    clearHist();
-    toast('История очищена','success');
-  };
 }
 
-/* =========================================================
-   INIT
-   ========================================================= */
-function init(){
-  applySet();
-  const btn=document.getElementById('themeBtn');
-  if(btn)btn.onclick=()=>{
-    const s=getSet();
-    setSet({theme:s.theme==='dark'?'light':'dark'});
-    toast(getSet().theme==='dark'?'Тёмная тема':'Светлая тема','info');
-  };
-  window.addEventListener('hashchange',render);
-  if(!location.hash)location.hash='#/';
-  render();
+startStream();
+
+/* ---------- PTZ ---------- */
+async function sendPtz(cmd) {
+  if (!CONFIG.ptzUrl) return;
+  try {
+    await fetch(CONFIG.ptzUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ cmd })
+    });
+  } catch (e) {
+    console.warn('PTZ error:', e);
+  }
 }
 
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);
-else init();
+ptzPanel.querySelectorAll('button[data-cmd]').forEach(btn => {
+  btn.addEventListener('click', () => sendPtz(btn.dataset.cmd));
+});
 
-})();
+btnPtz.addEventListener('click', () => {
+  ptzPanel.classList.toggle('show');
+  btnPtz.classList.toggle('active', ptzPanel.classList.contains('show'));
+});
+
+/* ---------- Снимок ---------- */
+btnSnap.addEventListener('click', () => {
+  if (!video.videoWidth) return;
+  const canvas = document.createElement('canvas');
+  canvas.width  = video.videoWidth;
+  canvas.height = video.videoHeight;
+  canvas.getContext('2d').drawImage(video, 0, 0);
+  canvas.toBlob(blob => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const t = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+    a.href = url;
+    a.download = `camera_${t}.jpg`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }, 'image/jpeg', 0.95);
+});
+
+/* ---------- Звук ---------- */
+function updateAudioBtn() {
+  const icon = btnAudio.querySelector('#audioIcon');
+  if (video.muted) {
+    icon.innerHTML = '<path d="M11 5 6 9H3v6h3l5 4z"/><path d="M22 9l-6 6M16 9l6 6"/>';
+    btnAudio.classList.remove('active');
+  } else {
+    icon.innerHTML = '<path d="M11 5 6 9H3v6h3l5 4z"/><path d="M16 9a4 4 0 0 1 0 6"/>';
+    btnAudio.classList.add('active');
+  }
+}
+btnAudio.addEventListener('click', () => {
+  video.muted = !video.muted;
+  updateAudioBtn();
+});
+
+/* ---------- Полный экран ---------- */
+btnFull.addEventListener('click', () => {
+  if (!document.fullscreenElement) {
+    document.documentElement.requestFullscreen?.();
+  } else {
+    document.exitFullscreen?.();
+  }
+});
+
+/* ---------- Горячие клавиши ---------- */
+document.addEventListener('keydown', e => {
+  const k = e.key.toLowerCase();
+  if (k === 'p') btnPtz.click();
+  else if (k === 's') btnSnap.click();
+  else if (k === 'm') btnAudio.click();
+  else if (k === 'f') btnFull.click();
+  else if (k === 'escape' && ptzPanel.classList.contains('show')) btnPtz.click();
+});
+
+/* ---------- Автоскрытие интерфейса ---------- */
+let idleTimer;
+function resetIdle() {
+  document.body.classList.remove('idle');
+  clearTimeout(idleTimer);
+  idleTimer = setTimeout(() => {
+    if (!ptzPanel.classList.contains('show')) document.body.classList.add('idle');
+  }, 3500);
+}
+['mousemove', 'mousedown', 'touchstart', 'keydown'].forEach(ev =>
+  document.addEventListener(ev, resetIdle, { passive: true })
+);
+resetIdle();
+
+/* ---------- Возврат к потоку ---------- */
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden && hls && hls.media) {
+    video.play().catch(() => {});
+  }
+});
+
+/* ---------- Двойной клик — полный экран ---------- */
+video.addEventListener('dblclick', () => btnFull.click());
 </script>
 </body>
 </html>
