@@ -1,786 +1,114 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Видеонаблюдение</title>
-<script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.13/dist/hls.min.js"></script>
-<style>
-  :root {
-    --bg: #0a0c10;
-    --panel: rgba(18, 21, 27, 0.78);
-    --panel-solid: #12151b;
-    --border: rgba(255, 255, 255, 0.08);
-    --border-strong: rgba(255, 255, 255, 0.14);
-    --text: #e8ecf1;
-    --muted: #7c8798;
-    --accent: #3ea6ff;
-    --accent-glow: rgba(62, 166, 255, 0.35);
-    --danger: #ff4757;
-    --ok: #2ed573;
-    --radius: 14px;
-    --blur: 20px;
-  }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Биометрия лица в реальном времени</title>
+    <style>
+        body {
+            margin: 0;
+            background-color: #0d0d0d;
+            color: #fff;
+            font-family: monospace;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+        h2 {
+            margin-bottom: 10px;
+            font-size: 1.2rem;
+            color: #ff8c00;
+        }
+        .container {
+            position: relative;
+            width: 640px;
+            height: 480px;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 0 20px rgba(255, 140, 0, 0.3);
+            border: 1px solid #333;
+        }
+        video, canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            transform: scaleX(-1); /* Зеркалируем для удобства */
+        }
+    </style>
 
-  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-
-  html, body {
-    height: 100%;
-    background: var(--bg);
-    color: var(--text);
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Roboto, sans-serif;
-    overflow-x: hidden;
-  }
-
-  /* ---------- Шапка ---------- */
-  .header {
-    position: sticky;
-    top: 0;
-    z-index: 40;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 16px;
-    padding: 16px 22px;
-    background: rgba(10, 12, 16, 0.85);
-    backdrop-filter: blur(var(--blur));
-    -webkit-backdrop-filter: blur(var(--blur));
-    border-bottom: 1px solid var(--border);
-    flex-wrap: wrap;
-  }
-
-  .logo {
-    display: flex;
-    align-items: center;
-    gap: 11px;
-    font-weight: 700;
-    font-size: 17px;
-    letter-spacing: .3px;
-  }
-  .logo-mark {
-    width: 34px; height: 34px;
-    border-radius: 10px;
-    background: linear-gradient(135deg, var(--accent), #6f4cff);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 6px 18px rgba(62, 166, 255, 0.3);
-  }
-  .logo-mark svg { width: 19px; height: 19px; stroke: #fff; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-
-  .header-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-
-  .layout-switch {
-    display: flex;
-    background: rgba(255,255,255,0.04);
-    border: 1px solid var(--border);
-    border-radius: 11px;
-    padding: 3px;
-    gap: 2px;
-  }
-  .layout-switch button {
-    width: 36px; height: 32px;
-    border: none;
-    background: transparent;
-    color: var(--muted);
-    border-radius: 8px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: background .15s, color .15s;
-  }
-  .layout-switch button:hover { color: var(--text); }
-  .layout-switch button.active { background: var(--accent); color: #04121f; }
-  .layout-switch svg { width: 17px; height: 17px; fill: currentColor; }
-
-  .btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    height: 40px;
-    padding: 0 16px;
-    border: 1px solid var(--border);
-    background: rgba(255,255,255,0.04);
-    color: var(--text);
-    border-radius: 11px;
-    cursor: pointer;
-    font-size: 14px;
-    font-weight: 500;
-    font-family: inherit;
-    transition: background .18s, border-color .18s, transform .1s;
-    white-space: nowrap;
-  }
-  .btn:hover { background: rgba(255,255,255,0.08); border-color: var(--border-strong); }
-  .btn:active { transform: scale(.96); }
-  .btn svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-  .btn.primary {
-    background: var(--accent);
-    border-color: var(--accent);
-    color: #04121f;
-    box-shadow: 0 6px 20px var(--accent-glow);
-  }
-  .btn.primary:hover { background: #57b3ff; }
-
-  /* ---------- Сетка камер ---------- */
-  .grid {
-    display: grid;
-    gap: 14px;
-    padding: 18px 22px 40px;
-    grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
-    transition: grid-template-columns .3s;
-  }
-  .grid[data-layout="1"] { grid-template-columns: 1fr; }
-  .grid[data-layout="2"] { grid-template-columns: repeat(2, 1fr); }
-  .grid[data-layout="3"] { grid-template-columns: repeat(3, 1fr); }
-  .grid[data-layout="4"] { grid-template-columns: repeat(4, 1fr); }
-  @media (max-width: 1100px) {
-    .grid[data-layout="3"], .grid[data-layout="4"] { grid-template-columns: repeat(2, 1fr); }
-  }
-  @media (max-width: 780px) {
-    .grid, .grid[data-layout="2"], .grid[data-layout="3"], .grid[data-layout="4"] { grid-template-columns: 1fr; }
-  }
-
-  /* ---------- Карточка камеры ---------- */
-  .cam {
-    position: relative;
-    background: #000;
-    border-radius: 16px;
-    overflow: hidden;
-    aspect-ratio: 16 / 9;
-    border: 1px solid var(--border);
-    box-shadow: 0 12px 30px rgba(0,0,0,0.4);
-    transition: border-color .2s, transform .2s;
-  }
-  .cam:hover { border-color: var(--border-strong); }
-  .cam.fullscreen-active { position: fixed; inset: 0; z-index: 100; aspect-ratio: auto; border-radius: 0; }
-
-  .cam video {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-    background: #000;
-    display: block;
-  }
-
-  .cam-top {
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 12px 14px;
-    background: linear-gradient(to bottom, rgba(0,0,0,0.78), transparent);
-    opacity: 0;
-    transition: opacity .25s;
-    pointer-events: none;
-    z-index: 5;
-  }
-  .cam:hover .cam-top, .cam.force-ui .cam-top { opacity: 1; pointer-events: auto; }
-
-  .cam-name {
-    display: flex;
-    align-items: center;
-    gap: 9px;
-    font-size: 14px;
-    font-weight: 600;
-    color: #fff;
-    text-shadow: 0 1px 4px rgba(0,0,0,0.8);
-    max-width: 60%;
-    overflow: hidden;
-  }
-  .cam-name span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-
-  .dot {
-    flex-shrink: 0;
-    width: 8px; height: 8px;
-    border-radius: 50%;
-    background: var(--muted);
-    transition: background .3s, box-shadow .3s;
-  }
-  .dot.live { background: var(--ok); box-shadow: 0 0 10px 2px rgba(46,213,115,.55); animation: pulse 2s infinite; }
-  .dot.err { background: var(--danger); box-shadow: 0 0 10px 2px rgba(255,71,87,.5); }
-  .dot.wait { background: #ffa502; }
-  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .5; } }
-
-  .cam-actions { display: flex; gap: 6px; }
-  .icon-btn {
-    width: 34px; height: 34px;
-    border-radius: 9px;
-    border: 1px solid rgba(255,255,255,0.12);
-    background: rgba(20, 24, 30, 0.7);
-    backdrop-filter: blur(10px);
-    color: #fff;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: background .15s, transform .1s, border-color .15s;
-    padding: 0;
-  }
-  .icon-btn:hover { background: rgba(62, 166, 255, 0.25); border-color: var(--accent); }
-  .icon-btn:active { transform: scale(.9); }
-  .icon-btn svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-  .icon-btn.danger:hover { background: rgba(255, 71, 87, 0.3); border-color: var(--danger); }
-
-  .cam-state {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 12px;
-    color: var(--muted);
-    font-size: 13px;
-    text-align: center;
-    padding: 20px;
-    background: rgba(0,0,0,0.6);
-    z-index: 3;
-  }
-  .cam-state.hidden { display: none; }
-  .cam-state .spinner {
-    width: 34px; height: 34px;
-    border: 3px solid rgba(255,255,255,.1);
-    border-top-color: var(--accent);
-    border-radius: 50%;
-    animation: spin .9s linear infinite;
-  }
-  @keyframes spin { to { transform: rotate(360deg); } }
-
-  /* ---------- Пустое состояние ---------- */
-  .empty {
-    grid-column: 1 / -1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 20px;
-    padding: 80px 30px;
-    text-align: center;
-    color: var(--muted);
-  }
-  .empty svg { width: 68px; height: 68px; stroke: var(--muted); fill: none; stroke-width: 1.4; opacity: .55; }
-  .empty h2 { font-size: 20px; color: var(--text); font-weight: 600; }
-  .empty p { max-width: 400px; line-height: 1.55; font-size: 14px; }
-
-  /* ---------- Модальное окно ---------- */
-  .modal-back {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.75);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    z-index: 100;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 20px;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity .25s;
-  }
-  .modal-back.show { opacity: 1; pointer-events: auto; }
-
-  .modal {
-    width: 100%;
-    max-width: 520px;
-    background: var(--panel-solid);
-    border: 1px solid var(--border-strong);
-    border-radius: 20px;
-    padding: 26px;
-    box-shadow: 0 30px 80px rgba(0,0,0,0.7);
-    transform: scale(.95) translateY(10px);
-    transition: transform .25s;
-    max-height: 90vh;
-    overflow-y: auto;
-  }
-  .modal-back.show .modal { transform: scale(1) translateY(0); }
-
-  .modal h3 {
-    font-size: 19px;
-    font-weight: 700;
-    margin-bottom: 4px;
-  }
-  .modal .sub {
-    font-size: 13px;
-    color: var(--muted);
-    margin-bottom: 22px;
-    line-height: 1.5;
-  }
-
-  .field { margin-bottom: 16px; }
-  .field label {
-    display: block;
-    font-size: 12.5px;
-    font-weight: 600;
-    color: var(--muted);
-    margin-bottom: 7px;
-    text-transform: uppercase;
-    letter-spacing: .4px;
-  }
-  .field input, .field select {
-    width: 100%;
-    height: 44px;
-    padding: 0 14px;
-    background: rgba(255,255,255,0.04);
-    border: 1px solid var(--border-strong);
-    border-radius: 11px;
-    color: var(--text);
-    font-size: 14px;
-    font-family: inherit;
-    outline: none;
-    transition: border-color .15s, background .15s;
-  }
-  .field input:focus, .field select:focus {
-    border-color: var(--accent);
-    background: rgba(62,166,255,0.06);
-  }
-  .field input::placeholder { color: #4e5866; }
-  .field .hint {
-    font-size: 12px;
-    color: var(--muted);
-    margin-top: 6px;
-    line-height: 1.5;
-  }
-
-  .modal-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 10px;
-    margin-top: 24px;
-  }
-
-  /* ---------- Toast ---------- */
-  .toast-wrap {
-    position: fixed;
-    bottom: 24px;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 200;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    align-items: center;
-    pointer-events: none;
-  }
-  .toast {
-    background: var(--panel-solid);
-    border: 1px solid var(--border-strong);
-    border-radius: 12px;
-    padding: 12px 18px;
-    font-size: 14px;
-    color: var(--text);
-    box-shadow: 0 12px 40px rgba(0,0,0,0.6);
-    animation: toastIn .3s ease;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-  .toast.err { border-color: rgba(255,71,87,0.5); }
-  .toast.ok { border-color: rgba(46,213,115,0.5); }
-  .toast svg { width: 18px; height: 18px; flex-shrink: 0; }
-  @keyframes toastIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-</style>
+    <!-- Подключаем скрипты MediaPipe Face Mesh -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js" crossorigin="anonymous"></script>
 </head>
 <body>
 
-<header class="header">
-  <div class="logo">
-    <div class="logo-mark">
-      <svg viewBox="0 0 24 24"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
-    </div>
-    Видеонаблюдение
-  </div>
-
-  <div class="header-right">
-    <div class="layout-switch" id="layoutSwitch">
-      <button data-layout="1" title="1 в ряд"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="1.5"/></svg></button>
-      <button data-layout="2" title="2 в ряд"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="8" height="14" rx="1.5"/><rect x="13" y="5" width="8" height="14" rx="1.5"/></svg></button>
-      <button data-layout="3" title="3 в ряд"><svg viewBox="0 0 24 24"><rect x="2" y="5" width="6" height="14" rx="1.2"/><rect x="9" y="5" width="6" height="14" rx="1.2"/><rect x="16" y="5" width="6" height="14" rx="1.2"/></svg></button>
-      <button data-layout="auto" class="active" title="Авто"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/></svg></button>
-    </div>
-    <button class="btn primary" id="btnAdd">
-      <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
-      Добавить камеру
-    </button>
-  </div>
-</header>
-
-<main class="grid" id="grid" data-layout="auto"></main>
-
-<!-- Модальное окно добавления/редактирования -->
-<div class="modal-back" id="modalBack">
-  <div class="modal">
-    <h3 id="modalTitle">Добавить камеру</h3>
-    <div class="sub">Укажи поток из go2rtc, RTSP-прокси или прямую HLS-ссылку.</div>
-
-    <div class="field">
-      <label for="fName">Название</label>
-      <input id="fName" type="text" placeholder="Например: Двор, Вход, Гараж" maxlength="60" autocomplete="off">
+    <h2>БИОМЕТРИЧЕСКАЯ СЕТКА ЛИЦА (468 ТОЧЕК)</h2>
+    <div class="container">
+        <video id="webcam" autoplay playsinline></video>
+        <canvas id="output_canvas"></canvas>
     </div>
 
-    <div class="field">
-      <label for="fType">Тип потока</label>
-      <select id="fType">
-        <option value="hls">HLS (.m3u8) — рекомендуем через go2rtc</option>
-        <option value="mp4">Прямая ссылка (mp4 / webm)</option>
-        <option value="mjpeg">MJPEG (HTTP-снимок)</option>
-      </select>
-    </div>
+    <script>
+        const videoElement = document.getElementById('webcam');
+        const canvasElement = document.getElementById('output_canvas');
+        const canvasCtx = canvasElement.getContext('2d');
 
-    <div class="field">
-      <label for="fUrl">URL потока</label>
-      <input id="fUrl" type="text" placeholder="http://192.168.1.50:1984/api/stream.m3u8?src=my_camera" autocomplete="off">
-      <div class="hint" id="urlHint">Совет: поток от <b>go2rtc</b> стабильнее всего. RTSP-ссылку go2rtc превратит в HLS автоматически.</div>
-    </div>
+        function onResults(results) {
+            // Подготавливаем холст под размер видео
+            canvasElement.width = videoElement.videoWidth;
+            canvasElement.height = videoElement.videoHeight;
 
-    <div class="modal-actions">
-      <button class="btn" id="btnCancel">Отмена</button>
-      <button class="btn primary" id="btnSave">Сохранить</button>
-    </div>
-  </div>
-</div>
+            canvasCtx.save();
+            canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+            
+            // Рисуем видеопоток
+            canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
 
-<div class="toast-wrap" id="toasts"></div>
-
-<script>
-/* =========================================================
-   Хранилище камер
-   ========================================================= */
-const STORAGE_KEY = 'cams_v1';
-
-function loadCams() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch { return []; }
-}
-function saveCams(list) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
-}
-function uid() {
-  return 'c_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-}
-
-let cams = loadCams();
-let editingId = null;
-
-/* =========================================================
-   Элементы
-   ========================================================= */
-const grid       = document.getElementById('grid');
-const modalBack  = document.getElementById('modalBack');
-const modalTitle = document.getElementById('modalTitle');
-const fName      = document.getElementById('fName');
-const fType      = document.getElementById('fType');
-const fUrl       = document.getElementById('fUrl');
-const urlHint    = document.getElementById('urlHint');
-const btnAdd     = document.getElementById('btnAdd');
-const btnCancel  = document.getElementById('btnCancel');
-const btnSave    = document.getElementById('btnSave');
-const toasts     = document.getElementById('toasts');
-
-/* =========================================================
-   Toast
-   ========================================================= */
-function toast(text, kind = '') {
-  const el = document.createElement('div');
-  el.className = 'toast ' + kind;
-  const icon = kind === 'err'
-    ? '<svg viewBox="0 0 24 24" fill="none" stroke="#ff4757" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v5M12 16h.01"/></svg>'
-    : kind === 'ok'
-    ? '<svg viewBox="0 0 24 24" fill="none" stroke="#2ed573" stroke-width="2" stroke-linecap="round"><path d="M20 6 9 17l-5-5"/></svg>'
-    : '';
-  el.innerHTML = icon + '<span>' + text + '</span>';
-  toasts.appendChild(el);
-  setTimeout(() => {
-    el.style.transition = 'opacity .3s, transform .3s';
-    el.style.opacity = '0';
-    el.style.transform = 'translateY(10px)';
-    setTimeout(() => el.remove(), 320);
-  }, 2600);
-}
-
-/* =========================================================
-   Рендер
-   ========================================================= */
-function render() {
-  grid.innerHTML = '';
-
-  if (cams.length === 0) {
-    grid.innerHTML = `
-      <div class="empty">
-        <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M23 7l-7 5 7 5V7z"/>
-          <rect x="1" y="5" width="15" height="14" rx="2"/>
-          <path d="M12 12h.01"/>
-        </svg>
-        <h2>Камер пока нет</h2>
-        <p>Нажми «Добавить камеру» и укажи ссылку на поток. Удобнее всего — HLS из go2rtc.</p>
-      </div>`;
-    return;
-  }
-
-  cams.forEach(cam => grid.appendChild(buildCard(cam)));
-}
-
-/* =========================================================
-   Карточка камеры
-   ========================================================= */
-function buildCard(cam) {
-  const card = document.createElement('div');
-  card.className = 'cam';
-  card.dataset.id = cam.id;
-
-  card.innerHTML = `
-    <video playsinline autoplay muted></video>
-
-    <div class="cam-top">
-      <div class="cam-name">
-        <div class="dot wait"></div>
-        <span></span>
-      </div>
-      <div class="cam-actions">
-        <button class="icon-btn btn-audio" title="Звук">
-          <svg viewBox="0 0 24 24" class="audio-icon"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="M22 9l-6 6M16 9l6 6"/></svg>
-        </button>
-        <button class="icon-btn btn-snap" title="Снимок">
-          <svg viewBox="0 0 24 24"><path d="M3 8a2 2 0 0 1 2-2h2l1.5-2h7L17 6h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><circle cx="12" cy="12.5" r="3.5"/></svg>
-        </button>
-        <button class="icon-btn btn-full" title="Полный экран">
-          <svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
-        </button>
-        <button class="icon-btn btn-edit" title="Изменить">
-          <svg viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
-        </button>
-        <button class="icon-btn danger btn-del" title="Удалить">
-          <svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>
-        </button>
-      </div>
-    </div>
-
-    <div class="cam-state">
-      <div class="spinner"></div>
-      <div class="state-text">Подключение…</div>
-    </div>
-  `;
-
-  card.querySelector('.cam-name span').textContent = cam.name || 'Камера';
-  const video   = card.querySelector('video');
-  const dot     = card.querySelector('.dot');
-  const state   = card.querySelector('.cam-state');
-  const stateTx = card.querySelector('.state-text');
-  const spinner = card.querySelector('.spinner');
-
-  function setState(kind, text) {
-    dot.className = 'dot ' + kind;
-    if (kind === 'live') {
-      state.classList.add('hidden');
-    } else {
-      state.classList.remove('hidden');
-      spinner.style.display = kind === 'err' ? 'none' : 'block';
-      stateTx.textContent = text || '';
-    }
-  }
-
-  /* --- Запуск потока --- */
-  let hls = null;
-  function start() {
-    setState('wait', 'Подключение…');
-    if (hls) { hls.destroy(); hls = null; }
-    video.removeAttribute('src');
-    video.load();
-
-    if (cam.type === 'mjpeg') {
-      video.remove();
-      const img = document.createElement('img');
-      img.src = cam.url;
-      img.style.cssText = 'width:100%;height:100%;object-fit:contain;background:#000;display:block';
-      card.insertBefore(img, card.firstChild);
-      img.onload = () => setState('live');
-      img.onerror = () => setState('err', 'Нет связи');
-      return;
-    }
-
-    if (cam.type === 'mp4') {
-      video.src = cam.url;
-      video.addEventListener('loadeddata', () => setState('live'), { once: true });
-      video.addEventListener('error',   () => setState('err', 'Ошибка потока'), { once: true });
-      video.play().catch(() => {});
-      return;
-    }
-
-    // HLS
-    if (Hls.isSupported()) {
-      hls = new Hls({ lowLatencyMode: true, enableWorker: true, liveSyncDurationCount: 2, backBufferLength: 30 });
-      hls.loadSource(cam.url);
-      hls.attachMedia(video);
-      hls.on(Hls.Events.MANIFEST_PARSED, () => { setState('live'); video.play().catch(() => {}); });
-      hls.on(Hls.Events.ERROR, (_, data) => {
-        if (data.fatal) {
-          if (data.type === Hls.ErrorTypes.NETWORK_ERROR) { setState('err', 'Нет связи'); hls.startLoad(); }
-          else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) hls.recoverMediaError();
-          else setState('err', 'Ошибка потока');
+            // Если лицо найдено, рисуем точки
+            if (results.multiFaceLandmarks) {
+                for (const landmarks of results.multiFaceLandmarks) {
+                    // Рисуем каждую точку биометрии
+                    for (const point of landmarks) {
+                        const x = point.x * canvasElement.width;
+                        const y = point.y * canvasElement.height;
+                        
+                        canvasCtx.fillStyle = '#ff8c00'; // Оранжевые точки
+                        canvasCtx.fillRect(x, y, 1.5, 1.5); // Маленькие пиксели точек
+                    }
+                }
+            }
+            canvasCtx.restore();
         }
-      });
-    } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-      video.src = cam.url;
-      video.addEventListener('loadedmetadata', () => { setState('live'); video.play().catch(() => {}); }, { once: true });
-      video.addEventListener('error', () => setState('err', 'Ошибка потока'), { once: true });
-    } else {
-      setState('err', 'HLS не поддерживается');
-    }
-  }
 
-  /* --- Кнопки --- */
-  card.querySelector('.btn-snap').onclick = () => {
-    if (!video.videoWidth) return;
-    const c = document.createElement('canvas');
-    c.width = video.videoWidth; c.height = video.videoHeight;
-    c.getContext('2d').drawImage(video, 0, 0);
-    c.toBlob(b => {
-      const a = document.createElement('a');
-      const t = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-      a.href = URL.createObjectURL(b);
-      a.download = (cam.name || 'camera').replace(/\s+/g, '_') + '_' + t + '.jpg';
-      a.click();
-      URL.revokeObjectURL(a.href);
-      toast('Снимок сохранён', 'ok');
-    }, 'image/jpeg', 0.95);
-  };
+        const faceMesh = new FaceMesh({
+            locateFile: (file) => {
+                return `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`;
+            }
+        });
 
-  card.querySelector('.btn-audio').onclick = (e) => {
-    video.muted = !video.muted;
-    const icon = e.currentTarget.querySelector('.audio-icon');
-    if (video.muted) icon.innerHTML = '<path d="M11 5 6 9H3v6h3l5 4z"/><path d="M22 9l-6 6M16 9l6 6"/>';
-    else             icon.innerHTML = '<path d="M11 5 6 9H3v6h3l5 4z"/><path d="M16 9a4 4 0 0 1 0 6"/>';
-  };
+        faceMesh.setOptions({
+            maxNumFaces: 1,
+            refineLandmarks: true, // Включает детальные точки вокруг глаз и губ (увеличивает до 478 точек)
+            minDetectionConfidence: 0.5,
+            minTrackingConfidence: 0.5
+        });
 
-  card.querySelector('.btn-full').onclick = () => {
-    card.classList.toggle('fullscreen-active');
-    if (card.classList.contains('fullscreen-active')) {
-      card.classList.add('force-ui');
-      if (card.requestFullscreen) card.requestFullscreen().catch(() => {});
-    } else {
-      card.classList.remove('force-ui');
-      if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
-    }
-  };
-  card.addEventListener('dblclick', () => card.querySelector('.btn-full').click());
+        faceMesh.onResults(onResults);
 
-  card.querySelector('.btn-edit').onclick = () => openModal(cam.id);
-  card.querySelector('.btn-del').onclick = () => {
-    if (!confirm(`Удалить камеру «${cam.name}»?`)) return;
-    cams = cams.filter(c => c.id !== cam.id);
-    saveCams(cams);
-    render();
-    toast('Камера удалена', 'ok');
-  };
-
-  start();
-  return card;
-}
-
-/* =========================================================
-   Модальное окно
-   ========================================================= */
-function openModal(id = null) {
-  editingId = id;
-  if (id) {
-    const c = cams.find(x => x.id === id);
-    modalTitle.textContent = 'Изменить камеру';
-    fName.value = c.name;
-    fType.value = c.type;
-    fUrl.value  = c.url;
-  } else {
-    modalTitle.textContent = 'Добавить камеру';
-    fName.value = '';
-    fType.value = 'hls';
-    fUrl.value  = '';
-  }
-  updateHint();
-  modalBack.classList.add('show');
-  setTimeout(() => fName.focus(), 100);
-}
-
-function closeModal() {
-  modalBack.classList.remove('show');
-  editingId = null;
-}
-
-function updateHint() {
-  const t = fType.value;
-  if (t === 'hls') {
-    urlHint.innerHTML = 'Пример: <b>http://192.168.1.50:1984/api/stream.m3u8?src=my_camera</b> (поток go2rtc)';
-    fUrl.placeholder = 'http://192.168.1.50:1984/api/stream.m3u8?src=my_camera';
-  } else if (t === 'mp4') {
-    urlHint.innerHTML = 'Прямая ссылка на <b>.mp4</b> или <b>.webm</b> файл/поток';
-    fUrl.placeholder = 'http://192.168.1.50/video.mp4';
-  } else {
-    urlHint.innerHTML = 'Ссылка на <b>MJPEG</b> поток или снимок камеры';
-    fUrl.placeholder = 'http://192.168.1.50/webcapture.jpg?user=admin&password=pass';
-  }
-}
-fType.addEventListener('change', updateHint);
-
-btnAdd.onclick    = () => openModal();
-btnCancel.onclick = closeModal;
-modalBack.addEventListener('click', e => { if (e.target === modalBack) closeModal(); });
-
-btnSave.onclick = () => {
-  const name = fName.value.trim();
-  const url  = fUrl.value.trim();
-  const type = fType.value;
-
-  if (!name) { toast('Введите название', 'err'); fName.focus(); return; }
-  if (!url)  { toast('Введите URL потока', 'err'); fUrl.focus(); return; }
-  if (!/^https?:\/\//i.test(url)) { toast('URL должен начинаться с http:// или https://', 'err'); fUrl.focus(); return; }
-
-  if (editingId) {
-    const c = cams.find(x => x.id === editingId);
-    Object.assign(c, { name, url, type });
-    toast('Камера обновлена', 'ok');
-  } else {
-    cams.push({ id: uid(), name, url, type });
-    toast('Камера добавлена', 'ok');
-  }
-  saveCams(cams);
-  render();
-  closeModal();
-};
-
-document.addEventListener('keydown', e => {
-  if (e.key === 'Escape' && modalBack.classList.contains('show')) closeModal();
-  if (e.key === 'Enter' && modalBack.classList.contains('show')) btnSave.click();
-});
-
-/* =========================================================
-   Переключатель раскладки
-   ========================================================= */
-document.getElementById('layoutSwitch').addEventListener('click', e => {
-  const btn = e.target.closest('button[data-layout]');
-  if (!btn) return;
-  document.querySelectorAll('#layoutSwitch button').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  grid.dataset.layout = btn.dataset.layout;
-});
-
-/* =========================================================
-   Синхронизация между вкладками
-   ========================================================= */
-window.addEventListener('storage', e => {
-  if (e.key === STORAGE_KEY) {
-    cams = loadCams();
-    render();
-  }
-});
-
-/* =========================================================
-   Первый запуск
-   ========================================================= */
-render();
-</script>
+        const camera = new Camera(videoElement, {
+            onFrame: async () => {
+                await faceMesh.send({ image: videoElement });
+            },
+            width: 640,
+            height: 480
+        });
+        
+        camera.start();
+    </script>
 </body>
 </html>
