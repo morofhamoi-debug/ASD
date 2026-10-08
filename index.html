@@ -111,84 +111,10 @@ h1,h2,h3,h4,p{margin:0;}
 .scroll-y::-webkit-scrollbar-thumb{background:rgba(255,255,255,.09);border-radius:4px;}
 .scroll-y::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.16);}
 
-/* ------------------ Loading screen ------------------ */
-#loading-screen{
-  align-items:center;
-  justify-content:center;
-  text-align:center;
-  background:radial-gradient(900px 600px at 50% 40%, #191926 0%, #07070b 70%);
-  z-index:100;
-}
-.logo-wrap{
-  display:flex;flex-direction:column;align-items:center;gap:clamp(12px,2.2vh,22px);
-  animation:fadeIn .8s ease-out both;
-  padding:0 6vw;
-  max-width:min(720px, 92vw);
-}
-.logo-mark{
-  font-family:var(--mono);
-  font-weight:900;
-  font-size:clamp(56px, 12vw, 132px);
-  letter-spacing:.08em;
-  line-height:.9;
-  color:var(--text-0);
-  text-shadow:0 0 40px rgba(210,59,59,.45), 0 0 90px rgba(210,59,59,.16);
-  position:relative;
-}
-.logo-mark::after{
-  content:"";
-  position:absolute;
-  inset:-16% -8%;
-  border:1px solid rgba(210,59,59,.28);
-  border-radius:22px;
-  pointer-events:none;
-  animation:pulseRing 3.2s ease-in-out infinite;
-}
-.logo-title{
-  font-size:clamp(22px, 4.2vw, 42px);
-  letter-spacing:.36em;
-  font-weight:700;
-  padding-left:.36em;
-  text-transform:uppercase;
-}
-.logo-tag{
-  color:var(--text-2);
-  font-size:clamp(12px,1.6vw,15px);
-  letter-spacing:.18em;
-  text-transform:uppercase;
-}
-.load-bar{
-  width:min(460px, 74vw);
-  height:3px;
-  background:rgba(255,255,255,.06);
-  border-radius:3px;
-  overflow:hidden;
-  margin-top:8px;
-}
-.load-bar-fill{
-  height:100%;
-  width:0%;
-  background:linear-gradient(90deg, var(--accent), var(--accent-2));
-  transition:width .25s linear;
-  box-shadow:0 0 12px rgba(210,59,59,.6);
-}
-.load-status{
-  color:var(--text-3);
-  font-family:var(--mono);
-  font-size:12px;
-  letter-spacing:.14em;
-}
-@keyframes fadeIn{
-  from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}
-}
-@keyframes pulseRing{
-  0%,100%{opacity:.35;transform:scale(1);}
-  50%{opacity:.9;transform:scale(1.03);}
-}
-
 /* ------------------ Main menu ------------------ */
 #main-menu{
   z-index:40;
+  cursor:pointer;
 }
 .menu-bg{
   position:absolute;inset:0;
@@ -999,20 +925,8 @@ body.no-anim *{animation:none !important;transition:none !important;}
 <body>
 <div id="app">
 
-  <!-- ==================== LOADING ==================== -->
-  <section id="loading-screen" class="screen">
-    <div class="logo-wrap">
-      <div class="logo-mark" aria-hidden="true">17</div>
-      <h1 class="logo-title">Дело №17</h1>
-      <p class="logo-tag">Некоторые тайны лучше не раскрывать.</p>
-      <div class="load-bar" aria-hidden="true"><div class="load-bar-fill" id="load-fill"></div></div>
-      <div class="load-status" id="load-status">Инициализация…</div>
-      <button id="load-start" class="btn primary hidden" type="button">НАЧАТЬ</button>
-    </div>
-  </section>
-
   <!-- ==================== MAIN MENU ==================== -->
-  <section id="main-menu" class="screen" hidden>
+  <section id="main-menu" class="screen">
     <div class="menu-bg" aria-hidden="true"></div>
     <div class="menu-inner">
       <header class="menu-head">
@@ -1098,7 +1012,7 @@ body.no-anim *{animation:none !important;transition:none !important;}
 /* ============================================================
    ДЕЛО №17 — ЧАСТЬ 1
    Утилиты, состояние, сохранения, звук, ввод (клавиатура/мышь/
-   сенсор/геймпад), базовый UI, загрузка, главное меню.
+   сенсор/геймпад), базовый UI, главное меню + tap-to-start.
    ============================================================ */
 
 /* ===== PART 1 ===== */
@@ -1388,7 +1302,6 @@ const SaveEngine = (function(){
       }
     }
 
-    // Приводим критические поля к правильному типу
     out.chapter = typeof state.chapter === 'number' ? state.chapter : 1;
     out.scene   = typeof state.scene   === 'string' ? state.scene   : 'intro';
     out.time    = typeof state.time    === 'string' ? state.time    : '22:14';
@@ -1440,7 +1353,6 @@ const SaveEngine = (function(){
     const v = Number(data.version) || 0;
 
     if (v < 1){
-      // будущие миграции: v0 -> v1
       data = shallowAssign(createDefaultState(), data);
       data.version = 1;
     }
@@ -1478,7 +1390,6 @@ const SaveEngine = (function(){
     if (!json){
       return { ok:false, reason:'serialize' };
     }
-    // Проверка размера: предупредим, если > 2.5 МБ
     const bytes = json.length;
     if (bytes > 2.5 * 1024 * 1024){
       console.warn('[Save] Размер слота превышает 2.5 МБ:', bytes);
@@ -1661,13 +1572,10 @@ const AudioEngine = (function(){
     if (unlocked) return;
     const c = ensureCtx();
     if (!c) return;
-    const resume = () => {
-      try {
-        if (c.state === 'suspended') c.resume().then(() => { unlocked = true; }).catch(()=>{});
-        else unlocked = true;
-      } catch (e) { /* ignore */ }
-    };
-    resume();
+    try {
+      if (c.state === 'suspended') c.resume().then(() => { unlocked = true; }).catch(()=>{});
+      else unlocked = true;
+    } catch (e) { /* ignore */ }
     if (c.state !== 'suspended') unlocked = true;
   }
 
@@ -1680,7 +1588,6 @@ const AudioEngine = (function(){
     if (fxGain) fxGain.gain.value = GameState.settings.effectsVolume;
   }
 
-  // Простой синтез тона (fallback для UI-звуков)
   function beep(freq, duration, type, gainVal){
     if (!fxEnabled) return;
     const c = ensureCtx();
@@ -1716,7 +1623,6 @@ const AudioEngine = (function(){
     }
   }
 
-  // Атмосферный "музыкальный" слой: дрон + низкая пульсация.
   function startMusic(){
     if (musicNodes) return;
     const c = ensureCtx();
@@ -1788,11 +1694,10 @@ const AudioEngine = (function(){
 /* ------------------------------------------------------------------
    InputManager + GamepadManager
    ------------------------------------------------------------------ */
-
 const InputManager = (function(){
   const state = {
-    mode: 'mouse',          // mouse | keyboard | touch | gamepad
-    focused: null,          // HTMLElement
+    mode: 'mouse',
+    focused: null,
     navStack: [],
     lastActionAt: 0
   };
@@ -1815,15 +1720,14 @@ const InputManager = (function(){
     supported: !!navigator.getGamepads,
     connected: false,
     index: -1,
-    buttons: {},       // current pressed state
-    prevButtons: {},   // previous frame
-    holdTimers: {},    // timestamps of last auto-repeat
+    buttons: {},
+    prevButtons: {},
+    holdTimers: {},
     lastPollAt: 0,
-    pollInterval: 32,  // ~30 fps
+    pollInterval: 32,
     deadzone: 0.45
   };
 
-  // Стандартная раскладка Gamepad API
   const GP = {
     A: 0, B: 1, X: 2, Y: 3,
     LB: 4, RB: 5, LT: 6, RT: 7,
@@ -1846,8 +1750,6 @@ const InputManager = (function(){
     const tag = (el.tagName || '').toLowerCase();
     return tag === 'input' || tag === 'textarea' || el.isContentEditable;
   }
-
-  /* ---------- Focus handling ---------- */
 
   function focusElement(el, opts){
     opts = opts || {};
@@ -1896,7 +1798,6 @@ const InputManager = (function(){
   }
 
   function getActiveScope(){
-    // Ищем модальные слои в порядке приоритета
     const pause = $('#pause-menu');
     if (pause && !pause.hidden) return pause;
     const modal = $('#modal-root');
@@ -1967,17 +1868,14 @@ const InputManager = (function(){
     const el = state.focused;
     if (!el || !document.contains(el)) return;
     if (el.disabled) return;
-    // Простая эмуляция клика с клик-событием
     try {
       el.click();
     } catch (e) {
-      // fallback: dispatch
       const ev = new MouseEvent('click', { bubbles:true, cancelable:true });
       el.dispatchEvent(ev);
     }
   }
 
-  /* ---------- Actions ---------- */
   function performAction(action, src){
     const t = nowMs();
     state.lastActionAt = t;
@@ -2014,7 +1912,6 @@ const InputManager = (function(){
     else if (src === 'mouse') setMode('mouse');
   }
 
-  /* ---------- Keyboard ---------- */
   function onKeyDown(e){
     if (isEditable(e.target) && e.key !== 'Escape') return;
 
@@ -2030,7 +1927,6 @@ const InputManager = (function(){
     performAction(a, 'keyboard');
   }
 
-  /* ---------- Pointer / touch ---------- */
   function onPointerDown(e){
     if (e.pointerType === 'touch') setModeFromSource('touch');
     else setModeFromSource('mouse');
@@ -2048,7 +1944,6 @@ const InputManager = (function(){
     }
   }
 
-  /* ---------- Gamepad polling ---------- */
   function pollGamepads(){
     if (!gpState.supported) return;
     const list = navigator.getGamepads ? navigator.getGamepads() : [];
@@ -2090,7 +1985,6 @@ const InputManager = (function(){
       if (pressed) cur[i] = true;
     }
 
-    // Axes -> d-pad emulation
     const ax = pad.axes || [];
     const lx = ax.length > 0 ? ax[0] : 0;
     const ly = ax.length > 1 ? ax[1] : 0;
@@ -2099,13 +1993,11 @@ const InputManager = (function(){
     if (ly < -gpState.deadzone) cur[GP.DUP] = true;
     if (ly >  gpState.deadzone) cur[GP.DDOWN] = true;
 
-    // Detect newly pressed (edge)
     const newly = {};
     for (const k in cur){
       if (!gpState.prevButtons[k]) newly[k] = true;
     }
 
-    // Auto-repeat on D-pad hold (для навигации)
     const repeatDelay = 380;
     const repeatRate  = 110;
     const dpadKeys = [GP.DUP, GP.DDOWN, GP.DLEFT, GP.DRIGHT];
@@ -2126,8 +2018,7 @@ const InputManager = (function(){
       }
     }
 
-    // Interpret
-    if (newly[GP.DUP]    || newly[GP.L3] && false) performAction('up',    'gamepad');
+    if (newly[GP.DUP])    performAction('up',    'gamepad');
     if (newly[GP.DDOWN])  performAction('down',  'gamepad');
     if (newly[GP.DLEFT])  performAction('left',  'gamepad');
     if (newly[GP.DRIGHT]) performAction('right', 'gamepad');
@@ -2152,7 +2043,6 @@ const InputManager = (function(){
     requestAnimationFrame(loop);
   }
 
-  /* ---------- Hints ---------- */
   function updateHints(){
     const root = $('#control-hints');
     if (!root) return;
@@ -2182,7 +2072,6 @@ const InputManager = (function(){
     root.innerHTML = hints.map(h => '<div class="hint">' + h + '</div>').join('');
   }
 
-  /* ---------- Public ---------- */
   function init(){
     window.addEventListener('keydown', onKeyDown, { passive:false });
     window.addEventListener('pointerdown', onPointerDown, { passive:true });
@@ -2203,7 +2092,6 @@ const InputManager = (function(){
       updateHints();
     });
 
-    // Сброс состояния кнопок при потере фокуса/видимости
     const resetHeld = () => {
       gpState.prevButtons = {};
       gpState.buttons = {};
@@ -2362,7 +2250,7 @@ const Modal = (function(){
 const UI = (function(){
 
   function showScreen(id){
-    ['#loading-screen','#main-menu','#game-screen'].forEach(sel => {
+    ['#main-menu','#game-screen'].forEach(sel => {
       const el = $(sel);
       if (!el) return;
       if (sel === id) el.removeAttribute('hidden');
@@ -2387,63 +2275,6 @@ const UI = (function(){
   }
 
   return { showScreen, setChapterLabel, setClock, setStoryLocation };
-})();
-
-/* ------------------------------------------------------------------
-   Loading screen
-   ------------------------------------------------------------------ */
-const LoadingScreen = (function(){
-  const messages = [
-    'Инициализация…',
-    'Загрузка дела №17…',
-    'Проверка улик…',
-    'Восстановление хронологии…',
-    'Подготовка интерфейса…',
-    'Почти готово…'
-  ];
-
-  function run(onDone){
-    const fill = $('#load-fill');
-    const status = $('#load-status');
-    const startBtn = $('#load-start');
-    if (!fill || !status) { if (onDone) onDone(); return; }
-
-    let step = 0;
-    let progress = 0;
-    const total = messages.length;
-
-    const tick = () => {
-      if (step >= total){
-        status.textContent = 'Готово.';
-        if (startBtn){
-          startBtn.classList.remove('hidden');
-          startBtn.addEventListener('click', () => {
-            AudioEngine.unlock();
-            AudioEngine.applySettings();
-            if (onDone) onDone();
-          }, { once:true });
-          // авто-переход через 2.5с, если пользователь не нажал
-          setTimeout(() => {
-            if (startBtn && !startBtn.classList.contains('hidden')){
-              startBtn.click();
-            }
-          }, 2600);
-        } else {
-          setTimeout(() => { if (onDone) onDone(); }, 400);
-        }
-        return;
-      }
-      progress = Math.round(((step + 1) / total) * 100);
-      fill.style.width = progress + '%';
-      status.textContent = messages[step];
-      step++;
-      setTimeout(tick, 260 + Math.random() * 220);
-    };
-
-    setTimeout(tick, 240);
-  }
-
-  return { run };
 })();
 
 /* ------------------------------------------------------------------
@@ -2472,7 +2303,6 @@ const Menu = (function(){
       });
     }
 
-    // Продолжить доступно?
     updateAvailability();
   }
 
@@ -2499,7 +2329,6 @@ const Menu = (function(){
   function doContinue(){
     const auto = SaveEngine.readAuto();
     if (!auto){
-      // fallback: свежайший из слотов
       const slots = SaveEngine.listSlots().filter(Boolean);
       if (!slots.length){ Toast.show('Нет сохранений', 'Начните новую игру.', 'warn'); return; }
       slots.sort((a,b) => (b.savedAt || 0) - (a.savedAt || 0));
@@ -2513,10 +2342,9 @@ const Menu = (function(){
     const clean = SaveEngine.sanitize(state);
     Object.keys(GameState).forEach(k => { delete GameState[k]; });
     Object.assign(GameState, clean);
-    // Применяем настройки
     const globalSettings = SettingsStore.load();
     GameState.settings = shallowAssign(GameState.settings || createDefaultSettings(), globalSettings);
-    applySettingsToDOM();
+    Settings.apply();
     AudioEngine.applySettings();
     UI.showScreen('#game-screen');
     UI.setChapterLabel(GameState.chapter);
@@ -2546,7 +2374,7 @@ const Menu = (function(){
     fresh.settings = shallowAssign(createDefaultSettings(), settings || {});
     Object.keys(GameState).forEach(k => { delete GameState[k]; });
     Object.assign(GameState, fresh);
-    applySettingsToDOM();
+    Settings.apply();
     AudioEngine.applySettings();
     UI.showScreen('#game-screen');
     UI.setChapterLabel(GameState.chapter);
@@ -2606,7 +2434,6 @@ const Menu = (function(){
       }
       const slot = e.target.closest('.slot');
       if (slot && !slot.disabled){
-        // Прямая загрузка по клику на слот
         const numEl = slot.querySelector('.slot-num');
         if (numEl){
           const m = numEl.textContent.match(/(\d+)/);
@@ -2673,7 +2500,7 @@ const Menu = (function(){
    ------------------------------------------------------------------ */
 const Settings = (function(){
 
-  function applySettingsToDOM(){
+  function apply(){
     const s = GameState.settings;
     document.documentElement.style.setProperty('--ui-scale', String(s.interfaceScale));
     document.body.classList.toggle('high-contrast', !!s.highContrast);
@@ -2703,7 +2530,6 @@ const Settings = (function(){
       return r;
     }
 
-    // Громкость музыки
     const music = document.createElement('input');
     music.type = 'range'; music.min = '0'; music.max = '1'; music.step = '0.05';
     music.value = String(s.musicVolume);
@@ -2719,7 +2545,6 @@ const Settings = (function(){
     const musicWrap = document.createElement('div'); musicWrap.style.display='flex'; musicWrap.style.alignItems='center'; musicWrap.style.gap='10px';
     musicWrap.appendChild(music); musicWrap.appendChild(musicVal);
 
-    // Громкость эффектов
     const fx = document.createElement('input');
     fx.type = 'range'; fx.min = '0'; fx.max = '1'; fx.step = '0.05';
     fx.value = String(s.effectsVolume);
@@ -2735,7 +2560,6 @@ const Settings = (function(){
     const fxWrap = document.createElement('div'); fxWrap.style.display='flex'; fxWrap.style.alignItems='center'; fxWrap.style.gap='10px';
     fxWrap.appendChild(fx); fxWrap.appendChild(fxVal);
 
-    // Скорость текста
     const speed = document.createElement('select');
     speed.className = 'btn';
     speed.style.minHeight = '44px';
@@ -2747,19 +2571,11 @@ const Settings = (function(){
     });
     speed.addEventListener('change', () => { s.textSpeed = speed.value; });
 
-    // Анимации
-    const animSwitch = buildSwitch(s.animations, (v) => { s.animations = v; applySettingsToDOM(); });
-
-    // Высокий контраст
-    const contrastSwitch = buildSwitch(s.highContrast, (v) => { s.highContrast = v; applySettingsToDOM(); });
-
-    // TV режим
-    const tvSwitch = buildSwitch(s.tvMode, (v) => { s.tvMode = v; applySettingsToDOM(); });
-
-    // Подсказки управления
+    const animSwitch = buildSwitch(s.animations, (v) => { s.animations = v; apply(); });
+    const contrastSwitch = buildSwitch(s.highContrast, (v) => { s.highContrast = v; apply(); });
+    const tvSwitch = buildSwitch(s.tvMode, (v) => { s.tvMode = v; apply(); });
     const hintsSwitch = buildSwitch(s.showHints, (v) => { s.showHints = v; InputManager.updateHints(); });
 
-    // Масштаб интерфейса
     const scale = document.createElement('input');
     scale.type = 'range'; scale.min = '0.8'; scale.max = '1.6'; scale.step = '0.05';
     scale.value = String(s.interfaceScale);
@@ -2769,12 +2585,11 @@ const Settings = (function(){
     scale.addEventListener('input', () => {
       s.interfaceScale = parseFloat(scale.value);
       scaleVal.textContent = Math.round(s.interfaceScale * 100) + '%';
-      applySettingsToDOM();
+      apply();
     });
     const scaleWrap = document.createElement('div'); scaleWrap.style.display='flex'; scaleWrap.style.alignItems='center'; scaleWrap.style.gap='10px';
     scaleWrap.appendChild(scale); scaleWrap.appendChild(scaleVal);
 
-    // Вибрация (если поддерживается)
     const canVibrate = 'vibrate' in navigator;
     const vibSwitch = buildSwitch(!!s.vibration && canVibrate, (v) => { s.vibration = v; }, !canVibrate);
 
@@ -2790,7 +2605,7 @@ const Settings = (function(){
 
     function commit(){
       SettingsStore.save(s);
-      applySettingsToDOM();
+      apply();
       AudioEngine.play('click');
     }
 
@@ -2834,11 +2649,8 @@ const Settings = (function(){
     return label;
   }
 
-  return { open, apply: applySettingsToDOM };
+  return { open, apply };
 })();
-
-// Экспорт функции для Menu (используется в applyState)
-function applySettingsToDOM(){ Settings.apply(); }
 
 /* ------------------------------------------------------------------
    Pause menu
@@ -3041,12 +2853,9 @@ function bindGlobalBack(){
 
   Bus.on('action:pause', () => {
     const game = $('#game-screen');
-    const menu = $('#main-menu');
     if (game && !game.hidden){
       if (PauseMenu.isOpen()) PauseMenu.hide();
       else PauseMenu.show();
-    } else if (menu && !menu.hidden){
-      // no-op в главном меню
     }
   });
 
@@ -3065,12 +2874,13 @@ function bindGlobalBack(){
 }
 
 /* ------------------------------------------------------------------
-   Первичная инициализация приложения
+   App — без экрана загрузки, сразу главное меню + tap-to-start
    ------------------------------------------------------------------ */
 const App = (function(){
 
+  let tapBound = false;
+
   function boot(){
-    // Загружаем глобальные настройки и достижения
     const loadedSettings = SettingsStore.load();
     GameState.settings = shallowAssign(createDefaultSettings(), loadedSettings);
     GameState.achievements = AchievementEngine.load();
@@ -3083,7 +2893,6 @@ const App = (function(){
     AutoSave.bind();
     bindTopbar();
 
-    // Автопауза при потере фокуса окна в игре
     window.addEventListener('blur', () => {
       const game = $('#game-screen');
       if (game && !game.hidden && !Modal.isOpen() && !PauseMenu.isOpen()){
@@ -3091,14 +2900,11 @@ const App = (function(){
       }
     });
 
-    // Запускаем анимацию загрузки
-    LoadingScreen.run(onLoadingDone);
-  }
-
-  function onLoadingDone(){
+    // Сразу показываем главное меню
     UI.showScreen('#main-menu');
     Menu.updateAvailability();
-    // Автозапуск музыки после первого действия пользователя
+
+    // Разблокировка звука по первому жесту пользователя
     const onceUnlock = () => {
       AudioEngine.unlock();
       AudioEngine.applySettings();
@@ -3107,10 +2913,52 @@ const App = (function(){
     };
     window.addEventListener('pointerdown', onceUnlock, { once:true });
     window.addEventListener('keydown', onceUnlock, { once:true });
-    // Фокус на первой доступной кнопке меню
-    const first = $('#menu-nav .mbtn:not([disabled])') || $('#menu-nav .mbtn');
-    if (first) InputManager.focus(first, { scroll:false });
+
+    // Мягкий автофокус: только если пользователь уже начал взаимодействовать с клавиатурой/геймпадом.
+    // До этого фокус не выставляем, чтобы визуально экран был чистым.
+    const onFirstKey = (e) => {
+      if (e.key === 'Tab' || e.key === 'Enter' || e.key === ' ' ||
+          e.key === 'ArrowUp' || e.key === 'ArrowDown' ||
+          e.key === 'ArrowLeft' || e.key === 'ArrowRight'){
+        const first = $('#menu-nav .mbtn:not([disabled])') || $('#menu-nav .mbtn');
+        if (first) InputManager.focus(first, { scroll:false });
+        window.removeEventListener('keydown', onFirstKey);
+      }
+    };
+    window.addEventListener('keydown', onFirstKey);
+
+    bindTapToStart();
     Bus.emit('app:ready');
+  }
+
+  // Тап/клик по пустому месту главного меню — начать игру
+  function bindTapToStart(){
+    if (tapBound) return;
+    tapBound = true;
+
+    const menu = $('#main-menu');
+    if (!menu) return;
+
+    const isInteractive = (el) => {
+      if (!el || !el.closest) return false;
+      return !!el.closest('button, a, input, select, textarea, [role="button"], .mbtn, .modal');
+    };
+
+    menu.addEventListener('click', (e) => {
+      if (isInteractive(e.target)) return;
+      if (Modal.isOpen()) return;
+      AudioEngine.unlock();
+      AudioEngine.applySettings();
+      tapStart();
+    });
+  }
+
+  function tapStart(){
+    if (SaveEngine.hasAnySave()){
+      Menu.handleAction('continue');
+    } else {
+      Menu.handleAction('new');
+    }
   }
 
   function bindTopbar(){
@@ -3138,12 +2986,11 @@ const App = (function(){
 })();
 
 /* ------------------------------------------------------------------
-   Обработчики изменения viewport (для корректной высоты на мобильных)
+   Обработчики изменения viewport
    ------------------------------------------------------------------ */
 (function viewportFixes(){
   function apply(){
     if (!window.visualViewport) return;
-    // Ничего не делаем жёстко — CSS использует dvh-подобные размеры через position:fixed.
   }
   if (window.visualViewport){
     window.visualViewport.addEventListener('resize', apply);
@@ -3155,7 +3002,7 @@ const App = (function(){
 })();
 
 /* ------------------------------------------------------------------
-   Экспорт наружу (для отладки)
+   Экспорт наружу
    ------------------------------------------------------------------ */
 window.D17 = {
   GameState,
@@ -3180,30 +3027,22 @@ window.D17 = {
 /* ------------------------------------------------------------------
    Запуск
    ------------------------------------------------------------------ */
-document.addEventListener('DOMContentLoaded', () => {
+function __d17BootOnce(){
+  if (window.__d17_booted) return;
+  window.__d17_booted = true;
   try {
     App.boot();
   } catch (e) {
     console.error('[D17] Фатальная ошибка запуска:', e);
-    const status = document.getElementById('load-status');
-    if (status) status.textContent = 'Ошибка запуска: ' + (e && e.message ? e.message : 'неизвестно');
   }
-});
+}
 
 if (document.readyState === 'complete' || document.readyState === 'interactive'){
-  setTimeout(() => {
-    if (!document.querySelector('#main-menu:not([hidden])') && !document.querySelector('#loading-screen[hidden]')){
-      if (!window.__d17_booted){
-        window.__d17_booted = true;
-        try { App.boot(); } catch (e) { console.error(e); }
-      }
-    }
-  }, 0);
+  __d17BootOnce();
 } else {
-  window.__d17_booted = false;
-  document.addEventListener('DOMContentLoaded', () => { window.__d17_booted = true; });
+  document.addEventListener('DOMContentLoaded', __d17BootOnce, { once:true });
 }
-<script>
+   <script>
 /* ===== PART 2 ===== */
 (function(){
 'use strict';
