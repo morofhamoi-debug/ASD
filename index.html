@@ -17810,9 +17810,12 @@ function skipTrial(){
 }
 
 function trialHelp(){
+  /* ИСПРАВЛЕНО: возврат на текущую сцену суда,
+     а не goBack() — так как help рисуется через render()
+     без пуша в историю роутов */
   render(''
   + '<div class="appbar">'
-  +   '<button class="back" onclick="goBack()">' + svg('back', 18) + '</button>'
+  +   '<button class="back" onclick="showTrialScene()">' + svg('back', 18) + '</button>'
   +   '<div class="ttl"><h2>Судебное заседание</h2><div class="sub">Справка</div></div>'
   + '</div>'
   + '<div style="padding:24px 20px">'
@@ -17825,7 +17828,7 @@ function trialHelp(){
   +       'слово подсудимого и приговор.</p>'
   +   '</div>'
   +   '<button class="btn ghost" style="width:100%;justify-content:center;margin-top:14px" '
-  +     'onclick="goBack()">Продолжить</button>'
+  +     'onclick="showTrialScene()">Продолжить</button>'
   + '</div>');
 }
 
@@ -17995,8 +17998,8 @@ const EPILOGUES = {
       + 'Он уехал из России. Живёт в Дубае. Никогда '
       + 'больше не занимается кино.\n\n'
       + 'Он не признал вину. Но всем, кто его знал, '
-      + 'ясно: он виновен не меньше Виктора 'Призна.н Просто '
-      + 'его вина ви не доказуема.'
+      + 'ясно: он виновен не меньше Виктора. Просто '
+      + 'его вина не доказуема.'
   },
 
   ep_viktor: {
@@ -18207,7 +18210,7 @@ const CREDITS_SECTIONS = [
     sub: 'Справедливость',
     items: [
       {role: '', name: 'Виктор Соколовский'},
-      {role: '', name:новным'},
+      {role: '', name: 'Признан виновным'},
       {role: '', name: '20 лет строгого режима'}
     ]
   },
@@ -18237,6 +18240,13 @@ G.creditsIndex = 0;
 ROUTES.credits = function(){
   G.screen = 'credits';
   G.creditsIndex = 0;
+
+  /* ИСПРАВЛЕНО: очищаем возможный старый интервал перед запуском нового,
+     чтобы при повторном входе на экран титров не было нескольких таймеров */
+  if(G._creditsTimer){
+    clearInterval(G._creditsTimer);
+    G._creditsTimer = null;
+  }
 
   render(''
   + '<div class="appbar">'
@@ -18297,9 +18307,22 @@ function renderCreditsSection(sc){
 }
 
 function creditsAdvance(){
+  /* ИСПРАВЛЕНО: если пользователь покинул экран титров —
+     останавливаем таймер, чтобы не перезаписывать чужой экран */
+  if(G.screen !== 'credits'){
+    if(G._creditsTimer){
+      clearInterval(G._creditsTimer);
+      G._creditsTimer = null;
+    }
+    return;
+  }
+
   G.creditsIndex++;
   if(G.creditsIndex >= CREDITS_SECTIONS.length){
-    clearInterval(G._creditsTimer);
+    if(G._creditsTimer){
+      clearInterval(G._creditsTimer);
+      G._creditsTimer = null;
+    }
     showEndScreen();
     return;
   }
@@ -18313,7 +18336,10 @@ function creditsAdvance(){
 }
 
 function skipCredits(){
-  clearInterval(G._creditsTimer);
+  if(G._creditsTimer){
+    clearInterval(G._creditsTimer);
+    G._creditsTimer = null;
+  }
   if(confirm('Пропустить титры?')){
     showEndScreen();
   }
@@ -18324,7 +18350,10 @@ function skipCredits(){
    ============================================================ */
 
 function showEndScreen(){
-  clearInterval(G._creditsTimer);
+  if(G._creditsTimer){
+    clearInterval(G._creditsTimer);
+    G._creditsTimer = null;
+  }
   setFlag('game_completed');
 
   const achCount = Object.keys(G.achievements || {}).length;
@@ -18565,7 +18594,7 @@ function showPostCredit(){
   +     '<div class="sub">' + (G.pcIndex + 1)
   +       + ' из ' + POSTCREDITS.length + '</div>'
   +   '</div>'
-  + </div>'
+  + '</div>'
 
   + '<div class="trial-progress">'
   +   '<div class="pbar"><i style="width:' + progress + '%"></i></div>'
@@ -18905,7 +18934,7 @@ function finalRestart(){
   + '}'
   + '.es-actions{'
   +   'display:flex;gap:10px;margin-bottom:22px;'
-  +   'flex-wrap:wrap;'       /* ИСПРАВЛЕНО */
+  +   'flex-wrap:wrap;'
   + '}'
   + '.es-actions .btn{'
   +   'min-width:0;font-size:12px;padding:11px 14px;'
