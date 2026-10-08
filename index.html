@@ -6623,14 +6623,6 @@ console.log(
 
 /* ============================================================
    БЛОК 1 — БАЗА ДАННЫХ УЛИК
-   ============================================================
-   Каждая улика содержит:
-   - id, t (заголовок), d (описание)
-   - src (источник: чат/галерея/заметка/звонок/браузер)
-   - cat (категория: алиби/мотив/оружие/связь/угроза/документ)
-   - key (bool — ключевая улика)
-   - relates (связанные улики)
-   - opens (что открывает)
    ============================================================ */
 
 const EVIDENCE_DB = {
@@ -7210,7 +7202,7 @@ const EVIDENCE_DB = {
 };
 
 /* ------------------------------------------------------------
-   СЛОВАРЬ НАЗВАНИЙ УЛИК (расширяем из Части 2-4)
+   СЛОВАРЬ НАЗВАНИЙ УЛИК
    ------------------------------------------------------------ */
 (function extendTitlesPart5(){
   if(typeof EVIDENCE_TITLES === 'undefined') return;
@@ -7241,76 +7233,6 @@ G.boardSelected = null;
    БЛОК 2 — РЕНДЕР ДОСКИ УЛИК
    ============================================================ */
 
-ROUTES.board = function(){
-  G.screen = 'board';
-
-  /* Синхронизируем EVIDENCE (из G.evidence) с EVIDENCE_DB */
-  const allIds = Object.keys(EVIDENCE_DB);
-  const collected = G.evidence.filter(function(id){
-    return EVIDENCE_DB[id];
-  });
-
-  const keyCount = collected.filter(function(id){
-    return EVIDENCE_DB[id].key;
-  }).length;
-
-  const progress = allIds.length
-    ? Math.round(collected.length / allIds.length * 100)
-    : 0;
-
-  /* Применяем фильтр */
-  const filtered = collected.filter(function(id){
-    if(G.boardFilter === 'all') return true;
-    return EVIDENCE_DB[id].cat === G.boardFilter;
-  });
-
-  /* Сортируем: ключевые вперёд */
-  filtered.sort(function(a, b){
-    const ak = EVIDENCE_DB[a].key ? 0 : 1;
-    const bk = EVIDENCE_DB[b].key ? 0 : 1;
-    if(ak !== bk) return ak - bk;
-    return a.localeCompare(b);
-  });
-
-  const rows = filtered.length
-    ? filtered.map(function(id){ return renderEvidenceCard(id); }).join('')
-    : renderEmptyBoard();
-
-  render(''
-  + '<div class="appbar">'
-  +   '<button class="back" onclick="goBack()">' + svg('back', 18) + '</button>'
-  +   '<div class="ttl">'
-  +     '<h2>Доска улик</h2>'
-  +     '<div class="sub">'
-  +       collected.length + ' из ' + allIds.length + ' · '
-  +       keyCount + ' ключевых'
-  +     '</div>'
-  +   '</div>'
-  +   '<button class="back" onclick="boardHelp()">'
-  +     svg('help', 18)
-  +   '</button>'
-  + '</div>'
-
-  + '<div class="board-progress">'
-  +   '<div class="bp-label">'
-  +     '<span>Прогресс расследования</span>'
-  +     '<b>' + progress + '%</b>'
-  +   '</div>'
-  +   '<div class="pbar"><i style="width:' + progress + '%"></i></div>'
-  + '</div>'
-
-  + '<div class="board-filter">'
-  +   Object.keys(EVIDENCE_CATS).map(function(k){
-  +     return ''; /* placeholder — заменяется ниже */
-  +   }).join('')
-  + '</div>'
-
-  + '<div class="board-list">' + rows + '</div>');
-};
-
-/* ------------------------------------------------------------
-   ФИЛЬТР (заменяем placeholder реальным)
-   ------------------------------------------------------------ */
 ROUTES.board = function(){
   G.screen = 'board';
 
@@ -8138,6 +8060,24 @@ const INTERROGATIONS = {
         ]
       }
     ]
+  },
+
+  /* ----------------------------------------------------------
+     СОФЬЯ МЕЛЬНИК — объект объявлен заранее с пустым массивом
+     questions, чтобы Часть 6 могла дополнить его без ошибки
+     TypeError (Cannot read properties of undefined).
+     ---------------------------------------------------------- */
+  interrogation_sonya: {
+    id: 'interrogation_sonya',
+    name: 'Софья Мельник',
+    role: 'соседка по квартире',
+    av: 'СМ',
+    color: '#3ddc97',
+    unlock: 'sonya_timeline',
+    intro:
+      'Соня волнуется. Она не понимает, зачем её вызвали. '
+      + 'Она жила с Мариной в одной квартире, но не была на показе.',
+    questions: []
   }
 
 };
@@ -8316,13 +8256,12 @@ function answerInterrogation(ansIdx){
   if(ans.truth === true) state.correct++;
   else state.wrong++;
 
-  /* Обновляем улики/флаги */
   if(ans.ev && !hasEv(ans.ev)){
     addEv(ans.ev);
     toast('📌 Улика', EVIDENCE_DB[ans.ev] ? EVIDENCE_DB[ans.ev].t : 'Зафиксировано', 'ev');
   }
 
-  showInterrogationReaction(it, q, ans, () => {
+  showInterrogationReaction(it, q, ans, function(){
     state.qIndex++;
     showInterrogationQuestion(it, state.qIndex);
   });
@@ -8969,7 +8908,7 @@ function showInterrogationResult(it){
 console.log(
   '%c[ЧАСТЬ 5 ЗАГРУЖЕНА]',
   'color:#5da9ff;font-weight:bold;font-size:14px',
-  '\nДоска улик: 42 карточки. Хронология: 30 событий. Допросы: 2 подозреваемых. Вставляй Часть 6 ниже.'
+  '\nДоска улик: 42 карточки. Хронология: 30 событий. Допросы: 3 подозреваемых. Вставляй Часть 6 ниже.'
 );
 
 /* ... Часть 5 заканчивается здесь. Не закрывай script/body/html.
@@ -8989,7 +8928,23 @@ console.log(
    БЛОК 1 — ПРОДОЛЖЕНИЕ БАЗЫ ДОПРОСОВ
    ============================================================ */
 
-/* Дополняем Соню оставшимися вопросами */
+/* Защита: если Part 5 не объявил interrogation_sonya — создаём */
+if(typeof INTERROGATIONS.interrogation_sonya === 'undefined'){
+  INTERROGATIONS.interrogation_sonya = {
+    id: 'interrogation_sonya',
+    name: 'Софья Мельник',
+    role: 'соседка по квартире',
+    av: 'СМ',
+    color: '#3ddc97',
+    unlock: 'sonya_timeline',
+    intro:
+      'Соня волнуется. Она не понимает, зачем её вызвали. '
+      + 'Она жила с Мариной в одной квартире, но не была на показе.',
+    questions: []
+  };
+}
+
+/* Дополняем Соню вопросами */
 INTERROGATIONS.interrogation_sonya.questions = [
   {
     id: 'q1',
@@ -9543,9 +9498,6 @@ function interrogationHelp(){
 
 /* ============================================================
    БЛОК 3 — СИСТЕМА ОБВИНЕНИЯ
-   ============================================================
-   Игрок выбирает подозреваемого, затем предъявляет улики.
-   Вердикт зависит от правильности выбора и набора улик.
    ============================================================ */
 
 const SUSPECTS = [
@@ -9623,7 +9575,6 @@ G.accusation = {
 ROUTES.accusation = function(){
   G.screen = 'accusation';
 
-  /* Проверка: можно ли уже обвинять */
   const keyEv = G.evidence.filter(function(id){
     return EVIDENCE_DB[id] && EVIDENCE_DB[id].key;
   }).length;
@@ -9842,23 +9793,18 @@ function finalizeAccusation(){
   const presented = G.accusation.evidence;
   const needed = s.evidence_needed;
 
-  /* Считаем совпадения */
   const matches = presented.filter(function(id){
     return needed.indexOf(id) >= 0;
   });
   const ratio = needed.length ? matches.length / needed.length : 0;
 
-  /* Проверка правильности */
   const correct = s.correct && matches.length >= s.min_evidence;
 
-  /* Сохраняем результат */
   G.flags.accusation_suspect = s.id;
   G.flags.accusation_correct = correct;
   G.flags.accusation_ratio = ratio;
 
-  if(correct){
-    G.wrongAccusations = 0;
-  } else {
+  if(!correct){
     G.wrongAccusations++;
   }
 
@@ -9936,15 +9882,8 @@ function showVerdict(s, correct, matches, presented){
   }
 }
 
-/* ------------------------------------------------------------
-   РЕГИСТРАЦИЯ МАРШРУТА
-   ------------------------------------------------------------ */
-ROUTES.accusation = ROUTES.accusation;
-
 /* ============================================================
    БЛОК 4 — ФИНАЛ
-   ============================================================
-   Экран «Дело раскрыто» с развязкой.
    ============================================================ */
 
 ROUTES.finale = function(){
@@ -9963,6 +9902,9 @@ ROUTES.finale = function(){
 };
 
 function renderFinaleWin(){
+  /* Устанавливаем флаг концовки для системы ENDINGS (Часть 9) */
+  setFlag('finale_good');
+
   render(''
   + '<div class="finale win">'
 
@@ -9984,7 +9926,7 @@ function renderFinaleWin(){
   +     '<p>Аудиозапись, найденная в её телефоне, стала '
   +       'неопровержимым доказательством. Запись приобщена к делу.</p>'
 
-  +     '<p>Суд приговорил его к 18 годам лишения свободы '
+  +     '<p>Суд приговорил его к 20 годам лишения свободы '
   +       'с отбыванием наказания в колонии строгого режима.</p>'
 
   +     '<p>Тело Марины обнаружено в подсобном помещении '
@@ -10043,6 +9985,9 @@ function renderFinaleWin(){
 }
 
 function renderFinaleFail(){
+  /* Устанавливаем флаг концовки для системы ENDINGS (Часть 9) */
+  setFlag('finale_bad');
+
   render(''
   + '<div class="finale lose">'
 
@@ -10106,6 +10051,7 @@ function shareFinale(){
 function restartCase(){
   if(confirm('Начать заново? Весь прогресс будет утерян.')){
     wipeSave();
+    try{ localStorage.removeItem(SAVE_SLOTS_KEY); } catch(e){}
     location.reload();
   }
 }
@@ -10128,10 +10074,8 @@ function restartCase(){
    БЛОК 6 — ДОБАВЛЕНИЕ КНОПКИ ОБВИНЕНИЯ НА ГЛАВНЫЙ ЭКРАН
    ============================================================ */
 
-/* Расширяем домашний экран — добавляем приложение «Обвинение» */
 (function addAccusationApp(){
   if(typeof APPS !== 'undefined'){
-    /* Добавляем в сетку, если ещё нет */
     const has = APPS.some(function(a){ return a.id === 'accusation'; });
     if(!has){
       APPS.push({
@@ -10143,7 +10087,6 @@ function restartCase(){
   }
 })();
 
-/* Обновляем openApp для нового пункта */
 (function patchOpenApp(){
   const orig = window.openApp;
   window.openApp = function(id){
@@ -10164,7 +10107,6 @@ function restartCase(){
   const style = document.createElement('style');
   style.textContent = ''
 
-  /* ---------- ДОПРОСЫ ---------- */
   + '.ir-done-stack{'
   +   'display:flex;flex-direction:column;'
   +   'align-items:center;gap:2px;'
@@ -10177,7 +10119,6 @@ function restartCase(){
   +   'font-family:monospace;'
   + '}'
 
-  /* ---------- ОБВИНЕНИЕ ---------- */
   + '.acc-warning{'
   +   'display:flex;gap:12px;padding:14px 16px;'
   +   'background:rgba(255,184,77,.08);'
@@ -10219,7 +10160,6 @@ function restartCase(){
   + '.sr-role{font-size:11.5px;color:var(--dim)}'
   + '.sus-row .icon{color:var(--dim2);flex:0 0 auto}'
 
-  /* Подтверждение */
   + '.acc-confirm{padding:34px 24px;text-align:center}'
   + '.ac-avatar{'
   +   'width:90px;height:90px;border-radius:50%;'
@@ -10241,7 +10181,6 @@ function restartCase(){
   + '}'
   + '.ac-actions{display:flex;gap:10px}'
 
-  /* Предъявление улик */
   + '.ep-head{'
   +   'display:flex;gap:14px;align-items:center;'
   +   'padding:16px 18px;'
@@ -10301,7 +10240,6 @@ function restartCase(){
   +   'opacity:.4;cursor:not-allowed;'
   + '}'
 
-  /* Вердикт */
   + '.verdict{padding:40px 24px;text-align:center}'
   + '.vd-icon{'
   +   'width:110px;height:110px;border-radius:50%;'
@@ -10343,7 +10281,6 @@ function restartCase(){
   + '.vd-stats b{font-size:22px;font-weight:600}'
   + '.vd-stats span{font-size:10.5px;color:var(--dim);letter-spacing:.5px}'
 
-  /* ФИНАЛ */
   + '.finale{'
   +   'min-height:100%;'
   +   'display:flex;flex-direction:column;'
@@ -10444,20 +10381,22 @@ function restartCase(){
    БЛОК 8 — ДОБАВЛЕНИЕ ИКОНКИ HOME В БИБЛИОТЕКУ
    ============================================================ */
 (function addHomeIcon(){
-  if(typeof ICON_PATHS !== 'undefined' && !ICON_PATHS.home){
+  if(typeof ICON_PATHS === 'undefined') return;
+  if(!ICON_PATHS.home){
     ICON_PATHS.home =
       '<path d="M3 10.5 12 3l9 7.5"/>' +
       '<path d="M5.5 9.5V20a1 1 0 0 0 1 1h11a1 1 0 0 0 1-1V9.5"/>' +
       '<path d="M9.5 21v-6h5v6"/>';
-    ICON_PATHS.circle =
-      '<circle cx="12" cy="12" r="9.5"/>';
+  }
+  if(!ICON_PATHS.circle){
+    ICON_PATHS.circle = '<circle cx="12" cy="12" r="9.5"/>';
   }
 })();
 
 console.log(
   '%c[ЧАСТЬ 6 ЗАГРУЖЕНА]',
   'color:#5da9ff;font-weight:bold;font-size:14px',
-  '\nДопросы: 8 подозреваемых. Обвинение: 6 вариантов. Финал: 2 концовки. Вставляй Часть 7 ниже.'
+  '\nДопросы: 7 подозреваемых. Обвинение: 6 вариантов. Финал: 2 концовки. Вставляй Часть 7 ниже.'
 );
 
 /* ... Часть 6 заканчивается здесь. Не закрывай script/body/html.
@@ -10531,7 +10470,7 @@ const VIDEOS = {
   },
 
   v3: {
-    t: 'Кинотеатр · показа',
+    t: 'Кинотеатр · показ',
     sub: '13.04.2024 · 21:52',
     dur: '2:14',
     src: 'Камера у входа',
@@ -10550,7 +10489,7 @@ const VIDEOS = {
       {t: '21:52', d: 'Зрители заходят в зал. Марина в чёрном платье.'},
       {t: '22:05', d: 'Из служебного входа выходит высокий мужчина.'},
       {t: '22:18', d: 'Мужчина смотрит на телефон. Ждёт.'},
-      {tрина и: '22:20', d: 'Марина выходит. Он берёт её под локоть.'},
+      {t: '22:20', d: 'Марина выходит. Он берёт её под локоть.'},
       {t: '22:22', d: 'Они садятся в тёмную машину у тротуара.'},
       {t: '22:24', d: 'Машина уезжает в сторону Заводской.'},
       {t: '22:31', d: 'Лена выбегает на улицу. Оглядывается.'}
@@ -10579,7 +10518,7 @@ const VIDEOS = {
       {t: '23:44', d: 'Такси подъезжает к воротам.'},
       {t: '23:45', d: 'Марина выходит. На ней лёгкое пальто.'},
       {t: '23:46', d: 'Она смотрит на телефон. Что-то печатает.'},
-      {дt: '23:47', d: 'Марина входит в ателье.'}
+      {t: '23:47', d: 'Марина входит в ателье.'}
     ]
   },
 
@@ -10597,7 +10536,7 @@ const VIDEOS = {
     critical: true,
     desc:
       'Камера в фойе киноателье. Марина входит в 23:48. '
-      + 'Администратор передаёт ей ключ. Маёт по коридору '
+      + 'Администратор передаёт ей ключ. Марина идёт по коридору '
       + 'в сторону павильона №3. Больше в кадре не появляется.',
     frames: [
       {t: '23:48', d: 'Марина входит в фойе.'},
@@ -11224,7 +11163,6 @@ function openVideo(id){
   if(!v) return;
 
   if(!G.opened.videos) G.opened.videos = {};
-  const first = !G.opened.videos[id];
   G.opened.videos[id] = true;
 
   if(v.flag) setFlag(v.flag);
@@ -11236,7 +11174,6 @@ function openVideo(id){
     }, 500);
   }
 
-  /* Формируем сетку кадров */
   const framesHtml = (v.frames || []).map(function(f, i){
     return ''
     + '<div class="vf-row">'
@@ -11337,7 +11274,6 @@ function playVideo(id){
   if(!v) return;
   toast('▶ Просмотр', v.t, '');
 
-  /* Имитация прогресса */
   const bar = document.querySelector('.vvs-fill');
   if(bar){
     bar.style.transition = 'width 3s linear';
@@ -11410,7 +11346,6 @@ function openAudio(id){
   if(!a) return;
 
   if(!G.opened.audio) G.opened.audio = {};
-  const first = !G.opened.audio[id];
   G.opened.audio[id] = true;
 
   if(a.flag) setFlag(a.flag);
@@ -11422,13 +11357,11 @@ function openAudio(id){
     }, 500);
   }
 
-  /* Плеер */
   const bars = Array.from({length: 40}, function(_, i){
     const h = 6 + Math.abs(Math.sin(i * 0.5)) * 22 + (i % 4) * 2;
     return '<i style="height:' + h + 'px;background:' + a.color + '"></i>';
   }).join('');
 
-  /* Транскрипт */
   const transcript = (a.transcript || []).map(function(l){
     const cls = l.who === 'Марина' ? 'm'
       : l.who === 'Виктор' ? 'v'
@@ -11532,20 +11465,6 @@ function playAudioRec(id){
   const a = AUDIO_RECORDINGS[id];
   if(!a) return;
   toast('🎧 Воспроизведение', a.t, '');
-
-  const steps = [
-    {ms: 700, txt: 'Начало записи'},
-    {ms: 1800, txt: 'Голос...'},
-    {ms: 3500, txt: 'Продолжение...'},
-    {ms: 5000, txt: 'Запись завершена'}
-  ];
-  steps.forEach(function(s){
-    setTimeout(function(){
-      if(s.txt !== 'Запись завершена'){
-        /* Только обновляем тост, без замены UI */
-      }
-    }, s.ms);
-  });
 
   if(id === 'a4'){
     setTimeout(function(){
@@ -11721,7 +11640,6 @@ function openFrameScene(id){
   if(typeof APPS !== 'undefined'){
     const has = APPS.some(function(a){ return a.id === 'media'; });
     if(!has){
-      /* Вставляем перед настройками */
       const idx = APPS.findIndex(function(a){ return a.id === 'settings'; });
       const item = {
         id: 'media',
@@ -11737,7 +11655,6 @@ function openFrameScene(id){
   }
 })();
 
-/* Патчим openApp */
 (function patchOpenAppForMedia(){
   if(typeof window.openApp !== 'function') return;
   const prev = window.openApp;
@@ -11750,7 +11667,6 @@ function openFrameScene(id){
   };
 })();
 
-/* Инициализируем хранилище */
 if(!G.opened.videos) G.opened.videos = {};
 if(!G.opened.audio) G.opened.audio = {};
 
@@ -11789,7 +11705,6 @@ if(!G.opened.audio) G.opened.audio = {};
   const style = document.createElement('style');
   style.textContent = ''
 
-  /* ---------- ГЛАВНОЕ МЕНЮ МЕДИАТЕКИ ---------- */
   + '.media-hero{'
   +   'padding:30px 24px 22px;text-align:center;'
   +   'background:radial-gradient(ellipse at top, '
@@ -11861,7 +11776,6 @@ if(!G.opened.audio) G.opened.audio = {};
   + '}'
   + '.media-hint .icon{flex:0 0 12px;margin-top:2px;opacity:.7}'
 
-  /* ---------- СПИСОК ВИДЕО ---------- */
   + '.vid-list{padding:6px 0 30px}'
   + '.vid-row{'
   +   'display:flex;gap:13px;padding:12px 16px;'
@@ -11905,7 +11819,6 @@ if(!G.opened.audio) G.opened.audio = {};
   +   'letter-spacing:1px;text-transform:uppercase;'
   + '}'
 
-  /* ---------- ПРОСМОТР ВИДЕО ---------- */
   + '.video-view{padding:0 0 30px}'
   + '.vv-screen{'
   +   'position:relative;'
@@ -12029,7 +11942,6 @@ if(!G.opened.audio) G.opened.audio = {};
   +   'display:flex;gap:10px;padding:0 16px;'
   + '}'
 
-  /* ---------- СПИСОК АУДИО ---------- */
   + '.aud-list{padding:6px 0 30px}'
   + '.aud-row{'
   +   'display:flex;gap:12px;padding:13px 16px;'
@@ -12070,7 +11982,6 @@ if(!G.opened.audio) G.opened.audio = {};
   +   'flex:0 0 auto;margin-right:4px;'
   + '}'
 
-  /* ---------- ПРОСМОТР АУДИО ---------- */
   + '.audio-page{padding:0 0 30px}'
   + '.ap-hero{'
   +   'text-align:center;padding:28px 20px 22px;'
@@ -12195,7 +12106,6 @@ if(!G.opened.audio) G.opened.audio = {};
   + '}'
   + '.ap-actions{display:flex;gap:10px;padding:0 16px}'
 
-  /* ---------- ПОКАДРОВЫЙ РАЗБОР ---------- */
   + '.frames-info{'
   +   'margin:14px 16px;'
   +   'padding:11px 14px;'
@@ -14509,22 +14419,6 @@ console.log(
    Часть 9 продолжит этот же блок. */
 /* ============================================================
    ЧАСТЬ 9 из 10 — ГЛУБОКИЙ АНАЛИЗ + ДОСТИЖЕНИЯ + NG+
-   ------------------------------------------------------------
-   Огромный блок расширений и фич:
-   - Расширенные Настройки (доступность, слоты сохранений)
-   - Система достижений (48 достижений)
-   - Статистика дела (детальный дашборд)
-   - Сводка по делу (Case Summary)
-   - Инструмент сопоставления улик
-   - Интерактивная реконструкция хронологии
-   - Анализатор аудиоволн
-   - Детектор лжи в допросах
-   - Психологический профиль
-   - Криминалистический анализ (отпечатки, ДНК)
-   - Зашифрованные файлы
-   - Система концовок (6 вариантов)
-   - New Game+ (сохранение прогресса)
-   - Скрытый контент
    ============================================================ */
 
 /* ============================================================
@@ -14557,7 +14451,9 @@ function saveToSlot(index, label){
         callsChecked: G.callsChecked,
         wrongAccusations: G.wrongAccusations,
         screen: G.screen,
-        opened: JSON.parse(JSON.stringify(G.opened))
+        opened: JSON.parse(JSON.stringify(G.opened)),
+        achievements: JSON.parse(JSON.stringify(G.achievements || {})),
+        unlockedEncrypted: JSON.parse(JSON.stringify(G.unlockedEncrypted || {}))
       },
       date: new Date().toISOString(),
       progress: Math.round(G.evidence.length / Math.max(1, Object.keys(EVIDENCE_DB).length) * 100)
@@ -14585,8 +14481,10 @@ function loadFromSlot(index){
     G.wrongAccusations = d.wrongAccusations || 0;
     G.opened = d.opened || {
       chats:{}, photos:{}, notes:{}, calls:{}, searches:{},
-      videos:{}, audio:{}, emails:{}, locations:{}, profiles:{}
+      videos:{}, audio:{}, emails:{}, locations:{}, profiles:{}, forensic:{}
     };
+    if(d.achievements) G.achievements = d.achievements;
+    if(d.unlockedEncrypted) G.unlockedEncrypted = d.unlockedEncrypted;
     return true;
   } catch(e){
     return false;
@@ -14751,6 +14649,7 @@ const ACHIEVEMENTS = {
     d: 'Провести все допросы',
     check: function(){
       const ids = Object.keys(INTERROGATIONS);
+      if(!ids.length) return false;
       return ids.every(function(id){
         return G.flags['interrogation_' + id + '_done'];
       });
@@ -14891,25 +14790,30 @@ const ACHIEVEMENTS = {
       return hasFlag('case_closed') && G.wrongAccusations === 0;
     }
   },
+  /* ИСПРАВЛЕНО: используем только реально существующие допросы */
   a_negotiator: {
     ico: 'chat',
     t: 'Переговорщик',
-    d: 'Убедить всех подозреваемых сказать правду',
+    d: 'Провести 4 успешных допроса',
     check: function(){
-      const ids = ['interrogation_viktor', 'interrogation_krylov',
-                   'interrogation_artem', 'interrogation_dima'];
+      const ids = [
+        'interrogation_viktor',
+        'interrogation_krylov',
+        'interrogation_sonya',
+        'interrogation_lena'
+      ];
       return ids.every(function(id){
         return G.flags['interrogation_' + id + '_done'];
       });
     }
   },
+  /* ИСПРАВЛЕНО: реально достижимая проверка */
   a_multi_endings: {
     ico: 'starFill',
-    t: 'Все концовки',
-    d: 'Увидеть все концовки',
+    t: 'Развязка',
+    d: 'Дойти до финала игры',
     check: function(){
-      const endings = ['finale_good', 'finale_bad', 'finale_neutral'];
-      return endings.every(function(e){ return hasFlag(e); });
+      return hasFlag('case_closed') || hasFlag('finale_bad');
     }
   },
   a_restart: {
@@ -14980,9 +14884,6 @@ const ACHIEVEMENTS = {
   }
 };
 
-/* ------------------------------------------------------------
-   РАЗБЛОКИРОВКА ДОСТИЖЕНИЙ
-   ------------------------------------------------------------ */
 G.achievements = G.achievements || {};
 
 function checkAchievements(){
@@ -15008,9 +14909,6 @@ function checkAchievements(){
 
 setInterval(checkAchievements, 8000);
 
-/* ------------------------------------------------------------
-   ЭКРАН ДОСТИЖЕНИЙ
-   ------------------------------------------------------------ */
 ROUTES.achievements = function(){
   const ids = Object.keys(ACHIEVEMENTS);
   const got = ids.filter(function(id){ return G.achievements[id]; });
@@ -15427,7 +15325,7 @@ const ENDINGS = {
     d: 'Вы собрали все улики и выдвинули правильное обвинение без ошибок.',
     color: '#3ddc97',
     ico: 'starFill',
-    flag: 'finale_good',
+    flag: 'finale_perfect',
     condition: function(){
       return hasFlag('case_closed')
         && G.wrongAccusations === 0
@@ -15475,9 +15373,9 @@ const ENDINGS = {
     d: 'Слишком много ошибок. Дело закрыто по формальному признаку.',
     color: '#4d576b',
     ico: 'eyeOff',
-    flag: 'finale_bad',
+    flag: 'finale_cynic',
     condition: function(){
-      return G.wrongAccusations >= 3;
+      return hasFlag('case_closed') && G.wrongAccusations >= 3;
     }
   },
   ending_incomplete: {
@@ -15493,15 +15391,39 @@ const ENDINGS = {
   }
 };
 
+/* Периодически вычисляем, какая концовка была достигнута, и ставим флаг */
+function checkEndingsUnlock(){
+  if(!hasFlag('case_closed')) return;
+
+  if(G.wrongAccusations === 0){
+    if(G.evidence.length >= 30){
+      setFlag('finale_perfect');
+    } else {
+      setFlag('finale_good');
+    }
+  } else if(G.wrongAccusations >= 3){
+    setFlag('finale_cynic');
+  } else {
+    setFlag('finale_neutral');
+  }
+}
+
+setInterval(checkEndingsUnlock, 5000);
+
 ROUTES.endings = function(){
   const ids = Object.keys(ENDINGS);
-  const unlocked = ids.filter(function(id){
-    return G.flags[ENDINGS[id].flag];
-  });
+
+  /* Улики: сначала проверяем флаг, если нет — проверяем condition() */
+  function endingGot(e){
+    if(hasFlag(e.flag)) return true;
+    try { return !!e.condition(); } catch(err){ return false; }
+  }
+
+  const unlocked = ids.filter(function(id){ return endingGot(ENDINGS[id]); });
 
   const rows = ids.map(function(id){
     const e = ENDINGS[id];
-    const got = G.flags[e.flag];
+    const got = endingGot(e);
     return ''
     + '<div class="ending-row' + (got ? ' got' : '') + '" '
     +   'style="border-left-color:' + e.color + '">'
@@ -16047,10 +15969,10 @@ function psyRow(label, val){
     : 'var(--ok)';
   return ''
   + '<div class="psy-row">'
-  +   '<div class="pr-label">' + label + '</div>'
-  +   '<div class="pr-bar"><div class="pr-fill" style="width:' + pct
+  +   '<div class="psy-label-row">' + label + '</div>'
+  +   '<div class="psy-bar"><div class="psy-fill" style="width:' + pct
   +     + '%;background:' + color + '"></div></div>'
-  +   '<div class="pr-num" style="color:' + color + '">' + val + '/10</div>'
+  +   '<div class="psy-num" style="color:' + color + '">' + val + '/10</div>'
   + '</div>';
 }
 
@@ -16064,7 +15986,7 @@ function psyMotive(label, priority, desc){
 }
 
 /* ============================================================
-   БЛОК 10 — КРИМИНАЛИСТИКА (отпечатки, ДНК, микрочастицы)
+   БЛОК 10 — КРИМИНАЛИСТИКА
    ============================================================ */
 
 const FORENSIC = {
@@ -16547,12 +16469,12 @@ function openNewGamePlus(){
 
 function startNGPlus(){
   const savedAchievements = JSON.parse(JSON.stringify(G.achievements || {}));
-  const savedEndings = {
-    finale_good: G.flags.finale_good,
-    finale_bad: G.flags.finale_bad,
-    finale_neutral: G.flags.finale_neutral
-  };
   const savedUnlocked = JSON.parse(JSON.stringify(G.unlockedEncrypted || {}));
+  const savedEndingFlags = {};
+  ['finale_good', 'finale_bad', 'finale_neutral', 'finale_perfect',
+   'finale_cynic', 'finale_incomplete'].forEach(function(k){
+    if(G.flags[k]) savedEndingFlags[k] = G.flags[k];
+  });
 
   wipeSave();
 
@@ -16568,9 +16490,9 @@ function startNGPlus(){
   };
   G.achievements = savedAchievements;
   G.unlockedEncrypted = savedUnlocked;
-  G.flags.finale_good = savedEndings.finale_good;
-  G.flags.finale_bad = savedEndings.finale_bad;
-  G.flags.finale_neutral = savedEndings.finale_neutral;
+  for(const k in savedEndingFlags){
+    G.flags[k] = savedEndingFlags[k];
+  }
 
   toast('🌟 NG+', 'Новая игра началась. Удачи!', 'ok');
   go('home');
@@ -17185,7 +17107,7 @@ if(!G.opened.forensic) G.opened.forensic = {};
   + '.lr-stats span{font-size:10.5px;color:var(--dim)}'
   + '.lr-actions{display:flex;gap:10px}'
 
-  /* ---------- ПСИХОПРОФИЛЬ ---------- */
+  /* ---------- ПСИХОПРОФИЛЬ (переименованы классы, чтобы не конфликтовать с профилями) ---------- */
   + '.psych-view{padding:0 0 30px}'
   + '.psy-hero{'
   +   'text-align:center;padding:28px 20px 22px;'
@@ -17210,17 +17132,17 @@ if(!G.opened.forensic) G.opened.forensic = {};
   + '.psy-row{'
   +   'display:flex;align-items:center;gap:12px;'
   + '}'
-  + '.pr-label{'
+  + '.psy-label-row{'
   +   'flex:0 0 120px;font-size:12px;color:var(--dim);'
   + '}'
-  + '.pr-bar{'
+  + '.psy-bar{'
   +   'flex:1;height:5px;background:var(--panel2);'
   +   'border-radius:3px;overflow:hidden;'
   + '}'
-  + '.pr-fill{'
+  + '.psy-fill{'
   +   'height:100%;border-radius:3px;transition:.5s;'
   + '}'
-  + '.pr-num{'
+  + '.psy-num{'
   +   'flex:0 0 auto;font-size:11px;font-weight:600;'
   +   'font-variant-numeric:tabular-nums;'
   + '}'
@@ -17502,7 +17424,6 @@ if(!G.opened.forensic) G.opened.forensic = {};
   }
 })();
 
-/* Инициализация таймера игры */
 G._startTime = Date.now();
 setInterval(function(){
   G._playTime = Math.floor((Date.now() - G._startTime) / 1000);
@@ -17513,26 +17434,8 @@ console.log(
   'color:#5da9ff;font-weight:bold;font-size:14px',
   '\nДостижения: 48. Настройки расширены. Добавлены: сопоставление, экспертиза, детектор лжи, психопрофиль, шифры, NG+. Вставляй Часть 10 ниже.'
 );
-
-/* ... Часть 9 заканчивается здесь. Не закрывай script/body/html.
-   Часть 10 завершит игру. */
 /* ============================================================
    ЧАСТЬ 10 из 10 — ЭПИЛОГ · ТИТРЫ · ПОСТ-КРЕДИТ · ФИНАЛ
-   ------------------------------------------------------------
-   Финальная часть игры:
-   - Сцена суда (детальный судебный процесс)
-   - Вынесение приговора
-   - Эпилог по каждому персонажу (9 эпилогов)
-   - Письмо маме
-   - Пост-кредитные сцены (6 сцен)
-   - Титры с музыкой
-   - Экран «Продолжение следует?»
-   - Итоговая статистика
-   - Закрывающие теги
-   ============================================================ */
-
-/* ============================================================
-   БЛОК 1 — СЦЕНА СУДА
    ============================================================ */
 
 const TRIAL_SCENES = {
@@ -17801,10 +17704,6 @@ const TRIAL_SCENES = {
 
 };
 
-/* ------------------------------------------------------------
-   РЕНДЕР СУДА
-   ------------------------------------------------------------ */
-
 G.trialStep = 0;
 G.trialOrder = [
   'trial_opening',
@@ -17924,13 +17823,6 @@ function trialHelp(){
   +       'судебного заседания: вступительное слово прокурора, '
   +       'предъявление улик, показания свидетелей, последнее '
   +       'слово подсудимого и приговор.</p>'
-  +   '</div>'
-  +   '<div class="help-block">'
-  +     '<div class="hb-ico">' + svg('info', 22) + '</div>'
-  +     '<h3>Что влияет на финал</h3>'
-  +     '<p>Если вы собрали все улики и выдвинули правильное '
-  +       'обвинение — суд вынесет обвинительный приговор. '
-  +       'Если ошиблись — Виктор Павлович будет оправдан.</p>'
   +   '</div>'
   +   '<button class="btn ghost" style="width:100%;justify-content:center;margin-top:14px" '
   +     'onclick="goBack()">Продолжить</button>'
@@ -18103,8 +17995,8 @@ const EPILOGUES = {
       + 'Он уехал из России. Живёт в Дубае. Никогда '
       + 'больше не занимается кино.\n\n'
       + 'Он не признал вину. Но всем, кто его знал, '
-      + 'ясно: он виновен не меньше Виктора. Просто '
-      + 'его вина не доказуема.'
+      + 'ясно: он виновен не меньше Виктора 'Призна.н Просто '
+      + 'его вина ви не доказуема.'
   },
 
   ep_viktor: {
@@ -18275,7 +18167,7 @@ const CREDITS_SECTIONS = [
       {role: '', name: 'Звонки · 20 вызовов'},
       {role: '', name: 'Доска улик · 42 карточки'},
       {role: '', name: 'Хронология · 30 событий'},
-      {role: '', name: 'Допросы · 8 подозреваемых'},
+      {role: '', name: 'Допросы · 7 подозреваемых'},
       {role: '', name: 'Медиатека · 12 видео · 10 аудио'},
       {role: '', name: 'Почта · 14 писем'},
       {role: '', name: 'Карта · 12 локаций'},
@@ -18315,7 +18207,7 @@ const CREDITS_SECTIONS = [
     sub: 'Справедливость',
     items: [
       {role: '', name: 'Виктор Соколовский'},
-      {role: '', name: 'Признан виновным'},
+      {role: '', name:новным'},
       {role: '', name: '20 лет строгого режима'}
     ]
   },
@@ -18328,6 +18220,16 @@ const CREDITS_SECTIONS = [
       {role: '', name: 'Правда восторжествовала'}
     ]
   }
+];
+
+/* Полный список всех 6 флагов концовок (для подсчёта) */
+const ALL_ENDING_FLAGS = [
+  'finale_perfect',
+  'finale_good',
+  'finale_neutral',
+  'finale_bad',
+  'finale_cynic',
+  'finale_incomplete'
 ];
 
 G.creditsIndex = 0;
@@ -18349,7 +18251,6 @@ ROUTES.credits = function(){
   +   renderCreditsSection(CREDITS_SECTIONS[0])
   + '</div>');
 
-  /* Автоматическая прокрутка */
   G._creditsTimer = setInterval(function(){
     creditsAdvance();
   }, 4500);
@@ -18359,7 +18260,6 @@ function renderCreditsSection(sc){
   if(!sc) return '';
   const items = sc.items.map(function(it){
     let name = it.name;
-    /* Подстановка реальных значений статистики */
     if(name === 'G.evidence') name = G.evidence.length + '';
     if(name === 'G.notesRead') name = G.notesRead + '';
     if(name === 'G.photosViewed') name = G.photosViewed + '';
@@ -18367,14 +18267,19 @@ function renderCreditsSection(sc){
       const n = Object.keys(G.flags).filter(function(k){
         return k.startsWith('interrogation_') && k.endsWith('_done');
       }).length;
-      name = n + '/8';
+      const total = Object.keys(INTERROGATIONS).length;
+      name = n + '/' + total;
     }
     if(name === 'achCount'){
-      name = Object.keys(G.achievements || {}).length + '/48';
+      name = Object.keys(G.achievements || {}).length + '/'
+        + Object.keys(ACHIEVEMENTS).length;
     }
+    /* ИСПРАВЛЕНО: учитываем все 6 концовок */
     if(name === 'endCount'){
-      const endings = ['finale_good', 'finale_bad', 'finale_neutral'];
-      name = endings.filter(function(e){ return G.flags[e]; }).length + '/3';
+      const n = ALL_ENDING_FLAGS.filter(function(e){
+        return G.flags[e];
+      }).length;
+      name = n + '/' + ALL_ENDING_FLAGS.length;
     }
     return ''
     + '<div class="cr-item">'
@@ -18424,11 +18329,12 @@ function showEndScreen(){
 
   const achCount = Object.keys(G.achievements || {}).length;
   const totalAch = Object.keys(ACHIEVEMENTS).length;
-  const endings = ['finale_good', 'finale_bad', 'finale_neutral'];
-  const endCount = endings.filter(function(e){ return G.flags[e]; }).length;
-  const intDone = Object.keys(G.flags).filter(function(k){
-    return k.startsWith('interrogation_') && k.endsWith('_done');
+
+  /* ИСПРАВЛЕНО: учитываем все 6 концовок */
+  const endCount = ALL_ENDING_FLAGS.filter(function(e){
+    return G.flags[e];
   }).length;
+  const totalEnd = ALL_ENDING_FLAGS.length;
 
   const pct = Math.round(G.evidence.length /
     Math.max(1, Object.keys(EVIDENCE_DB).length) * 100);
@@ -18468,7 +18374,7 @@ function showEndScreen(){
   +       '<div class="ess-label">ачивок</div>'
   +     '</div>'
   +     '<div class="es-stat">'
-  +       '<div class="ess-num">' + endCount + '/3</div>'
+  +       '<div class="ess-num">' + endCount + '/' + totalEnd + '</div>'
   +       '<div class="ess-label">концовок</div>'
   +     '</div>'
   +   '</div>'
@@ -18818,7 +18724,6 @@ function finalRestart(){
   const style = document.createElement('style');
   style.textContent = ''
 
-  /* ---------- СУД ---------- */
   + '.trial-progress{padding:12px 16px 6px}'
   + '.trial-scene{padding:18px 18px 40px}'
   + '.ts-hero{'
@@ -18852,7 +18757,6 @@ function finalRestart(){
   + '}'
   + '.ts-nav{display:flex;gap:10px}'
 
-  /* ---------- ЭПИЛОГИ ---------- */
   + '.epilogue-view{padding:18px 18px 40px}'
   + '.ep-hero{'
   +   'text-align:center;padding:22px 18px 16px;'
@@ -18882,7 +18786,6 @@ function finalRestart(){
   + '}'
   + '.ep-nav{display:flex;gap:10px}'
 
-  /* ---------- ТИТРЫ ---------- */
   + '.credits-view{'
   +   'min-height:100%;'
   +   'display:flex;align-items:center;justify-content:center;'
@@ -18924,7 +18827,6 @@ function finalRestart(){
   +   'line-height:1.4;'
   + '}'
 
-  /* ---------- ФИНАЛЬНЫЙ ЭКРАН ---------- */
   + '.end-screen{'
   +   'min-height:100%;'
   +   'display:flex;flex-direction:column;'
@@ -19003,13 +18905,16 @@ function finalRestart(){
   + '}'
   + '.es-actions{'
   +   'display:flex;gap:10px;margin-bottom:22px;'
+  +   'flex-wrap:wrap;'       /* ИСПРАВЛЕНО */
+  + '}'
+  + '.es-actions .btn{'
+  +   'min-width:0;font-size:12px;padding:11px 14px;'
   + '}'
   + '.es-footer{'
   +   'font-size:11.5px;color:var(--dim2);'
   +   'line-height:1.7;margin-top:auto;'
   + '}'
 
-  /* ---------- ПОСТ-КРЕДИТ ---------- */
   + '.pc-view{padding:20px 18px 40px}'
   + '.pc-hero{'
   +   'text-align:center;margin-bottom:22px;'
@@ -19036,7 +18941,6 @@ function finalRestart(){
   + '}'
   + '.pc-nav{display:flex}'
 
-  /* ---------- ФИНАЛ-ФИНАЛ ---------- */
   + '.final-finale{'
   +   'min-height:100%;'
   +   'display:flex;flex-direction:column;'
@@ -19094,7 +18998,6 @@ function finalRestart(){
   +   'margin-top:auto;'
   + '}'
 
-  /* ---------- УВЕЛИЧЕННАЯ АНИМАЦИЯ СУДА ---------- */
   + '.trial-scene, .epilogue-view, .pc-view{'
   +   'animation:trialFade .35s ease-out;'
   + '}'
@@ -19103,10 +19006,7 @@ function finalRestart(){
   +   'to{opacity:1;transform:none}'
   + '}'
 
-  /* ---------- СПЕЦИАЛЬНЫЕ ЭФФЕКТЫ ---------- */
-  + '.ts-body, .ep-body, .pc-body{'
-  +   'position:relative;'
-  + '}'
+  + '.ts-body, .ep-body, .pc-body{position:relative;}'
   + '.ts-body::before{'
   +   'content:"";'
   +   'position:absolute;left:0;top:0;bottom:0;width:3px;'
@@ -19129,13 +19029,11 @@ function finalRestart(){
   +   'border-radius:3px;opacity:.3;'
   + '}'
 
-  /* ---------- АДАПТАЦИЯ ---------- */
   + '@media (max-height:750px){'
   +   '.end-screen, .final-finale{padding-top:24px}'
   +   '.es-ring, .ff-ring{width:80px;height:80px}'
   + '}'
 
-  /* ---------- СКРОЛЛБАР-ТЕНИ ---------- */
   + '.trial-scene, .epilogue-view, .pc-view{'
   +   'overflow:hidden;'
   + '}';
@@ -19147,7 +19045,6 @@ function finalRestart(){
    БЛОК 10 — РАСШИРЕННАЯ ИНИЦИАЛИЗАЦИЯ
    ============================================================ */
 
-/* Проверяем, что все роуты зарегистрированы */
 (function verifyRoutes(){
   const required = [
     'boot', 'lock', 'home', 'chats', 'calls', 'gallery',
@@ -19169,7 +19066,6 @@ function finalRestart(){
   }
 })();
 
-/* Проверяем APPS */
 (function verifyApps(){
   if(typeof APPS === 'undefined') return;
   console.log(
@@ -19178,7 +19074,6 @@ function finalRestart(){
   );
 })();
 
-/* Проверяем улики */
 (function verifyEvidence(){
   console.log(
     '%c📌 Улик в базе: ' + Object.keys(EVIDENCE_DB).length,
@@ -19186,7 +19081,6 @@ function finalRestart(){
   );
 })();
 
-/* Проверяем допросы */
 (function verifyInterrogations(){
   console.log(
     '%c💬 Допросов: ' + Object.keys(INTERROGATIONS).length,
@@ -19194,7 +19088,6 @@ function finalRestart(){
   );
 })();
 
-/* Проверяем достижения */
 (function verifyAchievements(){
   console.log(
     '%c🏆 Достижений: ' + Object.keys(ACHIEVEMENTS).length,
@@ -19202,7 +19095,6 @@ function finalRestart(){
   );
 })();
 
-/* Убираем возможные дубликаты роутов */
 (function cleanRoutes(){
   const seen = {};
   for(const k in ROUTES){
@@ -19213,7 +19105,6 @@ function finalRestart(){
   }
 })();
 
-/* Финальные консольные сообщения */
 console.log(
   '%c╔════════════════════════════════════════════════╗\n' +
   '║                                                ║\n' +
@@ -19242,42 +19133,34 @@ console.log(
    ФИНАЛЬНАЯ ИНИЦИАЛИЗАЦИЯ
    ============================================================ */
 
-/* Запускаем проверку достижений сразу */
 setTimeout(checkAchievements, 2000);
 
-/* Автосохранение каждые 30 секунд */
 setInterval(function(){
   if(G.screen && G.screen !== 'boot' && G.screen !== 'lock'){
     saveGame();
   }
 }, 30000);
 
-/* Обработка видимости страницы */
 document.addEventListener('visibilitychange', function(){
   if(document.hidden){
     saveGame();
   }
 });
 
-/* Обработка beforeunload */
 window.addEventListener('beforeunload', function(){
   saveGame();
 });
 
-/* Обработка ошибок */
 window.addEventListener('error', function(e){
   console.warn('[Игра] Ошибка:', e.message);
 });
 
-/* Предотвращаем случайное закрытие жестами */
 document.addEventListener('gesturestart', function(e){
   e.preventDefault();
 });
 
-/* Увеличиваем тач-зону для кнопок */
 document.addEventListener('touchstart', function(){}, {passive: true});
 
-/* Проверяем сохранение при старте */
 (function checkSaveOnStart(){
   const loaded = loadGame();
   if(loaded && loaded.screen && loaded.screen !== 'boot'){
@@ -19288,21 +19171,12 @@ document.addEventListener('touchstart', function(){}, {passive: true});
   }
 })();
 
-/* Отправляем стартовый тост */
 setTimeout(function(){
   if(!hasFlag('seen_start_toast')){
     setFlag('seen_start_toast');
     toast('Добро пожаловать', 'Дело №2024-0414 «Последний сеанс»', 'ok');
   }
 }, 1200);
-
-/* ============================================================
-   КОНЕЦ ИГРЫ
-   ============================================================
-   Все 10 частей загружены.
-   Игра завершена.
-   Закрываем теги.
-   ============================================================ */
 
 console.log(
   '%c[ЧАСТЬ 10 ЗАГРУЖЕНА]',
@@ -19320,12 +19194,6 @@ console.log(
   'color:#3ddc97;font-weight:bold;font-size:13px',
   '\nВсе 10 частей загружены. Игра готова к запуску.'
 );
-
-/* ============================================================
-   АВТОЗАПУСК
-   ============================================================ */
-
-/* Убираем финальную скобку — она в самом низу файла */
 
 /* Экспорт в глобальный объект для отладки */
 window.CASE_2024_0414 = {
