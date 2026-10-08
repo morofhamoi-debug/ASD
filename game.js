@@ -3409,10 +3409,10 @@ function openPhoto(key){
   +   '</div>'
 
   +   '<div class="pv-stage">'
-  +     '<div class="pv-svg">' + svgScene + '</div>'
-  +     (p.tag === 'важно' || p.tag === 'последнее'
-  +       ? '<div class="pv-tag hot">' + escapeHtml(p.tag) + '</div>'
-  +       : '<div class="pv-tag">' + escapeHtml(p.tag) + '</div>')
+  +     '<div class="pv-svg">' + svgScene + '</
+  +   (p.tag === 'важно' || p.tag === 'последнее'
+  +     ? '<div class="pv-tag hot">' + escapeHtml(p.tag) + '</div>'
+  +     : '<div class="pv-tag">' + escapeHtml(p.tag) + '</div>')
   +   '</div>'
 
   +   '<div class="pv-meta">'
