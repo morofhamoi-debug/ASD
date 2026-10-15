@@ -1,14 +1,19 @@
 """MOROF BOT MANAGER — минимальное рабочее ядро.
 
-Содержит: конфиг, БД, модели, шифрование токенов, проверку через Telegram API,
-менеджер подключённых ботов, middleware доступа, FSM-подключение, раздел «Мои боты».
+Читает секреты в порядке приоритета:
+  1) переменные окружения (для хостинга: Render, Railway, VPS)
+  2) локальный файл secrets.py (для запуска на своём компьютере/сервере)
+
+Файл secrets.py НЕ должен попадать в GitHub.
 """
 
 from __future__ import annotations
 
 import asyncio
 import logging
+import os
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any
 
 import httpx
@@ -36,20 +41,64 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 log = logging.getLogger("morof")
 
-# ───────────────────────────────── КОНФИГ ──────────────────────────────────
+# ───────────────────────────── СЕКРЕТЫ ─────────────────────────────
+# Приоритет: переменные окружения → secrets.py
+
+try:
+    import secrets as _secrets  # локальный файл secrets.py
+    for _key in ("MAIN_BOT_TOKEN", "OWNER_IDS", "DATABASE_URL", "FERNET_KEY"):
+        _val = getattr(_secrets, _key, None)
+        if _val and not os.environ.get(_key):
+            os.environ[_key] = str(_val)
+except ImportError:
+    pass
+
+
+def _load_or_create_fernet() -> str:
+    """Гарантированно возвращает рабочий Fernet-ключ.
+
+    Порядок:
+      1) FERNET_KEY из окружения / secrets.py
+      2) локальный файл .fernet_key (сохраняется между запусками)
+      3) сгенерировать новый и сохранить в .fernet_key
+    """
+    key = os.environ.get("FERNET_KEY")
+    if key:
+        return key
+
+    key_file = Path(".fernet_key")
+    if key_file.exists():
+        return key_file.read_text().strip()
+
+    new_key = Fernet.generate_key().decode()
+    key_file.write_text(new_key)
+    log.warning(
+        "FERNET_KEY не задан — сгенерирован новый и сохранён в .fernet_key. "
+        "НЕ удаляй этот файл, иначе подключённые боты станут недоступны."
+    )
+    return new_key
+
+
+# ───────────────────────────── КОНФИГ ──────────────────────────────
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+
     main_bot_token: str
     owner_ids: str = ""
     database_url: str
-    fernet_key: str
+    fernet_key: str = ""
 
     @property
     def owners(self) -> set[int]:
         return {int(x) for x in self.owner_ids.split(",") if x.strip()}
 
+
 settings = Settings()
+
+if not settings.fernet_key:
+    settings.fernet_key = _load_or_create_fernet()
+
 _fernet = Fernet(settings.fernet_key.encode())
 
 
@@ -64,7 +113,7 @@ def decrypt_token(cipher: str) -> str:
         raise RuntimeError("Не удалось расшифровать токен. Проверь FERNET_KEY.") from e
 
 
-# ──────────────────────────────── БАЗА ДАННЫХ ──────────────────────────────
+# ───────────────────────── БАЗА ДАННЫХ ─────────────────────────────
 
 class Base(DeclarativeBase):
     pass
@@ -100,10 +149,10 @@ class ManagedBot(Base):
     __table_args__ = (Index("ix_mb_owner_status", "owner_id", "status"),)
 
 
-# ─────────────────────────── ПРОВЕРКА ТОКЕНА ───────────────────────────────
+# ───────────────────────── ПРОВЕРКА ТОКЕНА ────────────────────────
 
 async def validate_token(token: str) -> dict | None:
-    """Возвращает getMe-результат либо None. Токен не логируется."""
+    """Возвращает результат getMe или None. Токен не логируется."""
     try:
         async with httpx.AsyncClient(timeout=10.0) as c:
             r = await c.get(f"https://api.telegram.org/bot{token}/getMe")
@@ -113,7 +162,7 @@ async def validate_token(token: str) -> dict | None:
     return data.get("result") if data.get("ok") else None
 
 
-# ────────────────────── МЕНЕДЖЕР ПОДКЛЮЧЁННЫХ БОТОВ ────────────────────────
+# ───────────────── МЕНЕДЖЕР ПОДКЛЮЧЁННЫХ БОТОВ ────────────────────
 
 class Runtime:
     def __init__(self, bot_id: int, token: str) -> None:
@@ -124,7 +173,6 @@ class Runtime:
         self.dp.message(CommandStart())(self._on_start)
 
     async def _on_start(self, message: Message) -> None:
-        # Заготовка под /start, настраиваемое в панели (этап 4).
         await message.answer(
             "🤖 Этот бот подключён к <b>MOROF BOT MANAGER</b>.\n"
             "Настройка приветствия появится в следующих обновлениях."
@@ -173,7 +221,9 @@ class BotManager:
             await self.stop(bot_id)
 
     async def restore(self, session: AsyncSession) -> None:
-        rows = await session.execute(select(ManagedBot).where(ManagedBot.status == "active"))
+        rows = await session.execute(
+            select(ManagedBot).where(ManagedBot.status == "active")
+        )
         for b in rows.scalars():
             try:
                 await self.start(b.id, decrypt_token(b.token_encrypted))
@@ -184,7 +234,7 @@ class BotManager:
 manager = BotManager()
 
 
-# ─────────────────────────── MIDDLEWARE ────────────────────────────────────
+# ───────────────────────── MIDDLEWARE ──────────────────────────────
 
 DENY = "⛔️ <b>Доступ запрещён</b>\n\nТы не владелец панели MOROF BOT MANAGER."
 
@@ -205,8 +255,12 @@ class AccessMw(BaseMiddleware):
 
         user = await session.get(User, tg.id)
         if user is None:
-            user = User(id=tg.id, username=tg.username, full_name=tg.full_name,
-                        is_admin=tg.id in settings.owners)
+            user = User(
+                id=tg.id,
+                username=tg.username,
+                full_name=tg.full_name,
+                is_admin=tg.id in settings.owners,
+            )
             session.add(user)
         else:
             user.username = tg.username
@@ -226,18 +280,26 @@ class AccessMw(BaseMiddleware):
         return await handler(event, data)
 
 
-# ──────────────────────────────── КЛАВИАТУРЫ ───────────────────────────────
+# ───────────────────────── КЛАВИАТУРЫ ─────────────────────────────
 
 def kb_main() -> InlineKeyboardMarkup:
     b = InlineKeyboardBuilder()
-    b.row(InlineKeyboardButton(text="🤖 Мои боты", callback_data="menu:my_bots"),
-          InlineKeyboardButton(text="➕ Подключить бота", callback_data="menu:add_bot"))
-    b.row(InlineKeyboardButton(text="⚙️ Управление ботами", callback_data="menu:soon"),
-          InlineKeyboardButton(text="📊 Статистика", callback_data="menu:soon"))
-    b.row(InlineKeyboardButton(text="🖼 Оформление", callback_data="menu:soon"),
-          InlineKeyboardButton(text="📣 Рассылки", callback_data="menu:soon"))
-    b.row(InlineKeyboardButton(text="📝 Сообщения", callback_data="menu:soon"),
-          InlineKeyboardButton(text="❓ Помощь", callback_data="menu:help"))
+    b.row(
+        InlineKeyboardButton(text="🤖 Мои боты", callback_data="menu:my_bots"),
+        InlineKeyboardButton(text="➕ Подключить бота", callback_data="menu:add_bot"),
+    )
+    b.row(
+        InlineKeyboardButton(text="⚙️ Управление ботами", callback_data="menu:soon"),
+        InlineKeyboardButton(text="📊 Статистика", callback_data="menu:soon"),
+    )
+    b.row(
+        InlineKeyboardButton(text="🖼 Оформление", callback_data="menu:soon"),
+        InlineKeyboardButton(text="📣 Рассылки", callback_data="menu:soon"),
+    )
+    b.row(
+        InlineKeyboardButton(text="📝 Сообщения", callback_data="menu:soon"),
+        InlineKeyboardButton(text="❓ Помощь", callback_data="menu:help"),
+    )
     b.row(InlineKeyboardButton(text="👤 Профиль", callback_data="menu:profile"))
     return b.as_markup()
 
@@ -245,7 +307,10 @@ def kb_main() -> InlineKeyboardMarkup:
 def kb_bots(bots: list[ManagedBot]) -> InlineKeyboardMarkup:
     b = InlineKeyboardBuilder()
     for x in bots:
-        b.row(InlineKeyboardButton(text=f"🤖 {x.title} | @{x.username}", callback_data=f"bot:open:{x.id}"))
+        b.row(InlineKeyboardButton(
+            text=f"🤖 {x.title} | @{x.username}",
+            callback_data=f"bot:open:{x.id}",
+        ))
     b.row(InlineKeyboardButton(text="➕ Подключить нового бота", callback_data="menu:add_bot"))
     b.row(InlineKeyboardButton(text="🔄 Обновить список", callback_data="menu:my_bots"))
     b.row(InlineKeyboardButton(text="🏠 Главное меню", callback_data="menu:main"))
@@ -262,9 +327,12 @@ def kb_empty() -> InlineKeyboardMarkup:
 def kb_panel(bot_id: int) -> InlineKeyboardMarkup:
     b = InlineKeyboardBuilder()
     labels = [
-        ("⚙️ Настройки", "settings"), ("📝 Стартовое сообщение", "start"),
-        ("🖼 Фото и медиа", "media"), ("🔘 Inline-кнопки", "buttons"),
-        ("📋 Команды", "commands"), ("📣 Рассылки", "broadcast"),
+        ("⚙️ Настройки", "settings"),
+        ("📝 Стартовое сообщение", "start"),
+        ("🖼 Фото и медиа", "media"),
+        ("🔘 Inline-кнопки", "buttons"),
+        ("📋 Команды", "commands"),
+        ("📣 Рассылки", "broadcast"),
         ("📊 Статистика", "stats"),
     ]
     for text, key in labels:
@@ -321,7 +389,7 @@ def kb_newbot_success() -> InlineKeyboardMarkup:
     return b.as_markup()
 
 
-# ──────────────────────────────── ТЕКСТЫ ───────────────────────────────────
+# ──────────────────────────── ТЕКСТЫ ──────────────────────────────
 
 WELCOME = (
     "👋 <b>MOROF BOT MANAGER</b>\n\n"
@@ -357,7 +425,7 @@ NEWBOT_INVALID = (
 )
 
 
-# ──────────────────────────────── ХЕНДЛЕРЫ ─────────────────────────────────
+# ──────────────────────────── ХЕНДЛЕРЫ ────────────────────────────
 
 class NewBot(StatesGroup):
     token = State()
@@ -493,9 +561,11 @@ async def cb_nb_ok(c: CallbackQuery, state: FSMContext, session: AsyncSession, d
         select(ManagedBot).where(ManagedBot.telegram_bot_id == tg_id))).scalar_one_or_none()
 
     if existing is None:
-        bot = ManagedBot(owner_id=db_user.id, telegram_bot_id=tg_id,
-                         username=d["username"], title=d["title"],
-                         token_encrypted=encrypt_token(token), status="active")
+        bot = ManagedBot(
+            owner_id=db_user.id, telegram_bot_id=tg_id,
+            username=d["username"], title=d["title"],
+            token_encrypted=encrypt_token(token), status="active",
+        )
         session.add(bot)
     else:
         if existing.owner_id != db_user.id:
@@ -531,9 +601,9 @@ async def cb_nb_ok(c: CallbackQuery, state: FSMContext, session: AsyncSession, d
 
 @router.callback_query(F.data == "menu:my_bots")
 async def cb_bots(c: CallbackQuery, session: AsyncSession, db_user: User) -> None:
-    rows = await session.execute(select(ManagedBot)
-                                 .where(ManagedBot.owner_id == db_user.id)
-                                 .order_by(ManagedBot.created_at.asc()))
+    rows = await session.execute(
+        select(ManagedBot).where(ManagedBot.owner_id == db_user.id)
+        .order_by(ManagedBot.created_at.asc()))
     bots = list(rows.scalars())
     if not bots:
         text = "🤖 <b>МОИ БОТЫ</b>\n\nУ тебя пока нет подключённых ботов."
@@ -552,8 +622,11 @@ async def cb_open(c: CallbackQuery, session: AsyncSession, db_user: User) -> Non
     if not bot:
         await c.answer("Бот не найден", show_alert=True)
         return
-    smap = {"active": "✅ подключён", "invalid": "⚠️ требуется повторное подключение",
-            "disabled": "⏸ отключён"}
+    smap = {
+        "active": "✅ подключён",
+        "invalid": "⚠️ требуется повторное подключение",
+        "disabled": "⏸ отключён",
+    }
     await c.message.edit_text(
         "🤖 <b>УПРАВЛЕНИЕ БОТОМ</b>\n\n"
         f"Название: <b>{bot.title}</b>\n"
@@ -709,17 +782,21 @@ async def cb_del_ok(c: CallbackQuery, session: AsyncSession, db_user: User) -> N
     await c.answer("Удалено")
 
 
-# ──────────────────────────────── ЗАПУСК ───────────────────────────────────
+# ──────────────────────────── ЗАПУСК ──────────────────────────────
 
 async def main() -> None:
-    logging.basicConfig(level=logging.INFO,
-                        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+    )
 
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
-    bot = Bot(token=settings.main_bot_token,
-              default=DefaultBotProperties(parse_mode=ParseMode.HTML))
+    bot = Bot(
+        token=settings.main_bot_token,
+        default=DefaultBotProperties(parse_mode=ParseMode.HTML),
+    )
     dp = Dispatcher(storage=MemoryStorage())
     dp.update.middleware(DbMw())
     dp.update.middleware(AccessMw())
