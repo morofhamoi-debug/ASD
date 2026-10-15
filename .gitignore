@@ -1,0 +1,12 @@
+# секреты
+secrets.py
+.env
+.fernet_key
+
+# python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+.pytest_cache/
