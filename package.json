@@ -1,0 +1,18 @@
+{
+  "name": "pravosfera",
+  "version": "1.0.0",
+  "description": "Премиальная AI-платформа законодательства России",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "import": "node importer/import.js"
+  },
+  "dependencies": {
+    "@google/genai": "^1.46.0",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.0",
+    "express-rate-limit": "^7.4.0",
+    "pg": "^8.12.0"
+  }
+}
