@@ -1,0 +1,1544 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=5.0">
+    <meta name="theme-color" content="#0a0a0f">
+    <meta name="description" content="ПРАВОСФЕРА — интеллектуальная платформа законодательства России">
+    <title>ПРАВОСФЕРА — Законодательство России</title>
+    <style>
+        /* === БАЗОВЫЕ СТИЛИ === */
+        :root {
+            --bg-primary: #0a0a0f;
+            --bg-secondary: #12121a;
+            --bg-card: #1a1a24;
+            --text-primary: #f0f0f5;
+            --text-secondary: #a0a0b0;
+            --text-muted: #606070;
+            --accent: #4a9eff;
+            --accent-dim: rgba(74, 158, 255, 0.15);
+            --border: #2a2a3a;
+            --silver: #c0c0d0;
+            --safe-top: env(safe-area-inset-top, 0px);
+            --safe-bottom: env(safe-area-inset-bottom, 0px);
+            --font: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        html {
+            font-size: 16px;
+            -webkit-text-size-adjust: 100%;
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: var(--font);
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            overflow-x: hidden;
+            min-height: 100vh;
+            min-height: 100dvh;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* === ПРИВЕТСТВЕННЫЙ ЭКРАН === */
+        #welcome-screen {
+            position: fixed;
+            inset: 0;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg-primary);
+            padding: calc(var(--safe-top) + 2rem) 1.5rem calc(var(--safe-bottom) + 2rem);
+            transition: opacity 0.8s ease, visibility 0.8s ease;
+        }
+
+        #welcome-screen.hidden {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+
+        #welcome-screen canvas {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            opacity: 0.6;
+        }
+
+        .welcome-content {
+            position: relative;
+            z-index: 1;
+            text-align: center;
+            max-width: 600px;
+        }
+
+        .brand-logo {
+            font-size: 0.875rem;
+            font-weight: 600;
+            letter-spacing: 0.3em;
+            color: var(--silver);
+            text-transform: uppercase;
+            margin-bottom: 2rem;
+            opacity: 0;
+            animation: fadeInUp 1s ease 0.3s forwards;
+        }
+
+        .welcome-title {
+            font-size: clamp(2rem, 6vw, 3.5rem);
+            font-weight: 700;
+            line-height: 1.15;
+            margin-bottom: 1.5rem;
+            opacity: 0;
+            animation: fadeInUp 1s ease 0.6s forwards;
+        }
+
+        .welcome-title .gradient-text {
+            background: linear-gradient(135deg, #ffffff 0%, #a0b0c0 50%, #4a9eff 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .welcome-subtitle {
+            font-size: clamp(0.95rem, 2.5vw, 1.15rem);
+            color: var(--text-secondary);
+            max-width: 480px;
+            margin: 0 auto 3rem;
+            opacity: 0;
+            animation: fadeInUp 1s ease 0.9s forwards;
+        }
+
+        .btn-watch {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 1rem 2.5rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+            font-family: var(--font);
+            color: var(--bg-primary);
+            background: var(--text-primary);
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease, background 0.3s ease;
+            opacity: 0;
+            animation: fadeInUp 1s ease 1.2s forwards;
+            -webkit-tap-highlight-color: transparent;
+            min-height: 56px;
+        }
+
+        .btn-watch:hover {
+            transform: scale(1.03);
+            box-shadow: 0 0 40px rgba(255,255,255,0.15);
+        }
+
+        .btn-watch:active {
+            transform: scale(0.97);
+        }
+
+        .btn-watch svg {
+            width: 20px;
+            height: 20px;
+            transition: transform 0.3s ease;
+        }
+
+        .btn-watch:hover svg {
+            transform: translateX(4px);
+        }
+
+        /* === ПЕРЕХОДНАЯ АНИМАЦИЯ === */
+        #transition-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 2000;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        #transition-overlay.active {
+            pointer-events: auto;
+            opacity: 1;
+        }
+
+        #transition-overlay svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        #transition-overlay .mask-rect {
+            fill: var(--bg-primary);
+            transform-origin: center;
+        }
+
+        #transition-overlay.animating .mask-rect {
+            animation: expandMask 1.2s cubic-bezier(0.65, 0, 0.35, 1) forwards;
+        }
+
+        @keyframes expandMask {
+            0% { transform: scale(0); opacity: 1; }
+            60% { transform: scale(1.1); opacity: 1; }
+            100% { transform: scale(1); opacity: 0; }
+        }
+
+        /* === ОСНОВНОЙ ИНТЕРФЕЙС === */
+        #main-app {
+            display: none;
+            opacity: 0;
+            transition: opacity 0.6s ease;
+            min-height: 100vh;
+            min-height: 100dvh;
+            padding-bottom: calc(var(--safe-bottom) + 2rem);
+        }
+
+        #main-app.visible {
+            display: block;
+            opacity: 1;
+        }
+
+        /* Хедер */
+        .app-header {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(10, 10, 15, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border);
+            padding: calc(var(--safe-top) + 0.75rem) 1rem 0.75rem;
+        }
+
+        .header-inner {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+        }
+
+        .header-logo {
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.2em;
+            color: var(--silver);
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .icon-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            background: var(--bg-card);
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .icon-btn:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+            background: var(--accent-dim);
+        }
+
+        .icon-btn:active {
+            transform: scale(0.95);
+        }
+
+        .icon-btn svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        /* Контейнер контента */
+        .content-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 1rem;
+        }
+
+        /* Главный экран поиска */
+        .hero-section {
+            padding: 3rem 0 2rem;
+            text-align: center;
+        }
+
+        .hero-title {
+            font-size: clamp(1.75rem, 5vw, 2.5rem);
+            font-weight: 700;
+            margin-bottom: 0.75rem;
+            letter-spacing: -0.02em;
+        }
+
+        .hero-subtitle {
+            font-size: clamp(0.9rem, 2.5vw, 1.05rem);
+            color: var(--text-secondary);
+            margin-bottom: 2rem;
+            max-width: 500px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        /* Поисковая строка */
+        .search-box {
+            position: relative;
+            max-width: 680px;
+            margin: 0 auto;
+        }
+
+        .search-input-wrapper {
+            display: flex;
+            align-items: center;
+            background: var(--bg-card);
+            border: 1.5px solid var(--border);
+            border-radius: 16px;
+            padding: 0 1rem;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+            min-height: 60px;
+        }
+
+        .search-input-wrapper:focus-within {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 4px var(--accent-dim);
+        }
+
+        .search-icon {
+            width: 22px;
+            height: 22px;
+            color: var(--text-muted);
+            flex-shrink: 0;
+        }
+
+        .search-input {
+            flex: 1;
+            border: none;
+            outline: none;
+            background: transparent;
+            color: var(--text-primary);
+            font-size: 1rem;
+            font-family: var(--font);
+            padding: 1rem 0.75rem;
+            min-width: 0;
+        }
+
+        .search-input::placeholder {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .search-btn {
+            flex-shrink: 0;
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            border: none;
+            background: var(--accent);
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s ease, transform 0.2s ease;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .search-btn:hover { background: #3a8eef; }
+        .search-btn:active { transform: scale(0.95); }
+
+        .search-btn svg { width: 20px; height: 20px; }
+
+        /* Результаты поиска */
+        .results-section {
+            padding: 1rem 0 2rem;
+        }
+
+        .results-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .results-count {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .results-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .result-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 1.25rem;
+            cursor: pointer;
+            transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .result-card:hover {
+            border-color: var(--accent);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+
+        .result-card:active {
+            transform: translateY(0);
+        }
+
+        .result-doc-title {
+            font-size: 0.8rem;
+            color: var(--accent);
+            font-weight: 500;
+            margin-bottom: 0.25rem;
+        }
+
+        .result-article-title {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            line-height: 1.4;
+        }
+
+        .result-snippet {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .result-meta {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-top: 0.75rem;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            flex-wrap: wrap;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.15rem 0.5rem;
+            border-radius: 6px;
+            font-size: 0.7rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .status-active { background: rgba(74, 222, 128, 0.15); color: #4ade80; }
+        .status-repealed { background: rgba(248, 113, 113, 0.15); color: #f87171; }
+
+        /* Каталог категорий */
+        .categories-section {
+            padding: 1rem 0 2rem;
+        }
+
+        .section-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            letter-spacing: -0.01em;
+        }
+
+        .categories-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 0.75rem;
+        }
+
+        .category-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 1.25rem 1rem;
+            text-align: center;
+            cursor: pointer;
+            transition: border-color 0.2s ease, transform 0.2s ease;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .category-card:hover {
+            border-color: var(--accent);
+            transform: translateY(-2px);
+        }
+
+        .category-card:active {
+            transform: translateY(0);
+        }
+
+        .category-icon {
+            width: 40px;
+            height: 40px;
+            margin: 0 auto 0.75rem;
+            color: var(--accent);
+        }
+
+        .category-icon svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        .category-name {
+            font-size: 0.85rem;
+            font-weight: 500;
+            margin-bottom: 0.25rem;
+        }
+
+        .category-abbr {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .category-count {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            margin-top: 0.25rem;
+        }
+
+        /* Модальное окно статьи */
+        .article-modal {
+            position: fixed;
+            inset: 0;
+            z-index: 500;
+            background: var(--bg-primary);
+            display: none;
+            flex-direction: column;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .article-modal.open {
+            display: flex;
+        }
+
+        .article-header {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            background: rgba(10, 10, 15, 0.9);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border);
+            padding: calc(var(--safe-top) + 0.75rem) 1rem 0.75rem;
+        }
+
+        .article-header-inner {
+            max-width: 800px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .back-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+            padding: 0.5rem 0.75rem;
+            background: transparent;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            font-family: var(--font);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            -webkit-tap-highlight-color: transparent;
+            min-height: 40px;
+            white-space: nowrap;
+        }
+
+        .back-btn:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .article-header-title {
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .article-content-wrapper {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 1.5rem 1rem 4rem;
+            width: 100%;
+        }
+
+        .article-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            padding: 0.3rem 0.75rem;
+            background: var(--accent-dim);
+            border-radius: 8px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: var(--accent);
+            margin-bottom: 1rem;
+        }
+
+        .article-title-full {
+            font-size: clamp(1.25rem, 4vw, 1.75rem);
+            font-weight: 700;
+            line-height: 1.3;
+            margin-bottom: 0.75rem;
+            letter-spacing: -0.02em;
+        }
+
+        .article-meta-info {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem 1rem;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-bottom: 1.5rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .article-text {
+            font-size: 1rem;
+            line-height: 1.8;
+            color: var(--text-primary);
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            margin-bottom: 2rem;
+            user-select: text;
+            -webkit-user-select: text;
+        }
+
+        .article-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--border);
+        }
+
+        .action-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.25rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            color: var(--text-primary);
+            font-size: 0.85rem;
+            font-weight: 500;
+            font-family: var(--font);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            -webkit-tap-highlight-color: transparent;
+            min-height: 48px;
+        }
+
+        .action-btn:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .action-btn.primary {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: white;
+        }
+
+        .action-btn.primary:hover {
+            background: #3a8eef;
+        }
+
+        .action-btn svg {
+            width: 18px;
+            height: 18px;
+            flex-shrink: 0;
+        }
+
+        /* Блок объяснения ИИ */
+        .ai-explanation {
+            margin-top: 1.5rem;
+            padding: 1.25rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            display: none;
+        }
+
+        .ai-explanation.visible {
+            display: block;
+            animation: fadeInUp 0.5s ease;
+        }
+
+        .ai-explanation-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--accent);
+        }
+
+        .ai-explanation-header svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        .ai-explanation-text {
+            font-size: 0.95rem;
+            line-height: 1.7;
+            color: var(--text-secondary);
+            white-space: pre-wrap;
+        }
+
+        .ai-disclaimer {
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border);
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            font-style: italic;
+        }
+
+        /* Загрузка */
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Уведомления */
+        .toast {
+            position: fixed;
+            bottom: calc(var(--safe-bottom) + 1rem);
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 0.75rem 1.25rem;
+            font-size: 0.85rem;
+            color: var(--text-primary);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+            z-index: 3000;
+            opacity: 0;
+            transition: transform 0.3s ease, opacity 0.3s ease;
+            max-width: calc(100vw - 2rem);
+            text-align: center;
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        /* Пустые состояния */
+        .empty-state {
+            text-align: center;
+            padding: 3rem 1rem;
+            color: var(--text-muted);
+        }
+
+        .empty-state svg {
+            width: 48px;
+            height: 48px;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        .empty-state p {
+            font-size: 0.9rem;
+        }
+
+        /* Анимации */
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Адаптивность */
+        @media (max-width: 480px) {
+            .categories-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .search-input {
+                font-size: 16px; /* Предотвращает зум на iOS */
+            }
+            .search-input::placeholder {
+                font-size: 0.85rem;
+            }
+            .action-btn {
+                flex: 1;
+                justify-content: center;
+            }
+        }
+
+        @media (min-width: 768px) {
+            .categories-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+
+        /* prefers-reduced-motion */
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+            #welcome-screen canvas { display: none; }
+        }
+
+        /* Скрытие скроллбара */
+        .article-modal::-webkit-scrollbar { width: 0; }
+        .article-modal { scrollbar-width: none; }
+    </style>
+</head>
+<body>
+
+    <!-- ПРИВЕТСТВЕННЫЙ ЭКРАН -->
+    <div id="welcome-screen">
+        <canvas id="bg-canvas"></canvas>
+        <div class="welcome-content">
+            <div class="brand-logo">ПРАВОСФЕРА</div>
+            <h1 class="welcome-title">
+                <span class="gradient-text">Всё законодательство России.</span><br>
+                В одном пространстве.
+            </h1>
+            <p class="welcome-subtitle">
+                Находите нормы права, изучайте статьи и разбирайтесь в законодательстве с помощью искусственного интеллекта
+            </p>
+            <button class="btn-watch" id="btn-watch">
+                Смотреть
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                    <polyline points="12 5 19 12 12 19"></polyline>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- ПЕРЕХОДНАЯ SVG-АНИМАЦИЯ -->
+    <div id="transition-overlay">
+        <svg viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice">
+            <defs>
+                <mask id="transition-mask">
+                    <rect class="mask-rect" x="50" y="50" width="0" height="0" rx="50"/>
+                </mask>
+            </defs>
+            <rect width="100" height="100" fill="#0a0a0f" mask="url(#transition-mask)"/>
+        </svg>
+    </div>
+
+    <!-- ОСНОВНОЙ ИНТЕРФЕЙС -->
+    <div id="main-app">
+        <!-- Хедер -->
+        <header class="app-header">
+            <div class="header-inner">
+                <div class="header-logo">ПРАВОСФЕРА</div>
+                <div class="header-actions">
+                    <button class="icon-btn" id="btn-history" title="История поиска">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <polyline points="12 6 12 12 16 14"></polyline>
+                        </svg>
+                    </button>
+                    <button class="icon-btn" id="btn-favorites" title="Избранное">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <div class="content-container">
+            <!-- Главный экран поиска -->
+            <section class="hero-section" id="hero-section">
+                <h2 class="hero-title">Что вы хотите найти?</h2>
+                <p class="hero-subtitle">Название закона, номер статьи или вопрос своими словами</p>
+
+                <div class="search-box">
+                    <div class="search-input-wrapper">
+                        <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                        </svg>
+                        <input 
+                            type="text" 
+                            class="search-input" 
+                            id="search-input"
+                            placeholder="Например: что будет за кражу, штраф за парковку или статья 158 УК РФ…"
+                            autocomplete="off"
+                            spellcheck="false"
+                        >
+                        <button class="search-btn" id="search-btn">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="11" cy="11" r="8"></circle>
+                                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Результаты поиска -->
+            <section class="results-section" id="results-section" style="display: none;">
+                <div class="results-header">
+                    <span class="results-count" id="results-count"></span>
+                </div>
+                <div class="results-list" id="results-list"></div>
+            </section>
+
+            <!-- Каталог категорий -->
+            <section class="categories-section" id="categories-section">
+                <h3 class="section-title">Разделы законодательства</h3>
+                <div class="categories-grid" id="categories-grid">
+                    <!-- Заполняется динамически -->
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <!-- МОДАЛЬНОЕ ОКНО СТАТЬИ -->
+    <div class="article-modal" id="article-modal">
+        <div class="article-header">
+            <div class="article-header-inner">
+                <button class="back-btn" id="article-back-btn">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="15 18 9 12 15 6"></polyline>
+                    </svg>
+                    Назад
+                </button>
+                <span class="article-header-title" id="article-header-title"></span>
+            </div>
+        </div>
+
+        <div class="article-content-wrapper">
+            <span class="article-badge" id="article-doc-badge"></span>
+            <h1 class="article-title-full" id="article-title-full"></h1>
+            <div class="article-meta-info" id="article-meta-info"></div>
+            
+            <div class="article-text" id="article-text"></div>
+
+            <div class="article-actions">
+                <button class="action-btn" id="btn-copy-article">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                    </svg>
+                    Копировать
+                </button>
+                <button class="action-btn primary" id="btn-explain-ai">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 2a10 10 0 1 0 10 10H12V2z"></path>
+                        <path d="M12 12L2.5 12.5"></path>
+                        <path d="M12 12l6.5-6.5"></path>
+                    </svg>
+                    Объяснить простыми словами
+                </button>
+            </div>
+
+            <div class="ai-explanation" id="ai-explanation">
+                <div class="ai-explanation-header">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+                        <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                    </svg>
+                    Объяснение ИИ
+                </div>
+                <div class="ai-explanation-text" id="ai-explanation-text"></div>
+                <div class="ai-disclaimer" id="ai-disclaimer"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Уведомление -->
+    <div class="toast" id="toast"></div>
+
+    <script>
+        // ============================================
+        // КОНФИГУРАЦИЯ И СОСТОЯНИЕ
+        // ============================================
+        const API_BASE = window.location.origin;
+        
+        const state = {
+            currentArticle: null,
+            searchAbortController: null,
+            favorites: JSON.parse(localStorage.getItem('pravosfera_favorites') || '[]'),
+            history: JSON.parse(localStorage.getItem('pravosfera_history') || '[]')
+        };
+
+        // SVG-иконки для категорий
+        const categoryIcons = {
+            constitution: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>',
+            criminal: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>',
+            administrative: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>',
+            civil: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>',
+            labor: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>',
+            tax: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>',
+            family: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>',
+            housing: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>',
+            land: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>',
+            other: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>'
+        };
+
+        // ============================================
+        // ФОНОВАЯ АНИМАЦИЯ (Canvas)
+        // ============================================
+        function initBackgroundAnimation() {
+            const canvas = document.getElementById('bg-canvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            let animationId;
+            let time = 0;
+
+            function resize() {
+                canvas.width = window.innerWidth * window.devicePixelRatio;
+                canvas.height = window.innerHeight * window.devicePixelRatio;
+                canvas.style.width = window.innerWidth + 'px';
+                canvas.style.height = window.innerHeight + 'px';
+                ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+            }
+            resize();
+            window.addEventListener('resize', resize);
+
+            const particles = Array.from({ length: 30 }, () => ({
+                x: Math.random() * window.innerWidth,
+                y: Math.random() * window.innerHeight,
+                vx: (Math.random() - 0.5) * 0.3,
+                vy: (Math.random() - 0.5) * 0.3,
+                r: Math.random() * 2 + 1
+            }));
+
+            function draw() {
+                if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+                
+                ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+                time += 0.005;
+
+                particles.forEach(p => {
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    if (p.x < 0 || p.x > window.innerWidth) p.vx *= -1;
+                    if (p.y < 0 || p.y > window.innerHeight) p.vy *= -1;
+
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                    ctx.fillStyle = `rgba(74, 158, 255, ${0.1 + Math.sin(time + p.x * 0.01) * 0.05})`;
+                    ctx.fill();
+                });
+
+                // Линии между близкими частицами
+                for (let i = 0; i < particles.length; i++) {
+                    for (let j = i + 1; j < particles.length; j++) {
+                        const dx = particles[i].x - particles[j].x;
+                        const dy = particles[i].y - particles[j].y;
+                        const dist = Math.sqrt(dx * dx + dy * dy);
+                        if (dist < 150) {
+                            ctx.beginPath();
+                            ctx.moveTo(particles[i].x, particles[i].y);
+                            ctx.lineTo(particles[j].x, particles[j].y);
+                            ctx.strokeStyle = `rgba(74, 158, 255, ${0.05 * (1 - dist / 150)})`;
+                            ctx.lineWidth = 0.5;
+                            ctx.stroke();
+                        }
+                    }
+                }
+
+                animationId = requestAnimationFrame(draw);
+            }
+            draw();
+
+            return () => {
+                cancelAnimationFrame(animationId);
+                window.removeEventListener('resize', resize);
+            };
+        }
+
+        // ============================================
+        // ПЕРЕХОД С ПРИВЕТСТВЕННОГО ЭКРАНА
+        // ============================================
+        document.getElementById('btn-watch').addEventListener('click', function() {
+            const welcome = document.getElementById('welcome-screen');
+            const overlay = document.getElementById('transition-overlay');
+            const mainApp = document.getElementById('main-app');
+            
+            // Пульсация кнопки
+            this.style.transform = 'scale(0.92)';
+            
+            // Запуск SVG-анимации
+            setTimeout(() => {
+                overlay.classList.add('active');
+                const maskRect = overlay.querySelector('.mask-rect');
+                
+                // Анимируем расширение маски
+                maskRect.style.transition = 'all 1.2s cubic-bezier(0.65, 0, 0.35, 1)';
+                maskRect.setAttribute('x', '-10');
+                maskRect.setAttribute('y', '-10');
+                maskRect.setAttribute('width', '120');
+                maskRect.setAttribute('height', '120');
+                maskRect.setAttribute('rx', '0');
+                
+                setTimeout(() => {
+                    welcome.classList.add('hidden');
+                    mainApp.classList.add('visible');
+                    initMainApp();
+                    
+                    setTimeout(() => {
+                        overlay.classList.remove('active');
+                        maskRect.style.transition = 'none';
+                        maskRect.setAttribute('x', '50');
+                        maskRect.setAttribute('y', '50');
+                        maskRect.setAttribute('width', '0');
+                        maskRect.setAttribute('height', '0');
+                        maskRect.setAttribute('rx', '50');
+                    }, 400);
+                }, 1000);
+            }, 150);
+        });
+
+        // ============================================
+        // ИНИЦИАЛИЗАЦИЯ ОСНОВНОГО ПРИЛОЖЕНИЯ
+        // ============================================
+        function initMainApp() {
+            initBackgroundAnimation();
+            loadCategories();
+            
+            // Фокус на поиске для быстрого доступа
+            setTimeout(() => {
+                document.getElementById('search-input').focus();
+            }, 300);
+        }
+
+        // ============================================
+        // ЗАГРУЗКА КАТЕГОРИЙ
+        // ============================================
+        async function loadCategories() {
+            const grid = document.getElementById('categories-grid');
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/stats`);
+                const stats = await response.json();
+                
+                // Показываем реальные категории (если есть данные)
+                if (stats.documents > 0) {
+                    grid.innerHTML = `
+                        <div class="category-card" data-category="criminal">
+                            <div class="category-icon">${categoryIcons.criminal}</div>
+                            <div class="category-name">Уголовный кодекс</div>
+                            <div class="category-abbr">УК РФ</div>
+                        </div>
+                        <div class="category-card" data-category="administrative">
+                            <div class="category-icon">${categoryIcons.administrative}</div>
+                            <div class="category-name">КоАП РФ</div>
+                            <div class="category-abbr">КоАП</div>
+                        </div>
+                        <div class="category-card" data-category="civil">
+                            <div class="category-icon">${categoryIcons.civil}</div>
+                            <div class="category-name">Гражданский кодекс</div>
+                            <div class="category-abbr">ГК РФ</div>
+                        </div>
+                        <div class="category-card" data-category="labor">
+                            <div class="category-icon">${categoryIcons.labor}</div>
+                            <div class="category-name">Трудовой кодекс</div>
+                            <div class="category-abbr">ТК РФ</div>
+                        </div>
+                        <div class="category-card" data-category="tax">
+                            <div class="category-icon">${categoryIcons.tax}</div>
+                            <div class="category-name">Налоговый кодекс</div>
+                            <div class="category-abbr">НК РФ</div>
+                        </div>
+                        <div class="category-card" data-category="family">
+                            <div class="category-icon">${categoryIcons.family}</div>
+                            <div class="category-name">Семейный кодекс</div>
+                            <div class="category-abbr">СК РФ</div>
+                        </div>
+                        <div class="category-card" data-category="housing">
+                            <div class="category-icon">${categoryIcons.housing}</div>
+                            <div class="category-name">Жилищный кодекс</div>
+                            <div class="category-abbr">ЖК РФ</div>
+                        </div>
+                        <div class="category-card" data-category="constitution">
+                            <div class="category-icon">${categoryIcons.constitution}</div>
+                            <div class="category-name">Конституция РФ</div>
+                            <div class="category-abbr">Конституция</div>
+                        </div>
+                    `;
+                } else {
+                    grid.innerHTML = `
+                        <div class="empty-state" style="grid-column: 1 / -1;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                <polyline points="14 2 14 8 20 8"></polyline>
+                            </svg>
+                            <p>База законодательства ещё не загружена.</p>
+                            <p style="font-size:0.8rem;margin-top:0.5rem;">Выполните импорт данных: <code>npm run import</code></p>
+                        </div>
+                    `;
+                }
+
+                // Обработчики категорий
+                grid.querySelectorAll('.category-card').forEach(card => {
+                    card.addEventListener('click', () => {
+                        const category = card.dataset.category;
+                        document.getElementById('search-input').value = category;
+                        performSearch();
+                    });
+                });
+
+            } catch (err) {
+                console.error('Failed to load stats:', err);
+                grid.innerHTML = `
+                    <div class="empty-state" style="grid-column: 1 / -1;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="12" y1="8" x2="12" y2="12"></line>
+                            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                        </svg>
+                        <p>Не удалось загрузить каталог. Проверьте подключение к серверу.</p>
+                    </div>
+                `;
+            }
+        }
+
+        // ============================================
+        // ПОИСК
+        // ============================================
+        const searchInput = document.getElementById('search-input');
+        const searchBtn = document.getElementById('search-btn');
+        const resultsSection = document.getElementById('results-section');
+        const resultsList = document.getElementById('results-list');
+        const resultsCount = document.getElementById('results-count');
+
+        async function performSearch() {
+            const query = searchInput.value.trim();
+            if (query.length < 2) {
+                showToast('Введите хотя бы 2 символа');
+                return;
+            }
+
+            // Отменяем предыдущий запрос
+            if (state.searchAbortController) {
+                state.searchAbortController.abort();
+            }
+            state.searchAbortController = new AbortController();
+
+            // Показываем загрузку
+            resultsSection.style.display = 'block';
+            resultsList.innerHTML = `
+                <div class="empty-state">
+                    <div class="loading-spinner"></div>
+                    <p style="margin-top:1rem;">Поиск по законодательству…</p>
+                </div>
+            `;
+            resultsCount.textContent = '';
+
+            try {
+                const response = await fetch(
+                    `${API_BASE}/api/search?q=${encodeURIComponent(query)}`,
+                    { signal: state.searchAbortController.signal }
+                );
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Ошибка поиска');
+                }
+
+                // Сохраняем в историю
+                addToHistory(query);
+
+                if (data.results.length === 0) {
+                    resultsList.innerHTML = `
+                        <div class="empty-state">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <circle cx="11" cy="11" r="8"></circle>
+                                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                            </svg>
+                            <p>По запросу «${escapeHtml(query)}» ничего не найдено.</p>
+                            <p style="font-size:0.8rem;margin-top:0.5rem;">Попробуйте изменить формулировку или проверить номер статьи.</p>
+                        </div>
+                    `;
+                    resultsCount.textContent = '0 результатов';
+                    return;
+                }
+
+                resultsCount.textContent = `Найдено: ${data.total}`;
+                resultsList.innerHTML = data.results.map(article => `
+                    <div class="result-card" data-article-id="${article.id}">
+                        <div class="result-doc-title">${escapeHtml(article.abbreviation || article.document_title)}</div>
+                        <div class="result-article-title">Статья ${escapeHtml(article.article_number)}. ${escapeHtml(article.article_title)}</div>
+                        <div class="result-snippet">${escapeHtml(article.content.substring(0, 200))}…</div>
+                        <div class="result-meta">
+                            <span class="status-badge status-${article.status === 'active' ? 'active' : 'repealed'}">
+                                ${article.status === 'active' ? 'Действует' : 'Утратила силу'}
+                            </span>
+                            ${article.chapter ? `<span>${escapeHtml(article.chapter)}</span>` : ''}
+                        </div>
+                    </div>
+                `).join('');
+
+                // Обработчики карточек
+                resultsList.querySelectorAll('.result-card').forEach(card => {
+                    card.addEventListener('click', () => {
+                        openArticle(card.dataset.articleId);
+                    });
+                });
+
+            } catch (err) {
+                if (err.name === 'AbortError') return;
+                console.error('Search error:', err);
+                resultsList.innerHTML = `
+                    <div class="empty-state">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="12" y1="8" x2="12" y2="12"></line>
+                            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                        </svg>
+                        <p>Не удалось выполнить поиск.</p>
+                        <p style="font-size:0.8rem;margin-top:0.5rem;">Проверьте подключение и попробуйте снова.</p>
+                    </div>
+                `;
+            }
+        }
+
+        searchBtn.addEventListener('click', performSearch);
+        searchInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') performSearch();
+        });
+
+        // ============================================
+        // ОТКРЫТИЕ СТАТЬИ
+        // ============================================
+        async function openArticle(articleId) {
+            const modal = document.getElementById('article-modal');
+            modal.classList.add('open');
+            document.body.style.overflow = 'hidden';
+
+            // Показываем загрузку
+            document.getElementById('article-title-full').textContent = 'Загрузка…';
+            document.getElementById('article-text').textContent = '';
+            document.getElementById('article-meta-info').innerHTML = '';
+            document.getElementById('article-doc-badge').textContent = '';
+            document.getElementById('ai-explanation').classList.remove('visible');
+
+            try {
+                const response = await fetch(`${API_BASE}/api/articles/${articleId}`);
+                if (!response.ok) throw new Error('Статья не найдена');
+                
+                const article = await response.json();
+                state.currentArticle = article;
+
+                // Заполняем модальное окно
+                document.getElementById('article-header-title').textContent = 
+                    `${article.abbreviation || article.document_title} — Статья ${article.article_number}`;
+                document.getElementById('article-doc-badge').textContent = 
+                    article.abbreviation || article.document_title;
+                document.getElementById('article-title-full').textContent = 
+                    `Статья ${article.article_number}. ${article.article_title}`;
+                
+                document.getElementById('article-meta-info').innerHTML = `
+                    <span class="status-badge status-${article.status === 'active' ? 'active' : 'repealed'}">
+                        ${article.status === 'active' ? 'Действует' : 'Утратила силу'}
+                    </span>
+                    ${article.chapter ? `<span>${escapeHtml(article.chapter)}</span>` : ''}
+                    ${article.document_source_url ? `<a href="${escapeHtml(article.document_source_url)}" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:none;">Источник</a>` : ''}
+                `;
+                
+                document.getElementById('article-text').textContent = article.content;
+
+            } catch (err) {
+                console.error('Failed to load article:', err);
+                document.getElementById('article-title-full').textContent = 'Ошибка загрузки';
+                document.getElementById('article-text').textContent = 
+                    'Не удалось загрузить текст статьи. Проверьте подключение к серверу и попробуйте снова.';
+            }
+        }
+
+        // Закрытие модального окна
+        document.getElementById('article-back-btn').addEventListener('click', () => {
+            document.getElementById('article-modal').classList.remove('open');
+            document.body.style.overflow = '';
+            state.currentArticle = null;
+        });
+
+        // ============================================
+        // КОПИРОВАНИЕ ТЕКСТА
+        // ============================================
+        document.getElementById('btn-copy-article').addEventListener('click', async () => {
+            if (!state.currentArticle) return;
+            
+            try {
+                await navigator.clipboard.writeText(state.currentArticle.content);
+                showToast('Текст статьи скопирован');
+            } catch {
+                showToast('Не удалось скопировать текст');
+            }
+        });
+
+        // ============================================
+        // ОБЪЯСНЕНИЕ ИИ
+        // ============================================
+        document.getElementById('btn-explain-ai').addEventListener('click', async function() {
+            if (!state.currentArticle) return;
+
+            const btn = this;
+            const explanationBox = document.getElementById('ai-explanation');
+            const explanationText = document.getElementById('ai-explanation-text');
+            const disclaimer = document.getElementById('ai-disclaimer');
+
+            btn.disabled = true;
+            btn.innerHTML = '<div class="loading-spinner"></div> Анализ…';
+
+            try {
+                const response = await fetch(`${API_BASE}/api/explain`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        articleId: state.currentArticle.id,
+                        articleText: state.currentArticle.content,
+                        articleTitle: state.currentArticle.article_title,
+                        documentTitle: state.currentArticle.document_title
+                    })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Ошибка ИИ');
+                }
+
+                explanationText.textContent = data.explanation;
+                disclaimer.textContent = data.disclaimer || '';
+                explanationBox.classList.add('visible');
+                showToast('Объяснение готово');
+
+            } catch (err) {
+                console.error('AI explanation error:', err);
+                showToast(err.message || 'ИИ временно недоступен');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = `
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 2a10 10 0 1 0 10 10H12V2z"></path>
+                        <path d="M12 12L2.5 12.5"></path>
+                        <path d="M12 12l6.5-6.5"></path>
+                    </svg>
+                    Объяснить простыми словами
+                `;
+            }
+        });
+
+        // ============================================
+        // ИСТОРИЯ И ИЗБРАННОЕ
+        // ============================================
+        function addToHistory(query) {
+            state.history = state.history.filter(h => h !== query);
+            state.history.unshift(query);
+            state.history = state.history.slice(0, 20);
+            localStorage.setItem('pravosfera_history', JSON.stringify(state.history));
+        }
+
+        document.getElementById('btn-history').addEventListener('click', () => {
+            if (state.history.length === 0) {
+                showToast('История поиска пуста');
+                return;
+            }
+            const list = state.history.map(h => `• ${h}`).join('\n');
+            if (confirm(`История поиска:\n\n${list}\n\nОчистить историю?`)) {
+                state.history = [];
+                localStorage.setItem('pravosfera_history', '[]');
+                showToast('История очищена');
+            }
+        });
+
+        document.getElementById('btn-favorites').addEventListener('click', () => {
+            if (state.favorites.length === 0) {
+                showToast('В избранном пока ничего нет');
+            } else {
+                showToast(`В избранном: ${state.favorites.length} статей`);
+            }
+        });
+
+        // ============================================
+        // ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+        // ============================================
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('show');
+            clearTimeout(toast._timeout);
+            toast._timeout = setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // ============================================
+        // ЗАПУСК
+        // ============================================
+        document.addEventListener('DOMContentLoaded', () => {
+            // Если приветственный экран уже был показан в этой сессии, можно пропустить
+            // (опционально)
+        });
+
+        // Обработка кнопки "Назад" браузера
+        window.addEventListener('popstate', () => {
+            if (document.getElementById('article-modal').classList.contains('open')) {
+                document.getElementById('article-back-btn').click();
+            }
+        });
+    </script>
+</body>
+</html>
