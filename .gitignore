@@ -1,12 +1,4 @@
-# секреты
-secrets.py
+node_modules/
 .env
-.fernet_key
-
-# python
-__pycache__/
-*.pyc
-*.pyo
-.venv/
-venv/
-.pytest_cache/
+*.log
+.DS_Store
